@@ -15,6 +15,7 @@ import {
   Settings,
   Inbox,
   Bookmark,
+  Briefcase,
   type LucideIcon,
 } from "lucide-react-native";
 import type { SidebarGroup } from "@/components/layout/SidebarNav";
@@ -108,10 +109,18 @@ export const USER_CLIENT_EXTRA: NavItem[] = [
   },
 ];
 
-// Specialist-only addition: empty after #1615 — specialists already see the
-// public bourse via the base "Запросы" item; the legacy public-requests link
-// is no longer surfaced separately.
-export const USER_SPECIALIST_EXTRA: NavItem[] = [];
+// Specialist-only addition. Wave 5 / specialist-split: dedicated entry
+// to the editor page (work area, experience, contacts, public-profile
+// toggle). Lives separately from /profile so a specialist who's also a
+// client can see both surfaces. Hidden when 'Я специалист' is off.
+export const USER_SPECIALIST_EXTRA: NavItem[] = [
+  {
+    label: "Я специалист",
+    href: "/specialist",
+    icon: Briefcase,
+    match: (ctx) => topLevelMatch(ctx, "/specialist"),
+  },
+];
 
 export const USER_TAIL_ITEMS: NavItem[] = [];
 

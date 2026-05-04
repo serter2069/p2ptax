@@ -19,8 +19,6 @@ import { colors } from "@/lib/theme";
 import { Z } from "@/lib/zIndex";
 import { useSettingsForm, type AutosaveStatus } from "@/lib/useSettingsForm";
 import ProfileTab from "@/components/settings/ProfileTab";
-import SpecialistTab from "@/components/settings/SpecialistTab";
-import InlineWorkArea from "@/components/settings/InlineWorkArea";
 
 /**
  * Unified Profile page (Wave 4 / profile-merged).
@@ -153,14 +151,11 @@ export default function UnifiedProfile() {
   }, [params.focus]);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
-  // When the specialist clicks "Изменить рабочую зону" we open the inline
-  // 3-step wizard right here on /profile instead of navigating away (the
-  // old behaviour redirected to /profile?firstTime=true&focus=specialist
-  // which is the same page → just scrolled, never opening anything).
-  const [editingWorkArea, setEditingWorkArea] = useState(false);
 
-  // useSettingsForm still expects `activeTab` for backward compat; we always
-  // pass "profile" since this page no longer has tabs.
+  // Wave 5 / specialist-split: /profile is now account-only. Specialist-
+  // mode editing (work area, experience, contacts, etc.) lives on
+  // /specialist. The 'Я специалист' toggle below redirects there
+  // immediately when flipped ON, so users never have to scroll.
   const form = useSettingsForm({
     ready,
     activeTab: "profile",
@@ -168,83 +163,13 @@ export default function UnifiedProfile() {
   });
   const { router, user, isSpecialistUser } = form;
 
-  // Refs for section auto-scroll (focus param). On web the View becomes a
-  // host node — we capture it via callback refs so we can call scrollIntoView
-  // directly without fighting the cross-platform RN typings.
-  const scrollRef = useRef<ScrollView | null>(null);
-  const personalRef = useRef<{ scrollIntoView?: (o?: ScrollIntoViewOptions) => void } | null>(null);
-  const specialistRef = useRef<{ scrollIntoView?: (o?: ScrollIntoViewOptions) => void } | null>(null);
-  const visibilityRef = useRef<{ scrollIntoView?: (o?: ScrollIntoViewOptions) => void } | null>(null);
-  const didScrollRef = useRef(false);
-
-  // Callback ref factories — RN-Web passes the host node, RN-Native passes
-  // a View component. Either way, we just store it and only call
-  // scrollIntoView when present (web only).
-  const setPersonalRef = useCallback((node: unknown) => {
-    personalRef.current = node as typeof personalRef.current;
-  }, []);
-  const setSpecialistRef = useCallback((node: unknown) => {
-    specialistRef.current = node as typeof specialistRef.current;
-  }, []);
-  const setVisibilityRef = useCallback((node: unknown) => {
-    visibilityRef.current = node as typeof visibilityRef.current;
-  }, []);
-
-  // Stranded specialist auto-open: if the visitor lands on /profile with
-  // ?focus=specialist (e.g. clicked the StrandedSpecialistBanner's
-  // "Завершить →"), they're already a specialist but have no work-area
-  // entries yet — open the inline wizard automatically so they don't
-  // have to hunt for the "+ Добавить ИФНС и услуги" button.
+  // Wave 5: legacy ?focus=specialist links forward to /specialist.
   useEffect(() => {
     if (!ready) return;
-    if (focus !== "specialist") return;
-    if (!isSpecialistUser) return;
-    if (form.specLoading) return;
-    if (!form.specData) return;
-    if (form.specData.fnsServices && form.specData.fnsServices.length === 0) {
-      setEditingWorkArea(true);
+    if (focus === "specialist") {
+      form.nav.replaceRoutes.specialistEdit();
     }
-  }, [ready, focus, isSpecialistUser, form.specLoading, form.specData]);
-
-  // When the user lands with `?focus=specialist` and isn't a specialist yet,
-  // auto-enable so the sections are visible. Mirrors old role=specialist flow.
-  useEffect(() => {
-    if (!ready || didScrollRef.current) return;
-    if (firstTime && focus === "specialist" && !isSpecialistUser) {
-      // Fire-and-forget; the toggle handler is idempotent.
-      void form.handleToggleSpecialist(true);
-    }
-  }, [ready, firstTime, focus, isSpecialistUser, form]);
-
-  // Auto-scroll to the requested section once.
-  useEffect(() => {
-    if (!ready || didScrollRef.current || Platform.OS !== "web") return;
-    if (!focus) {
-      didScrollRef.current = true;
-      return;
-    }
-    const target =
-      focus === "specialist"
-        ? specialistRef.current
-        : focus === "visibility"
-          ? visibilityRef.current
-          : focus === "name"
-            ? personalRef.current
-            : null;
-    if (target && typeof window !== "undefined") {
-      // RN-Web renders <View/> as an HTMLDivElement at runtime — call
-      // scrollIntoView when the host method is available.
-      const node = target as { scrollIntoView?: (opts?: ScrollIntoViewOptions) => void };
-      if (typeof node.scrollIntoView === "function") {
-        try {
-          node.scrollIntoView({ behavior: "smooth", block: "start" });
-        } catch {
-          // swallow
-        }
-      }
-      didScrollRef.current = true;
-    }
-  }, [ready, focus]);
+  }, [ready, focus, form]);
 
   if (!ready) {
     return (
@@ -320,7 +245,6 @@ export default function UnifiedProfile() {
       </View>
 
       <ScrollView
-        ref={scrollRef}
         className="flex-1"
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 32 }}
@@ -338,8 +262,8 @@ export default function UnifiedProfile() {
             <FirstTimeBanner onDismiss={() => setBannerDismissed(true)} />
           )}
 
-          {/* 1. Личные данные + 2. Тумблер "Я специалист" + (when ON) "Публичный профиль" */}
-          <View ref={setPersonalRef as never}>
+          {/* 1. Личные данные + 2. Тумблер "Я специалист" */}
+          <View>
             <ProfileTab
               firstName={form.firstName}
               lastName={form.lastName}
@@ -368,77 +292,28 @@ export default function UnifiedProfile() {
             />
           </View>
 
-          {/* Anchor refs for focus auto-scroll. Specialist anchor wraps the
-              specialist sections so it scrolls into view at the right spot. */}
-          <View ref={setVisibilityRef as never} />
-          <View ref={setSpecialistRef as never}>
-            {/* 3-6. Specialist sections — visible only when isSpecialist ON */}
-            {isSpecialistUser ? (
-              <>
-                {editingWorkArea ? (
-                  <InlineWorkArea
-                    initialEntries={(form.specData?.fnsServices ?? []).map((g) => ({
-                      fnsId: g.fns.id,
-                      fnsName: g.fns.name,
-                      fnsCode: g.fns.code,
-                      cityId: g.city.id,
-                      cityName: g.city.name,
-                      serviceIds: g.services.map((s) => s.id),
-                      serviceNames: g.services.map((s) => s.name),
-                      isAnyService: g.services.length === 0,
-                    }))}
-                    onDone={() => {
-                      setEditingWorkArea(false);
-                      // Refresh the specialist profile so the new
-                      // FNS/services list shows up in FnsServicesSection.
-                      form.refreshSpecialistData?.();
-                    }}
-                    onCancel={() => setEditingWorkArea(false)}
-                  />
-                ) : (
-                  <>
-                    {form.specData && form.specData.fnsServices.length === 0 && (
-                      <View className="bg-accent-soft border border-border rounded-2xl px-4 py-3 mb-4">
-                        <Text className="text-sm text-text-base leading-5">
-                          Заполните город, услугу и услугу, чтобы попасть в каталог.
-                        </Text>
-                      </View>
-                    )}
-                    <SpecialistTab
-                      isSpecialistUser={isSpecialistUser}
-                      specLoading={form.specLoading}
-                      specData={form.specData}
-                      description={form.description}
-                      officeAddress={form.officeAddress}
-                      workingHours={form.workingHours}
-                      experienceText={form.experienceText}
-                      specializationText={form.specializationText}
-                      contacts={form.contacts}
-                      addingContact={form.addingContact}
-                      newContactType={form.newContactType}
-                      newContactValue={form.newContactValue}
-                      contactSaving={form.contactSaving}
-                      showTypePicker={form.showTypePicker}
-                      onDescriptionChange={form.setDescription}
-                      onOfficeAddressChange={form.setOfficeAddress}
-                      onWorkingHoursChange={form.setWorkingHours}
-                      onExperienceTextChange={form.setExperienceText}
-                      onSpecializationTextChange={form.setSpecializationText}
-                      onContactsChange={form.setContacts}
-                      onAddingContactChange={form.setAddingContact}
-                      onNewContactTypeChange={form.setNewContactType}
-                      onNewContactValueChange={form.setNewContactValue}
-                      onContactSavingChange={form.setContactSaving}
-                      onShowTypePickerChange={form.setShowTypePicker}
-                      onGoToProfileTab={() => undefined}
-                      onGoToWorkArea={() => setEditingWorkArea(true)}
-                      onSpecialistBlur={form.autosaveSpecialistProfile}
-                    />
-                  </>
-                )}
-              </>
-            ) : null}
-          </View>
+          {/* Quick link to /specialist when in specialist mode. The
+              actual editor (work area, experience, contacts, etc.)
+              now lives there — /profile is account-only. */}
+          {isSpecialistUser && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Открыть настройки специалиста"
+              onPress={() => form.nav.replaceRoutes.specialistEdit()}
+              className="bg-white border border-border rounded-2xl px-4 py-4 mb-4 flex-row items-center justify-between"
+              style={{ minHeight: 64 }}
+            >
+              <View className="flex-1 mr-4">
+                <Text className="text-base font-semibold text-text-base">
+                  Настройки специалиста
+                </Text>
+                <Text className="text-xs text-text-mute mt-0.5">
+                  Рабочая зона, опыт, контакты, видимость в каталоге
+                </Text>
+              </View>
+              <Text style={{ color: colors.accent, fontSize: 18 }}>›</Text>
+            </Pressable>
+          )}
 
           {/* Logout / Delete — always visible at bottom */}
           <Card className="mt-2 mb-4" style={{ overflow: "hidden" }}>

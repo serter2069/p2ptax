@@ -187,6 +187,7 @@ function RootLayout() {
                 links continue to work. */}
             <Stack.Screen name="profile/index" />
             <Stack.Screen name="profile/[id]" />
+            <Stack.Screen name="specialist/index" />
             <Stack.Screen name="settings" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="legal/index" options={{ headerShown: false }} />

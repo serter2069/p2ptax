@@ -321,16 +321,16 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
   const handleToggleSpecialist = useCallback(
     async (value: boolean) => {
       if (value) {
-        // Wave 4/profile-merged: never navigate away. We always flip the flag
-        // server-side; if the user has no FNS data the inline specialist
-        // sections of the merged Profile page guide them to fill it. The
-        // sidebar item "Запросы" is added by `buildUserItems(true)` and
-        // the inline "Где работаете" picker writes via the existing
-        // saveWorkArea() helper.
+        // Wave 5/specialist-split: enabling 'Я специалист' immediately
+        // sends the user to /specialist (the dedicated editor) so the
+        // editing surface is impossible to miss. The /profile page now
+        // only owns account stuff; specialist editing was hidden 'below
+        // the fold' under the old single-page layout.
         try {
           await apiPost("/api/user/leave-specialist-toggle", { enable: true });
           updateUser({ isSpecialist: true });
           await loadSpecialistData();
+          nav.routes.specialistEdit();
         } catch {
           dialog.alert({ title: "Ошибка", message: "Не удалось включить режим специалиста" });
         }

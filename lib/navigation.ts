@@ -64,6 +64,12 @@ export const ROUTES = {
   profile: "/profile",
   settings: "/settings",
 
+  // Specialist editor (Wave 5 / specialist-split). All specialist-mode
+  // editing — work area, experience, contacts, public-profile toggle —
+  // lives on this dedicated page. Distinct from the public profile
+  // detail at /profile/[id].
+  specialistEdit: "/specialist",
+
   // Specialists
   specialists: "/specialists",
 
