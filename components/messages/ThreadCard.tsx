@@ -139,28 +139,40 @@ export default function ThreadCard({
         </View>
       </Pressable>
 
-      <View className="flex-1 min-w-0 py-3.5" style={{ paddingRight: hasUnread ? 8 : 0 }}>
-        {/* S3 fix — give the name flex-1 + min-w-0 so it gets the bulk of the row width
-            and only ellipsises for genuinely long names. Timestamp is fixed-width on the
-            right (flex-shrink-0). Perspective badge sits between name and timestamp, also
-            shrink-proof. Removed the spacer-View that previously starved the name. */}
+      <View className="flex-1 min-w-0 py-3.5">
+        {/* Row layout is identical for read and unread states — the
+            only visual signal of unread is a tiny dot next to the
+            timestamp + the left-border on the row container. Сергей's
+            ask: 'не меняй шрифт, дату — просто скажи что есть
+            непрочитанное'. So name stays semibold (or bold only when
+            selected), timestamp stays muted, preview stays muted.
+            The big red 22px counter badge is replaced by a 8px primary
+            dot before the timestamp. */}
         <View className="flex-row items-center gap-2">
           <Text
             className={`flex-1 min-w-0 text-base ${
-              selected || hasUnread
-                ? "font-bold text-text-base"
-                : "font-semibold text-text-base"
+              selected ? "font-bold text-text-base" : "font-semibold text-text-base"
             }`}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
             {name}
           </Text>
+          {hasUnread && (
+            <View
+              accessibilityLabel={`${item.unreadCount} непрочитано`}
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: colors.primary,
+                flexShrink: 0,
+              }}
+            />
+          )}
           {item.lastMessage && (
             <Text
-              className={`text-xs flex-shrink-0 ${
-                hasUnread ? "text-accent font-semibold" : "text-text-dim"
-              }`}
+              className="text-xs flex-shrink-0 text-text-dim"
               numberOfLines={1}
             >
               {formatTime(item.lastMessage.createdAt)}
@@ -189,20 +201,14 @@ export default function ThreadCard({
                     resizeMode="cover"
                     accessibilityLabel={firstImage.filename}
                   />
-                  <Text
-                    className={`text-sm flex-1 ${hasUnread ? "font-semibold text-text-base" : "text-text-mute"}`}
-                    numberOfLines={1}
-                  >
+                  <Text className="text-sm flex-1 text-text-mute" numberOfLines={1}>
                     {item.lastMessage.text || `Файл: ${firstImage.filename}`}
                   </Text>
                 </View>
               );
             }
             return (
-              <Text
-                className={`text-sm mt-1 ${hasUnread ? "font-semibold text-text-base" : "text-text-mute"}`}
-                numberOfLines={2}
-              >
+              <Text className="text-sm mt-1 text-text-mute" numberOfLines={2}>
                 {item.lastMessage.text}
               </Text>
             );
@@ -216,24 +222,6 @@ export default function ThreadCard({
           </Text>
         )}
       </View>
-      {hasUnread && (
-        <View
-          style={{
-            minWidth: 22,
-            height: 22,
-            borderRadius: 11,
-            backgroundColor: colors.danger ?? "#dc2626",
-            alignItems: "center",
-            justifyContent: "center",
-            paddingHorizontal: 6,
-            marginLeft: 8,
-          }}
-        >
-          <Text style={{ color: colors.white, fontSize: 11, fontWeight: "700" }}>
-            {item.unreadCount > 99 ? "99+" : item.unreadCount}
-          </Text>
-        </View>
-      )}
     </Pressable>
   );
 }
