@@ -37,6 +37,13 @@ export interface RefreshResult {
   accessToken?: string;
   /** Fresh user payload from /refresh, present iff ok=true */
   user?: RefreshUserPayload;
+  /**
+   * Discriminator for ok=false. Lets callers distinguish a real
+   * authentication failure (where they should clear tokens / log the
+   * user out) from a transient blip (api restarting, network error,
+   * 5xx — leave tokens alone, the user can retry on their next action).
+   */
+  reason?: "no-refresh-token" | "auth-rejected" | "transient";
 }
 
 let inflight: Promise<RefreshResult> | null = null;
@@ -85,16 +92,14 @@ async function refreshAttempt(refreshToken: string): Promise<RefreshAttempt> {
 async function doRefresh(): Promise<RefreshResult> {
   const refreshToken = await AsyncStorage.getItem(REFRESH_KEY);
   if (!refreshToken) {
-    return { ok: false };
+    return { ok: false, reason: "no-refresh-token" };
   }
 
-  // Try once. If we got an explicit 401, give the API one more chance —
-  // the most common cause of a single transient 401 right after a server
-  // restart is that prisma/jwt verification middleware hasn't fully
-  // initialized yet, and a stale request races the boot. A second attempt
-  // ~1.5s later either succeeds or confirms the token is genuinely
-  // invalid. Without this retry, every routine `pm2 restart p2ptax-api`
-  // could log random users out (Сергей's 2026-05-04 incident).
+  // Retry an explicit 401 once after a 1.5s pause — the most common cause
+  // of a single transient 401 right after `pm2 restart p2ptax-api` is the
+  // jwt-verification middleware racing the api boot. A second attempt
+  // either succeeds or confirms the token is genuinely invalid. Without
+  // this retry, every routine api restart could log random users out.
   let attempt = await refreshAttempt(refreshToken);
 
   if (attempt.kind === "auth-rejected") {
@@ -116,12 +121,12 @@ async function doRefresh(): Promise<RefreshResult> {
     // Confirmed real auth failure — token genuinely invalid. Clear.
     await AsyncStorage.removeItem(TOKEN_KEY);
     await AsyncStorage.removeItem(REFRESH_KEY);
-    return { ok: false };
+    return { ok: false, reason: "auth-rejected" };
   }
 
   // Transient (5xx / network / restart in progress). Keep tokens — the
   // user can retry on their next action when the api is back up.
-  return { ok: false };
+  return { ok: false, reason: "transient" };
 }
 
 /**

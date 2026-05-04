@@ -165,11 +165,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // Only an explicit auth failure should trigger refresh+logout.
               // Server 5xx (e.g. transient S3/MinIO presign failure) must NOT
               // sign the user out — keep the token and retry on next action.
-              const refreshed = await refreshAuth();
-              if (!refreshed) {
+              //
+              // Important: `refreshAuthSession` distinguishes 'auth-rejected'
+              // (token really expired/revoked → clear) from 'transient'
+              // (api restarting / network blip → keep tokens). Without that
+              // discrimination Сергей kept getting bounced to /login every
+              // time we restarted the api.
+              const refreshResult = await refreshAuthSession();
+              if (refreshResult.ok && refreshResult.accessToken) {
+                setToken(refreshResult.accessToken);
+                if (refreshResult.user) {
+                  setUser(refreshResult.user as unknown as UserData);
+                }
+              } else if (
+                refreshResult.reason === "auth-rejected" ||
+                refreshResult.reason === "no-refresh-token"
+              ) {
+                // Real logout — token confirmed invalid by the server.
                 await clearTokens();
                 setToken(null);
               }
+              // 'transient' falls through silently — keep the token; the
+              // next user action will retry through lib/api.ts's 401
+              // interceptor when the api is back up.
             } else {
               console.warn(`[auth] /me returned ${res.status}; keeping token`);
             }
