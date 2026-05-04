@@ -1,0 +1,24 @@
+User-agent: *
+Allow: /$
+Allow: /specialists$
+Allow: /specialists/
+Allow: /requests$
+Allow: /requests/
+Allow: /legal/
+
+Disallow: /api/
+Disallow: /messages
+Disallow: /threads/
+Disallow: /my-requests
+Disallow: /profile
+Disallow: /saved-specialists
+Disallow: /admin
+Disallow: /(admin-tabs)
+Disallow: /(tabs)
+Disallow: /requests/new
+Disallow: /requests/*/write
+Disallow: /login
+Disallow: /otp
+Disallow: /onboarding
+
+Sitemap: https://p2ptax.smartlaunchhub.com/sitemap.xml

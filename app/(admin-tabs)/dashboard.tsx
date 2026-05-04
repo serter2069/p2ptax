@@ -32,6 +32,7 @@ import {
 } from "@/components/dashboard";
 import { api } from "@/lib/api";
 import { colors, BREAKPOINT } from "@/lib/theme";
+import { useNoIndex } from "@/components/seo/NoIndex";
 
 interface Stats {
   activeRequests: number;
@@ -110,6 +111,7 @@ function formatDateShort(iso: string | null | undefined): string {
 }
 
 export default function AdminDashboard() {
+  useNoIndex();
   const router = useRouter()
   const nav = useTypedRouter();
   const { width } = useWindowDimensions();

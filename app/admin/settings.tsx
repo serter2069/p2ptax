@@ -21,6 +21,8 @@ import { useTypedRouter } from "@/lib/navigation";
 import { API_URL, api } from "@/lib/api";
 import { colors, textStyle } from "@/lib/theme";
 
+import { useNoIndex } from "@/components/seo/NoIndex";
+
 interface SettingField {
   key: string;
   label: string;
@@ -44,6 +46,7 @@ const SETTINGS_FIELDS: SettingField[] = [
 ];
 
 export default function AdminSettings() {
+  useNoIndex();
   const { token, isAuthenticated, isLoading: authLoading, isAdminUser } = useAuth();
   const router = useRouter();
   const nav = useTypedRouter();

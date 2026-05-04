@@ -34,6 +34,7 @@ import ProfileTab from "@/components/settings/ProfileTab";
 import SpecialistTab from "@/components/settings/SpecialistTab";
 import InlineWorkArea from "@/components/settings/InlineWorkArea";
 import { dialog } from "@/lib/dialog";
+import { useNoIndex } from "@/components/seo/NoIndex";
 
 /**
  * Unified Profile page — Wave 8.
@@ -178,6 +179,7 @@ function TabStrip({ active, profileLabel, onChange }: TabStripProps) {
 }
 
 export default function UnifiedProfile() {
+  useNoIndex();
   const params = useLocalSearchParams<{
     firstTime?: string;
     focus?: string;

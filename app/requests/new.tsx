@@ -31,6 +31,7 @@ import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
 import FileUploadSection, { type AttachedFile } from "@/components/requests/FileUploadSection";
 import { draftStorage } from "@/lib/draftStorage";
 import { track } from "@/lib/analytics";
+import { useNoIndex } from "@/components/seo/NoIndex";
 
 // Single canonical key (v1). Replaces legacy "pending_request_draft".
 const DRAFT_KEY = "p2ptax_request_draft_v1";
@@ -52,6 +53,7 @@ interface SpecialistMini {
 }
 
 export default function CreateRequest() {
+  useNoIndex();
   const router = useRouter();
   const nav = useTypedRouter();
   const { isAuthenticated, isLoading: authLoading, token } = useAuth();

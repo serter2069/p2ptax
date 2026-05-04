@@ -21,6 +21,7 @@ import { useRequireAuth } from "@/lib/useRequireAuth";
 import { apiGet } from "@/lib/api";
 import { sortThreads } from "@/lib/threadDisplay";
 import { colors, BREAKPOINT } from "@/lib/theme";
+import { useNoIndex } from "@/components/seo/NoIndex";
 
 /**
  * Unified Inbox — iter11 UI layer (PR 2/3).
@@ -38,6 +39,7 @@ interface ThreadsMyGroup {
 }
 
 export default function UnifiedInbox() {
+  useNoIndex();
   const router = useRouter();
   const nav = useTypedRouter();
   const { ready } = useRequireAuth();

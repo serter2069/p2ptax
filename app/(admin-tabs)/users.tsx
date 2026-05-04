@@ -17,6 +17,7 @@ import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
 import { colors, fontSizeValue } from "@/lib/theme";
+import { useNoIndex } from "@/components/seo/NoIndex";
 
 
 /**
@@ -90,6 +91,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function AdminUsers() {
+  useNoIndex();
   const { token } = useAuth();
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);

@@ -6,6 +6,7 @@ import InlineChatView from "@/components/InlineChatView";
 import LoadingState from "@/components/ui/LoadingState";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
+import { useNoIndex } from "@/components/seo/NoIndex";
 
 // On web there are no physical safe areas (no device notch/home bar),
 // so we strip bottom edge to prevent the composer from being clipped.
@@ -14,6 +15,7 @@ const SAFE_EDGES = Platform.OS === "web"
   : (["top", "bottom"] as const);
 
 export default function ChatThread() {
+  useNoIndex();
   const { id, requestId } = useLocalSearchParams<{ id: string; requestId?: string }>();
   const router = useRouter();
   const { ready, isLoading: authLoading } = useRequireAuth();

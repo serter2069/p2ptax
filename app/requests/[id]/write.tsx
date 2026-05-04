@@ -13,6 +13,7 @@ import { api, ApiError } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
+import { useNoIndex } from "@/components/seo/NoIndex";
 
 interface RequestSummary {
   id: string;
@@ -47,6 +48,7 @@ const SAFE_EDGES =
  * components — the user sees a seamless transition into the live chat.
  */
 export default function SpecialistConfirmWrite() {
+  useNoIndex();
   const router = useRouter();
   const nav = useTypedRouter();
   const { id } = useLocalSearchParams<{ id: string }>();

@@ -15,6 +15,7 @@ import { Badge, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { colors } from "@/lib/theme";
 import { API_URL } from "@/lib/api";
+import { useNoIndex } from "@/components/seo/NoIndex";
 
 
 type StatusFilter = "ALL" | "NEW" | "REVIEWED";
@@ -67,6 +68,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function AdminComplaints() {
+  useNoIndex();
   const { token } = useAuth();
   const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [loading, setLoading] = useState(true);
