@@ -86,6 +86,19 @@ router.get("/public", async (req: Request, res: Response) => {
     const cityId = (req.query.city_id as string) || undefined;
     const fnsId = (req.query.fns_id as string) || undefined;
 
+    // Optional auth — used to filter the caller's own requests out
+    // of the public catalog (no point showing yourself your own
+    // request, you have /my-requests for that).
+    let callerId: string | null = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        callerId = verifyAccessToken(authHeader.slice(7)).userId;
+      } catch {
+        // ignore — public endpoint, anon is fine
+      }
+    }
+
     const where: Prisma.RequestWhereInput = {
       status: { in: ["ACTIVE", "CLOSING_SOON"] },
       isPublic: true,
@@ -93,6 +106,7 @@ router.get("/public", async (req: Request, res: Response) => {
 
     if (cityId) where.cityId = cityId;
     if (fnsId) where.fnsId = fnsId;
+    if (callerId) where.userId = { not: callerId };
 
     // Exclude QA/dev seed rows from the public feed.
     const seedWhere = notSeedRequestWhere();
@@ -248,13 +262,33 @@ router.get("/:id/public", async (req: Request, res: Response) => {
         // Storage key → presigned URL so <Image> renders directly.
         avatarUrl: await presignAvatarUrl(result.user.avatarUrl).catch(() => null),
       },
-      files: result.files.map((f) => ({
-        id: f.id,
-        url: f.url,
-        filename: f.filename,
-        size: f.size,
-        mimeType: f.mimeType,
-      })),
+      // Presign every attachment URL inline so anon visitors can
+      // download without going through /api/upload/signed-url
+      // (auth-only). External http(s) URLs (seed data) pass through.
+      files: await Promise.all(
+        result.files.map(async (f) => {
+          let url = f.url;
+          if (!/^https?:\/\//i.test(url)) {
+            const cleaned = url.replace(/^\/+/, "");
+            const prefix = `${MINIO_BUCKET}/`;
+            const key = cleaned.startsWith(prefix)
+              ? cleaned.slice(prefix.length)
+              : cleaned;
+            try {
+              url = await minioClient.presignedGetObject(MINIO_BUCKET, key, 60 * 60);
+            } catch {
+              // Fall through to raw stored URL.
+            }
+          }
+          return {
+            id: f.id,
+            url,
+            filename: f.filename,
+            size: f.size,
+            mimeType: f.mimeType,
+          };
+        })
+      ),
       threadsCount: result._count.threads,
       hasExistingThread,
       existingThreadId,

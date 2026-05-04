@@ -350,11 +350,11 @@ export default function RequestsFeed({
       <View>
         {title && <PageTitle title={title} subtitle={subtitle} />}
         {mode === "catalog" && (
-          /* Card styling matches the request rows below it (rounded
-             border, mx-4 to align with .mx-4 on RequestCard). The
-             previous full-width 'bg-white + border-b' strip clashed
-             visually — square chrome above rounded cards. */
-          <View className="bg-white border border-border rounded-2xl mx-4 mt-2 mb-3 px-4 py-3">
+          /* Card styling matches the request rows below — rounded
+             border, white surface. Width comes from the FlatList
+             contentContainerStyle.paddingHorizontal so filter and
+             rows share the left/right edge (no extra mx-4 here). */
+          <View className="bg-white border border-border rounded-2xl mt-2 mb-3 px-4 py-3">
             <CityFnsCascade
               mode="typeahead"
               value={filterValue}
@@ -434,7 +434,10 @@ export default function RequestsFeed({
             createdAt={item.createdAt}
             hasFiles={item.hasFiles}
             filesCount={item.filesCount}
-            user={item.user}
+            // In 'mine' mode the author is always the viewer — drop the
+            // user prop so RequestCard doesn't print 'Иван И.' on every
+            // row. Catalog mode keeps the author info.
+            user={mode === "mine" ? undefined : item.user}
             onPress={handleRequestPress}
           />
         )}

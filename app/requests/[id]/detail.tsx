@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { dialog } from "@/lib/dialog";
 import { File, FileImage, Download, ChevronLeft, MessageSquare } from "lucide-react-native";
+import LandingHeader from "@/components/landing/LandingHeader";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -366,6 +367,7 @@ interface AnonymousViewRequest {
   city?: { name: string } | null;
   fns?: { name: string; code: string } | null;
   user?: {
+    id?: string;
     firstName: string | null;
     lastName: string | null;
     avatarUrl: string | null;
@@ -373,14 +375,31 @@ interface AnonymousViewRequest {
   files?: FileItem[];
 }
 
+/**
+ * Drop the city chip if its name already appears in the FNS name.
+ * 'ИФНС №1 по г. Казани' already conveys 'Казань' — no need for a
+ * second chip. Cheap regex match handles the standard naming pattern
+ * (case + 'г.' prefix optional).
+ */
+function shouldShowCityChip(cityName?: string, fnsName?: string): boolean {
+  if (!cityName) return false;
+  if (!fnsName) return true;
+  const stem = cityName.replace(/[аеёийоуы]$/i, "").slice(0, 4).toLowerCase();
+  return !fnsName.toLowerCase().includes(stem);
+}
+
 function AnonymousView({
   request,
   onLogin,
   onFilePress,
+  onAuthorPress,
+  onFindSpecialists,
 }: {
   request: AnonymousViewRequest;
   onLogin: () => void;
   onFilePress: (f: FileItem) => void;
+  onAuthorPress: () => void;
+  onFindSpecialists: () => void;
 }) {
   const initials =
     [request.user?.firstName?.[0], request.user?.lastName?.[0]]
@@ -394,13 +413,20 @@ function AnonymousView({
         year: "numeric",
       })
     : null;
+  const showCity = shouldShowCityChip(request.city?.name, request.fns?.name);
   return (
     <>
-      {/* Hero — mirrors what the owner / authenticated visitor sees,
-          minus the threads list and the close-request controls. Anon
-          viewers can read the full request before deciding to log in. */}
       <Card className="mb-4">
-        <View className="flex-row items-center mb-3">
+        {/* Author row — clickable on the avatar+name when we know the
+            author's id, so anon visitors can jump to the author's
+            public profile (/profile/[id]) and check who's posting. */}
+        <Pressable
+          accessibilityRole={request.user?.id ? "link" : undefined}
+          accessibilityLabel={request.user?.id ? "Профиль автора" : undefined}
+          onPress={request.user?.id ? onAuthorPress : undefined}
+          disabled={!request.user?.id}
+          className="flex-row items-center mb-3"
+        >
           <View
             className="w-10 h-10 rounded-full items-center justify-center mr-3"
             style={{ backgroundColor: colors.accentSoft }}
@@ -438,14 +464,11 @@ function AnonymousView({
               </Text>
             </View>
           )}
-        </View>
+        </Pressable>
 
-        {(request.city?.name || request.fns?.code) && (
-          <View
-            className="flex-row flex-wrap mb-3"
-            style={{ gap: 8 }}
-          >
-            {request.city?.name && (
+        {(showCity || request.fns?.code) && (
+          <View className="flex-row flex-wrap mb-3" style={{ gap: 8 }}>
+            {showCity && request.city?.name && (
               <View
                 className="px-2.5 py-1 rounded-md"
                 style={{ backgroundColor: colors.accentSoft }}
@@ -476,27 +499,34 @@ function AnonymousView({
         </Text>
       </Card>
 
-      {(request.files ?? []).length > 0 && (
-        <Card className="mb-4">
-          <Text
-            className="uppercase mb-2"
-            style={{ fontSize: 12, letterSpacing: 2, color: colors.textSecondary, fontWeight: "600" }}
-          >
-            Документы
-          </Text>
-          <FileList files={request.files ?? []} onPress={onFilePress} />
-        </Card>
-      )}
+      {/* FileList already prints its own 'Прикреплённые документы'
+          header — we used to wrap it in another Card with a duplicate
+          'Документы' label. Render the FileList card directly. */}
+      <FileList files={request.files ?? []} onPress={onFilePress} />
 
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Войти, чтобы откликнуться"
         onPress={onLogin}
-        className="bg-accent rounded-xl py-3.5 items-center mb-6"
+        className="bg-accent rounded-xl py-3.5 items-center mb-2"
         style={({ pressed }) => [pressed && { opacity: 0.7 }]}
       >
         <Text className="text-white font-semibold text-base">Войти, чтобы откликнуться</Text>
       </Pressable>
+
+      {request.fns?.code && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Найти специалистов по этой ИФНС"
+          onPress={onFindSpecialists}
+          className="rounded-xl py-3 items-center mb-6 border border-border"
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+        >
+          <Text className="text-sm font-semibold" style={{ color: colors.text }}>
+            Посмотреть специалистов по этой ИФНС →
+          </Text>
+        </Pressable>
+      )}
     </>
   );
 }
@@ -657,13 +687,36 @@ export default function RequestDetail() {
     };
     return (
       <SafeAreaView className="flex-1 bg-surface2">
+        {/* Marketing header with logo so anon visitors actually see
+            they're on P2PTax, not a stray detail page. The same chrome
+            wraps /requests/new for anon visitors. */}
+        <LandingHeader
+          isDesktop={isDesktop}
+          onHome={() => nav.routes.home()}
+          onCatalog={() => nav.routes.specialists()}
+          onLogin={() =>
+            nav.dynamic.loginWithReturnTo(`/requests/${id}/detail`)
+          }
+          onCreateRequest={() => nav.routes.requestsNew()}
+          isAuthenticated={false}
+        />
         <ScrollView className="flex-1">
           <View style={containerStyle} className={isDesktop ? "" : "px-4"}>
             <View className="flex-row items-center pt-4 pb-2">
+              {/* Smart back: if router can pop, do so; otherwise route
+                  to home. Without this, an anon visitor who landed on
+                  this page from a direct link saw 'GO_BACK was not
+                  handled by any navigator'. */}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Назад"
-                onPress={() => router.back()}
+                onPress={() => {
+                  if (router.canGoBack && router.canGoBack()) {
+                    router.back();
+                  } else {
+                    nav.routes.home();
+                  }
+                }}
                 className="flex-row items-center"
                 style={{ minHeight: 44 }}
               >
@@ -678,6 +731,16 @@ export default function RequestDetail() {
                   nav.dynamic.loginWithReturnTo(`/requests/${id}/detail`)
                 }
                 onFilePress={handleFilePress}
+                onAuthorPress={() => {
+                  if (pub.user?.id) nav.dynamic.specialist(pub.user.id);
+                }}
+                onFindSpecialists={() => {
+                  if (pub.fns?.id) {
+                    nav.any(`/specialists?fns_ids=${pub.fns.id}`);
+                  } else {
+                    nav.routes.specialists();
+                  }
+                }}
               />
             </View>
           </View>
