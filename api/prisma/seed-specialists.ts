@@ -292,6 +292,48 @@ const SPECIALISTS: Array<{
     officeAddress: "Уфа, Цюрупы ул., 2",
     workingHours: "Пн-Пт, 10:00-19:00",
   },
+  {
+    // Wide-coverage specialist — covers 7 Moscow inspections at once.
+    // Stress-tests the public-profile WorkAreaSection layout (single
+    // 'Все услуги' chip per FNS once everything's selected) and the
+    // catalog card row that lists FNS codes. Real specialists rarely
+    // cover this many; seeded for visual / regression checking.
+    email: "viktor.shubin@p2ptax-seed.ru",
+    firstName: "Виктор",
+    lastName: "Шубин",
+    avatarUrl: "https://i.pravatar.cc/150?u=ViktorShubin",
+    description:
+      "Налоговый консультант федерального уровня. Веду дела по всему Центральному административному округу Москвы — от Тверской до Замоскворечья. 14 лет практики, более 700 успешно закрытых проверок. Специализация — крупные выездные проверки и многоэпизодные споры с ИФНС.",
+    fnsCodes: [
+      "7701",
+      "7702",
+      "7705",
+      "7707",
+      "7708",
+      "7709",
+      "7710",
+    ],
+    serviceNames: [
+      "Выездная проверка",
+      "Камеральная проверка",
+      "Отдел оперативного контроля",
+    ],
+    phone: "+7 (495) 120-14-14",
+    telegram: "@shubin_taxlaw",
+    officeAddress: "Москва, Большая Якиманка ул., 19",
+    workingHours: "Пн-Пт, 9:00-20:00",
+    yearsOfExperience: 14,
+    specializations: [
+      "Выездные проверки крупного бизнеса",
+      "Многоэпизодные споры с ИФНС",
+      "Сопровождение проверок ЦАО Москвы",
+    ],
+    certifications: [
+      "Сертификат ИПБ",
+      "Член Палаты налоговых консультантов",
+      "9 публикаций в «Налоговый вестник»",
+    ],
+  },
 ];
 
 // ─── EXTRA SPECIALISTS (Issue #1625, +25) ────────────────────────────
