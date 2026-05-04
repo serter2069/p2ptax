@@ -85,11 +85,12 @@ export default function ChatComposer({
     !disabled && !sending && (value.trim().length > 0 || files.length > 0);
 
   // Auto-expand: track TextInput content height, clamped between
-  // MIN_HEIGHT (single-line ~36px) and MAX_HEIGHT (≈5 rows). The inner
-  // <Input multiline> has its own 80px floor for general descriptions —
-  // the composer explicitly overrides it via containerStyle.minHeight
-  // below so it can start at one short row.
-  const MIN_HEIGHT = 36;
+  // MIN_HEIGHT and MAX_HEIGHT (≈5 rows). MIN_HEIGHT matches the 44px
+  // square of the paperclip + send buttons so the single-line state
+  // sits perfectly centered on the icons (was 36 before — left the
+  // placeholder visually below the icons). When the input grows past
+  // 44, items-end pins the icons to the bottom and the text wraps up.
+  const MIN_HEIGHT = 44;
   const MAX_HEIGHT = 140;
   const [inputHeight, setInputHeight] = useState(MIN_HEIGHT);
 
@@ -180,9 +181,11 @@ export default function ChatComposer({
             borderRadius: radiusValue.xl,
             height: inputHeight,
             // Explicit minHeight beats the Input component's default 80px
-            // multiline floor — composer needs to start at one row.
+            // multiline floor — composer needs to start at the same 44px
+            // height as the paperclip / send buttons so the single-line
+            // text sits centered on the icons.
             minHeight: MIN_HEIGHT,
-            paddingVertical: 4,
+            paddingVertical: 12,
             borderBottomWidth: 0,
             borderTopWidth: 0,
             borderLeftWidth: 0,
