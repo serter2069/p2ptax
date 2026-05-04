@@ -561,10 +561,10 @@ export default function CreateRequest() {
             <View className="flex-row items-center justify-between py-3 mt-3 border-t border-border">
               <View className="flex-1 mr-4">
                 <Text className="text-sm font-medium text-text-base mb-0.5">
-                  Публичный запрос
+                  Показывать в публичной ленте
                 </Text>
                 <Text className="text-xs text-text-mute leading-4">
-                  Виден всем в каталоге. Выключите, если хотите показывать только авторизованным пользователям.
+                  По умолчанию запрос виден в общем каталоге. Выключите — он не появится в ленте, но останется доступным по прямой ссылке (например, специалисту, которому вы её отправите сами).
                 </Text>
               </View>
               <StyledSwitch
