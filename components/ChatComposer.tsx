@@ -223,11 +223,17 @@ export default function ChatComposer({
                   }
             }
             style={{
-              // Zero vertical padding here — the wrapper handles vertical
-              // centering via justifyContent. Padding inside the textarea
-              // would add to its scrollHeight, breaking the centering.
-              paddingVertical: 0,
+              // ALL paddings + borders zeroed. <textarea> on web has
+              // native defaults (border 1px, padding 2px 6px) that the
+              // wrapper's justifyContent:center can't compensate for —
+              // they shift the cap-baseline of the placeholder upward
+              // by 2-3px relative to the icons. With these zeroed, the
+              // textarea is a flat 20px (lineHeight) for single-line
+              // content and the wrapper centers it perfectly against
+              // the 44px icon row.
+              padding: 0,
               paddingHorizontal: 12,
+              borderWidth: 0,
               fontSize: 14,
               lineHeight: 20,
               color: colors.text,
@@ -241,6 +247,12 @@ export default function ChatComposer({
                     outlineStyle: "none" as any,
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     resize: "none" as any,
+                    // RN-Web ignores `border: 0` from style sometimes;
+                    // belt-and-suspenders explicit border-* zeroing.
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    borderStyle: "none" as any,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    boxSizing: "content-box" as any,
                   }
                 : { height: inputHeight }),
             }}

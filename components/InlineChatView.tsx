@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { dialog } from "@/lib/dialog";
 import {
   View,
@@ -59,6 +59,29 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
   const [sending, setSending] = useState(false);
   const [text, setText] = useState("");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+
+  // Per-thread draft persistence — without this, the text in the
+  // composer 'jumped' between chats: switching from thread A to B
+  // (in the desktop split-view) carried whatever you'd typed into
+  // A's composer over to B. Now drafts are stored in-memory by
+  // threadId; on every threadId change we save the outgoing draft
+  // and load whatever the user had previously typed for the new
+  // thread. In-memory only — survives navigation but not page
+  // refresh, which is fine for chat drafts.
+  const draftsRef = useRef<Map<string, string>>(new Map());
+  const prevThreadIdRef = useRef(threadId);
+  useEffect(() => {
+    if (prevThreadIdRef.current === threadId) return;
+    // Persist outgoing thread's draft (or wipe if empty)
+    if (text.length > 0) {
+      draftsRef.current.set(prevThreadIdRef.current, text);
+    } else {
+      draftsRef.current.delete(prevThreadIdRef.current);
+    }
+    // Load incoming thread's draft (or empty)
+    setText(draftsRef.current.get(threadId) ?? "");
+    prevThreadIdRef.current = threadId;
+  }, [threadId, text]);
 
   const flatListRef = useRef<FlatList>(null);
 

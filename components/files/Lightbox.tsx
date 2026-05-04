@@ -62,11 +62,14 @@ export default function Lightbox({
 
   const handleDownload = () => {
     if (Platform.OS === "web") {
+      // No target=_blank — most browsers treat it as 'open in new tab'
+      // and ignore the download attribute. Same-window anchor + the
+      // download attr triggers the actual save dialog. The user stays
+      // on the current page (the modal stays open).
       const a = document.createElement("a");
       a.href = item.url;
       a.download = item.filename;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
+      a.rel = "noopener";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
