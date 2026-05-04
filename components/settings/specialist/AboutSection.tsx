@@ -15,14 +15,16 @@ export default function AboutSection({
   onChange,
   onBlur,
 }: AboutSectionProps) {
-  // Auto-grow textarea — fully unbounded. The 380px cap that used to be
-  // here forced the user to scroll inside the field once their bio passed
-  // ~10 lines, even though the entire page is already scrollable. Outer
-  // scroll handles overflow now; minHeight just guards an empty box.
+  // Auto-grow textarea. Capped high (1200px ≈ ~50 lines) so the field
+  // can't grow without bound — without an upper bound onContentSizeChange
+  // and the wrapper's minHeight feed each other and React throws
+  // 'Maximum update depth exceeded'. The cap is never visible to a
+  // 500-char bio (≈8–10 lines).
   const lineCount = Math.max(4, description.split("\n").length + Math.floor(description.length / 60));
   const [contentHeight, setContentHeight] = useState<number>(0);
-  const minHeight = 96;
-  const computedHeight = Math.max(minHeight, contentHeight + 24);
+  const MIN_HEIGHT = 96;
+  const MAX_HEIGHT = 1200;
+  const computedHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, contentHeight + 24));
 
   return (
     <Card padding="none" className="mb-4" style={{ paddingHorizontal: 16, paddingVertical: 20 }}>
@@ -39,7 +41,15 @@ export default function AboutSection({
         multiline
         numberOfLines={lineCount}
         maxLength={500}
-        onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
+        onContentSizeChange={(e) => {
+          // Bail if the new height is within 1px of the cached value —
+          // RN-Web emits onContentSizeChange whenever the wrapper resizes,
+          // which would re-trigger this and re-resize the wrapper, etc.
+          // The 1px hysteresis breaks the feedback loop without needing
+          // a hard cap.
+          const next = e.nativeEvent.contentSize.height;
+          setContentHeight((prev) => (Math.abs(prev - next) < 1 ? prev : next));
+        }}
         containerStyle={{ minHeight: computedHeight }}
       />
       <Text className="text-xs text-text-dim text-right mt-1">
