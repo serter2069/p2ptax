@@ -218,7 +218,7 @@ function DesktopSpecialistRow({
                       }}
                     >
                       <Text style={{ color: colors.primary, fontSize: 11 }} numberOfLines={1}>
-                        Все
+                        Все услуги
                       </Text>
                     </View>
                   ) : (
