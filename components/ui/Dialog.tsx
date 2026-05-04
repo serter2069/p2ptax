@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Modal, View, Text, Pressable, Platform } from "react-native";
+import { CheckCircle2, AlertTriangle } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 import { dialog, type DialogRequest } from "@/lib/dialog";
 
@@ -71,6 +72,29 @@ export default function DialogHost() {
             ...(Platform.OS === "android" ? { elevation: 24 } : {}),
           }}
         >
+          {current.tone ? (
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor:
+                  current.tone === "success"
+                    ? "#dcfce7"
+                    : "#fef3c7",
+                marginBottom: 12,
+                alignSelf: "flex-start",
+              }}
+            >
+              {current.tone === "success" ? (
+                <CheckCircle2 size={32} color="#16a34a" />
+              ) : (
+                <AlertTriangle size={32} color="#d97706" />
+              )}
+            </View>
+          ) : null}
           {current.title ? (
             <Text
               style={{

@@ -25,6 +25,9 @@ export interface DialogOptions {
   confirmLabel?: string;
   cancelLabel?: string;
   destructive?: boolean;
+  /** Optional accent — renders an icon at the top of the dialog.
+   *  'success' → green CheckCircle, 'warning' → orange AlertTriangle. */
+  tone?: "success" | "warning";
 }
 
 export interface DialogRequest extends DialogOptions {

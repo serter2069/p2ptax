@@ -280,12 +280,18 @@ export default function CreateRequest() {
         try { window.localStorage.removeItem("p2ptax_anon_session_v1"); } catch { /* ignore */ }
       }
 
+      // Stop the loading spinner BEFORE we await the post-publish
+      // confirmation dialog — otherwise the submit button keeps
+      // spinning while the success popup is open, which contradicts
+      // the popup's 'опубликован' message.
+      setSubmitting(false);
+
       // Post-publish: offer two paths. Default action is the friendly
       // 'Перейти к запросу' (so passive users land on the detail page,
       // unchanged behaviour). Confirm action — labelled 'Найти
-      // специалистов сами' — deep-links to the catalog filtered by
-      // the FNS the user just picked, so impatient clients can
-      // immediately browse matching specialists instead of waiting
+      // специалистов самостоятельно' — deep-links to the catalog
+      // filtered by the FNS the user just picked, so impatient clients
+      // can immediately browse matching specialists instead of waiting
       // for replies.
       const goToDetail = () => nav.replaceAny(`/requests/${result.id}/detail`);
       const goToSpecialists = () => {
@@ -299,8 +305,9 @@ export default function CreateRequest() {
         title: "Запрос опубликован",
         message:
           "Специалисты по вашей ИФНС увидят его и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
-        confirmLabel: "Найти специалистов сами",
+        confirmLabel: "Найти специалистов самостоятельно",
         cancelLabel: "Перейти к запросу",
+        tone: "success",
       });
       if (findThem) {
         goToSpecialists();
@@ -314,7 +321,8 @@ export default function CreateRequest() {
           : "Не удалось опубликовать запрос. Проверьте данные и попробуйте ещё раз.";
       track("intake_submit", { ok: false, reason: msg });
       setSubmitError(msg);
-    } finally {
+      // Only reset submitting on error path — the success branch above
+      // already cleared it before opening the dialog.
       setSubmitting(false);
     }
   }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles, anonSessionId, isPublic, targetSpecialistId]);
