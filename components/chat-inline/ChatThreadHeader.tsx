@@ -8,7 +8,6 @@ import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Avatar } from "@/components/ui";
-import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
 import { colors } from "@/lib/theme";
 import { Z, layer } from "@/lib/zIndex";
 
@@ -104,13 +103,6 @@ export default function ChatThreadHeader({
               >
                 {otherName}
               </Text>
-              {thread && myId ? (
-                thread.clientId === myId ? (
-                  <PerspectiveBadge perspective="as_client" size="md" />
-                ) : thread.specialistId === myId ? (
-                  <PerspectiveBadge perspective="as_specialist" size="md" />
-                ) : null
-              ) : null}
             </View>
             {thread && myId ? (
               (() => {

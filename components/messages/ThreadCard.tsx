@@ -1,6 +1,5 @@
 import { View, Text, Pressable, Image } from "react-native";
 import Avatar from "@/components/ui/Avatar";
-import PerspectiveBadge from "@/components/ui/PerspectiveBadge";
 import { colors, overlay } from "@/lib/theme";
 import { displayName, formatTime } from "@/lib/threadDisplay";
 import { API_URL } from "@/lib/api";
@@ -155,11 +154,6 @@ export default function ThreadCard({
           >
             {name}
           </Text>
-          {item.perspective ? (
-            <View className="flex-shrink-0">
-              <PerspectiveBadge perspective={item.perspective} size="sm" />
-            </View>
-          ) : null}
           {item.lastMessage && (
             <Text
               className={`text-xs flex-shrink-0 ${

@@ -1,11 +1,10 @@
 import { useRef, useState } from "react";
-import { Platform, Pressable, View, Text, ActivityIndicator } from "react-native";
+import { Platform, Pressable, View, Text, ActivityIndicator, TextInput } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import FileUploadZone, {
   FileUploadChips,
   type PendingFile,
 } from "@/components/ui/FileUploadZone";
-import Input from "@/components/ui/Input";
 import { colors, radiusValue } from "@/lib/theme";
 import { Z } from "@/lib/zIndex";
 
@@ -162,34 +161,50 @@ export default function ChatComposer({
           onDragStateChange={setIsDragOver}
         />
 
-        {/* Text input — strip Input's underline; only the parent strip's
-            top border is visible, otherwise web stacks a double-border. */}
-        <Input
+        {/* Text input — direct TextInput (not the global <Input> wrapper)
+            because <Input multiline> stacks its own paddingTop/paddingBottom
+            on top of the wrapper's padding, which left the placeholder
+            sitting visibly below the paperclip + send icons. Here the only
+            vertical padding is paddingVertical: (44 - 20) / 2 = 12, so
+            the single-line text is centered against the 44px button
+            squares. textAlignVertical="top" keeps the cursor at the top
+            once content wraps to multiple lines. */}
+        <TextInput
           accessibilityLabel={accessibilityLabel}
           placeholder={placeholder}
+          placeholderTextColor={colors.placeholder}
           value={value}
           onChangeText={onChangeText}
           multiline
           maxLength={maxLength}
           editable={!disabled}
+          textAlignVertical="top"
           onContentSizeChange={(e) => {
             const h = e.nativeEvent.contentSize.height;
             setInputHeight(Math.min(Math.max(MIN_HEIGHT, h), MAX_HEIGHT));
           }}
-          style={{ flex: 1 }}
-          containerStyle={{
-            borderRadius: radiusValue.xl,
+          style={{
+            flex: 1,
             height: inputHeight,
-            // Explicit minHeight beats the Input component's default 80px
-            // multiline floor — composer needs to start at the same 44px
-            // height as the paperclip / send buttons so the single-line
-            // text sits centered on the icons.
             minHeight: MIN_HEIGHT,
+            maxHeight: MAX_HEIGHT,
             paddingVertical: 12,
-            borderBottomWidth: 0,
-            borderTopWidth: 0,
-            borderLeftWidth: 0,
-            borderRightWidth: 0,
+            paddingHorizontal: 12,
+            fontSize: 14,
+            lineHeight: 20,
+            color: colors.text,
+            backgroundColor: "transparent",
+            borderRadius: radiusValue.xl,
+            ...(Platform.OS === "web"
+              ? {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  outlineWidth: 0 as any,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  outlineStyle: "none" as any,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  resize: "none" as any,
+                }
+              : {}),
           }}
         />
 
