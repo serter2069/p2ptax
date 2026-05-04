@@ -17,10 +17,15 @@ router.get("/recent-wins", async (req: Request, res: Response) => {
       ? Math.max(1, Math.min(20, limitRaw))
       : 5;
 
-    const cases = await prisma.specialistCase.findMany({
+    // Fetch a wider pool, then dedupe by specialist so the landing's
+    // 3-card row always shows three distinct authors. Without this the
+    // top-N can cluster on whichever specialist has the most recent
+    // year-tagged cases (one specialist owning all 3 cards reads as a
+    // seed artifact even when the data is real).
+    const pool = await prisma.specialistCase.findMany({
       where: { status: "resolved" },
       orderBy: [{ year: "desc" }, { createdAt: "desc" }],
-      take: limit,
+      take: Math.max(limit * 6, 30),
       include: {
         specialist: {
           select: {
@@ -43,6 +48,24 @@ router.get("/recent-wins", async (req: Request, res: Response) => {
         },
       },
     });
+
+    const seenSpecialists = new Set<string>();
+    const cases: typeof pool = [];
+    for (const c of pool) {
+      if (seenSpecialists.has(c.specialistId)) continue;
+      seenSpecialists.add(c.specialistId);
+      cases.push(c);
+      if (cases.length >= limit) break;
+    }
+    // Fallback: if we filtered out too aggressively (very few specialists
+    // have cases), top up from the original pool to satisfy the limit.
+    if (cases.length < limit) {
+      for (const c of pool) {
+        if (cases.includes(c)) continue;
+        cases.push(c);
+        if (cases.length >= limit) break;
+      }
+    }
 
     const items = cases.map((c) => {
       const sp = c.specialist;
