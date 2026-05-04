@@ -64,6 +64,10 @@ function useStrandedSpecialistInfo(): { stranded: boolean } {
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/legal") ||
+    // Hide the banner on /profile itself — the user is already on the
+    // editor, the banner is just redundant noise above the form they
+    // came to fill in (user feedback Wave 10).
+    pathname.startsWith("/profile") ||
     pathname === "/login" ||
     pathname === "/otp" ||
     pathname === "/" ||

@@ -82,14 +82,27 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     }
   }, [user]);
 
-  const loadSpecialistData = useCallback(async () => {
-    setSpecLoading(true);
+  const loadSpecialistData = useCallback(async (opts?: { silent?: boolean }) => {
+    // 'silent' refresh — used after autosave to update specData without
+    // flashing the loading skeleton or stomping on local field state.
+    // Was the cause of the flicker users saw on every blur — autosave
+    // fired loadSpecialistData() which set specLoading=true (skeleton)
+    // and reassigned every field input from the server response,
+    // visibly redrawing the form.
+    if (!opts?.silent) setSpecLoading(true);
     try {
       const [profile, contactsData] = await Promise.all([
         apiGet<SpecialistProfileData>("/api/specialist/profile"),
         apiGet<{ items: ContactMethodItem[] }>("/api/profile/contacts"),
       ]);
       setSpecData(profile);
+      // In silent mode we DON'T re-seed the field-level state. The user's
+      // last typed value is already authoritative; the autosave just
+      // confirmed it landed on the server. Touching state would race
+      // with whatever the user is typing right now.
+      if (opts?.silent) {
+        return;
+      }
       setIsAvailable(profile.isAvailable);
       if (profile.profile) {
         setDescription(profile.profile.description ?? "");
@@ -218,7 +231,10 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         lastName: lastName.trim(),
         avatarUrl: avatarUrl || null,
       });
-      await loadSpecialistData();
+      // Silent reload — keeps specData fresh for derived UI (e.g. the
+      // dirty-flag math) but doesn't flash the skeleton or overwrite
+      // the user's currently-edited fields.
+      await loadSpecialistData({ silent: true });
       // Form leaving dirty state confirms the save; no blocking popup.
     } catch {
       dialog.alert({ title: "Ошибка", message: "Не удалось сохранить" });
@@ -429,8 +445,10 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         experienceText: experienceText.trim() || null,
         specializationText: specializationText.trim() || null,
       });
-      // Reload to keep `specData` in sync (so dirty-flag math doesn't lie).
-      await loadSpecialistData();
+      // Silent reload — refresh specData in the background; do NOT
+      // flip specLoading or re-seed input fields (causes the visible
+      // flicker users hit on every blur).
+      await loadSpecialistData({ silent: true });
     });
   }, [
     description,
