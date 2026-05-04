@@ -57,19 +57,30 @@ export default function SpecialistPublicProfile() {
   // /reveal logs the click + returns contacts.
   const [contactsRevealed, setContactsRevealed] = useState(false);
   const [revealing, setRevealing] = useState(false);
+  // Preview list of contact types the specialist has, even when the
+  // viewer hasn't clicked 'Показать контакты' yet — so they know what
+  // channels exist before deciding to reveal.
+  const [contactTypesPreview, setContactTypesPreview] = useState<string[]>([]);
 
   useEffect(() => {
     async function load() {
       try {
         const [specRes, contactsRes] = await Promise.all([
           api<SpecialistDetail>(`/api/specialists/${id}`, { noAuth: true }),
-          api<{ items: ContactMethodItem[]; revealed: boolean }>(
-            `/api/specialists/${id}/contacts`,
-          ).catch(() => ({ items: [], revealed: false })),
+          api<{
+            items: ContactMethodItem[];
+            revealed: boolean;
+            types?: string[];
+          }>(`/api/specialists/${id}/contacts`).catch(() => ({
+            items: [],
+            revealed: false,
+            types: [],
+          })),
         ]);
         setSpecialist(specRes);
         setContacts(contactsRes.items);
         setContactsRevealed(contactsRes.revealed);
+        setContactTypesPreview(contactsRes.types ?? []);
       } catch (e) {
         setError("Не удалось загрузить профиль");
         if (__DEV__) console.error("Specialist detail error:", e);
@@ -351,8 +362,9 @@ export default function SpecialistPublicProfile() {
             cardShadow={legacyShadow}
           />
         ) : (
-          /* Reveal CTA — click logs the view (server records viewerId,
-             ip, UA, ownerId, ts) before returning the contact list. */
+          /* Reveal CTA — preview the *types* of contacts the specialist
+             has (no values). User can decide based on the available
+             channels before clicking, which logs to contact_views. */
           <View
             className="bg-white rounded-2xl border border-border mx-4 mt-4 px-4 py-5"
             style={legacyShadow}
@@ -367,29 +379,83 @@ export default function SpecialistPublicProfile() {
             >
               КОНТАКТЫ
             </Text>
-            <Text
-              className="text-sm leading-5 mb-4"
-              style={{ color: colors.textSecondary }}
-            >
-              Телефон, Telegram, WhatsApp и другие способы связи —
-              нажмите, чтобы увидеть.
-            </Text>
+            {contactTypesPreview.length > 0 ? (
+              <>
+                <Text
+                  className="text-sm leading-5 mb-3"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Доступны:
+                </Text>
+                <View
+                  className="flex-row flex-wrap mb-4"
+                  style={{ gap: 8 }}
+                >
+                  {/* Dedupe types: a specialist can have e.g. two
+                      Telegrams; we still want to show 'Telegram' once. */}
+                  {Array.from(new Set(contactTypesPreview)).map((t) => {
+                    const labels: Record<string, string> = {
+                      phone: "Телефон",
+                      email: "Email",
+                      telegram: "Telegram",
+                      whatsapp: "WhatsApp",
+                      max: "Max",
+                      vk: "ВКонтакте",
+                      website: "Сайт",
+                    };
+                    return (
+                      <View
+                        key={t}
+                        className="px-3 py-1 rounded-full"
+                        style={{ backgroundColor: colors.accentSoft }}
+                      >
+                        <Text
+                          className="text-xs font-medium"
+                          style={{ color: colors.primary }}
+                        >
+                          {labels[t] ?? t}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </>
+            ) : (
+              <Text
+                className="text-sm leading-5 mb-4"
+                style={{ color: colors.textSecondary }}
+              >
+                Контакты появятся, как только специалист их добавит.
+              </Text>
+            )}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Показать контакты"
               onPress={handleRevealContacts}
-              disabled={revealing}
+              disabled={revealing || contactTypesPreview.length === 0}
               className="items-center justify-center rounded-xl py-3 px-4"
               style={{
-                backgroundColor: revealing ? colors.surface2 : colors.primary,
-                opacity: revealing ? 0.7 : 1,
+                backgroundColor:
+                  revealing || contactTypesPreview.length === 0
+                    ? colors.surface2
+                    : colors.primary,
+                opacity: revealing || contactTypesPreview.length === 0 ? 0.7 : 1,
               }}
             >
               <Text
                 className="text-sm font-semibold"
-                style={{ color: revealing ? colors.textSecondary : colors.white }}
+                style={{
+                  color:
+                    revealing || contactTypesPreview.length === 0
+                      ? colors.textSecondary
+                      : colors.white,
+                }}
               >
-                {revealing ? "Открываем…" : "Показать контакты"}
+                {revealing
+                  ? "Открываем…"
+                  : contactTypesPreview.length === 0
+                    ? "Контактов нет"
+                    : "Показать контакты"}
               </Text>
             </Pressable>
           </View>

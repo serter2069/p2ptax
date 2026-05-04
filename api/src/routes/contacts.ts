@@ -54,7 +54,11 @@ router.get("/specialists/:id/contacts", async (req: Request, res: Response) => {
 
     if (callerId === ownerId) {
       const items = await fetchContactsForOwner(ownerId);
-      res.json({ items, revealed: true });
+      res.json({
+        items,
+        revealed: true,
+        types: items.map((c) => c.type),
+      });
       return;
     }
 
@@ -66,12 +70,24 @@ router.get("/specialists/:id/contacts", async (req: Request, res: Response) => {
       });
       if (seen) {
         const items = await fetchContactsForOwner(ownerId);
-        res.json({ items, revealed: true });
+        res.json({
+          items,
+          revealed: true,
+          types: items.map((c) => c.type),
+        });
         return;
       }
     }
 
-    res.json({ items: [], revealed: false });
+    // Not revealed: still expose the *types* of contacts the specialist
+    // has so the visitor can decide whether to click 'Показать
+    // контакты'. Values stay hidden.
+    const items = await fetchContactsForOwner(ownerId);
+    res.json({
+      items: [],
+      revealed: false,
+      types: items.map((c) => c.type),
+    });
   } catch (error) {
     console.error("contacts public error:", error);
     res.status(500).json({ error: "Internal server error" });
