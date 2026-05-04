@@ -77,11 +77,14 @@ export default function FilePreviewModal({ file, visible, onClose }: Props) {
       // navigation; presigned MinIO URLs honor Content-Disposition we
       // set server-side, but the explicit download attr forces it
       // even when the server wouldn't.
+      // No target=_blank — that flag overrides the download intent in
+      // most browsers and the file pops in a new tab instead of being
+      // saved. Same-window navigation + the download attribute = real
+      // save dialog. Browser stays on the current page.
       const a = document.createElement("a");
       a.href = resolvedUrl;
       a.download = file.filename;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
+      a.rel = "noopener";
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -138,7 +141,11 @@ export default function FilePreviewModal({ file, visible, onClose }: Props) {
               accessibilityLabel="Скачать"
               onPress={handleDownload}
               disabled={!resolvedUrl}
-              style={({ pressed }) => [
+              // hover/pressed affordance — slightly darker on hover (web)
+              // or 0.85 opacity on press (native + web fallback). The
+              // styles include both so RN-Web and native render the
+              // same intent.
+              style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
                 {
                   flexDirection: "row",
                   alignItems: "center",
@@ -146,7 +153,7 @@ export default function FilePreviewModal({ file, visible, onClose }: Props) {
                   paddingVertical: 8,
                   borderRadius: 10,
                   backgroundColor: resolvedUrl ? colors.primary : gray[200],
-                  opacity: pressed ? 0.85 : 1,
+                  opacity: pressed ? 0.85 : hovered ? 0.92 : 1,
                   gap: 6,
                 },
               ]}

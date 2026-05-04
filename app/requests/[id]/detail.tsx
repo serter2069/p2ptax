@@ -8,6 +8,7 @@ import {
   Modal,
   Linking,
   ActivityIndicator,
+  Platform,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -82,9 +83,18 @@ function FileList({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Скачать все файлы"
-            onPress={() =>
-              Linking.openURL(`/api/requests/${requestId}/files.zip`).catch(() => {})
-            }
+            onPress={() => {
+              if (Platform.OS === "web") {
+                const a = document.createElement("a");
+                a.href = `/api/requests/${requestId}/files.zip`;
+                a.download = `request-${requestId}-files.zip`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                return;
+              }
+              Linking.openURL(`/api/requests/${requestId}/files.zip`).catch(() => {});
+            }}
             className="flex-row items-center"
             hitSlop={6}
           >
@@ -339,16 +349,9 @@ function SpecialistView({
 
   return (
     <>
-      <RequestInfoBlock request={request} />
-
-      {isClosed && (
-        <View className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 mb-4 items-center">
-          <Text className="text-sm text-text-base font-medium text-center">
-            Запрос закрыт — откликнуться невозможно
-          </Text>
-        </View>
-      )}
-
+      {/* Client card sits above the request info — semantically the
+          author of the request comes first ('who sent this') before
+          the request body itself. Сергей feedback. */}
       {request.client && (
         <Card className="mb-4">
           <Text className="text-xs font-semibold text-text-mute mb-2 uppercase tracking-wider">Клиент</Text>
@@ -369,6 +372,16 @@ function SpecialistView({
             </Text>
           </Pressable>
         </Card>
+      )}
+
+      <RequestInfoBlock request={request} />
+
+      {isClosed && (
+        <View className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 mb-4 items-center">
+          <Text className="text-sm text-text-base font-medium text-center">
+            Запрос закрыт — откликнуться невозможно
+          </Text>
+        </View>
       )}
 
       <FileList files={request.files} onPress={onFilePress} requestId={request.id} />
