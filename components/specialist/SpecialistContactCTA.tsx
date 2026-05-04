@@ -38,26 +38,11 @@ export default function SpecialistContactCTA({
         Написать {firstName ?? "специалисту"}
       </Text>
       <Text
-        className="text-sm leading-5 mb-2"
+        className="text-sm leading-5 mb-4"
         style={{ color: colors.textSecondary }}
       >
         Ваш запрос будет прочитан в течение рабочего дня.
       </Text>
-      <View
-        className="flex-row items-center px-2.5 py-1.5 rounded-md self-start mb-4"
-        style={{ backgroundColor: colors.greenSoft, gap: 6 }}
-      >
-        <View
-          className="rounded-full"
-          style={{ width: 6, height: 6, backgroundColor: colors.success }}
-        />
-        <Text
-          className="text-xs font-semibold"
-          style={{ color: colors.success }}
-        >
-          Первое сообщение — бесплатно
-        </Text>
-      </View>
 
       <Pressable
         accessibilityRole="button"
