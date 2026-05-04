@@ -104,11 +104,23 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
   const isDesktop = width >= 768;
   const isWide = width >= 1024;
 
-  // URL params — only used in 'all' mode for shareable filtered catalog
+  // URL params — only used in 'all' mode for shareable filtered catalog.
+  // Accept both the short form (?city=, ?fns=) and the canonical
+  // multi-id form (?city_ids=, ?fns_ids=) used by the rest of the app
+  // — the deep-links from /requests/new and /requests/:id/detail send
+  // _ids and the catalog was silently ignoring them.
   const urlParams = useLocalSearchParams<{
     city?: string;
     fns?: string;
+    city_ids?: string;
+    fns_ids?: string;
   }>();
+  const initialCityId =
+    (urlParams.city_ids?.split(",")[0] ?? "").trim() ||
+    (urlParams.city ?? "").trim();
+  const initialFnsId =
+    (urlParams.fns_ids?.split(",")[0] ?? "").trim() ||
+    (urlParams.fns ?? "").trim();
 
   // ── Filter source data ──
   const { cities: citiesData } = useCities();
@@ -119,8 +131,8 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
 
   // ── Unified filter state ──
   const [filterValue, setFilterValue] = useState<CityFnsValue>(() => ({
-    cities: mode === "all" && urlParams.city ? [urlParams.city] : [],
-    fns: mode === "all" && urlParams.fns ? [urlParams.fns] : [],
+    cities: mode === "all" && initialCityId ? [initialCityId] : [],
+    fns: mode === "all" && initialFnsId ? [initialFnsId] : [],
     fnsServices: {},
   }));
 

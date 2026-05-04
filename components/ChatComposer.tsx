@@ -174,7 +174,15 @@ export default function ChatComposer({
           placeholder={placeholder}
           placeholderTextColor={colors.placeholder}
           value={value}
-          onChangeText={onChangeText}
+          onChangeText={(next) => {
+            // Reset to MIN_HEIGHT BEFORE the contentSize callback fires.
+            // Without this the textarea on web sticks at whatever height
+            // it grew to (a multi-line entry never shrinks back when the
+            // user deletes the newlines). Resetting first lets
+            // onContentSizeChange measure the true natural height.
+            setInputHeight(MIN_HEIGHT);
+            onChangeText(next);
+          }}
           multiline
           maxLength={maxLength}
           editable={!disabled}
