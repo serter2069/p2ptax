@@ -161,14 +161,19 @@ router.get("/", async (req: Request, res: Response) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
     const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
+    // Inbox shows every thread the user is part of, regardless of which
+    // column (clientId / specialistId) they sit in. Direct DMs always
+    // store the initiator as clientId, so a specialist who writes to
+    // someone else used to be hidden from their own inbox under the
+    // legacy `{ specialistId: userId }` filter — bug #DM-inbox.
+    const threadFilter = {
+      OR: [{ clientId: userId }, { specialistId: userId }],
+      ...(requestIdFilter ? { requestId: requestIdFilter } : {}),
+    };
+
     const [threads, total] = await Promise.all([
       prisma.thread.findMany({
-        where: {
-          ...(isSpecialist
-            ? { specialistId: userId }
-            : { clientId: userId }),
-          ...(requestIdFilter ? { requestId: requestIdFilter } : {}),
-        },
+        where: threadFilter,
         orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
         skip: offset,
         take: limit,
@@ -189,14 +194,7 @@ router.get("/", async (req: Request, res: Response) => {
           },
         },
       }),
-      prisma.thread.count({
-        where: {
-          ...(isSpecialist
-            ? { specialistId: userId }
-            : { clientId: userId }),
-          ...(requestIdFilter ? { requestId: requestIdFilter } : {}),
-        },
-      }),
+      prisma.thread.count({ where: threadFilter }),
     ]);
 
     // Fetch files for last messages
@@ -217,10 +215,15 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     const mapped = await Promise.all(threads.map(async (t) => {
-      const lastReadAt = isSpecialist
-        ? t.specialistLastReadAt
-        : t.clientLastReadAt;
-      const otherUser = isSpecialist ? t.client : t.specialist;
+      // Role within THIS thread, not the user's global isSpecialist
+      // flag. After role-agnostic DMs the same user can sit on either
+      // column depending on who initiated. Picking the wrong side here
+      // meant unread-count and otherUser pointed at the wrong row.
+      const meIsClient = t.clientId === userId;
+      const lastReadAt = meIsClient
+        ? t.clientLastReadAt
+        : t.specialistLastReadAt;
+      const otherUser = meIsClient ? t.specialist : t.client;
       const lastMessage = t.messages[0] || null;
 
       // Count unread: messages from other party after lastReadAt
@@ -266,22 +269,17 @@ router.get("/", async (req: Request, res: Response) => {
       };
     }));
 
-    // Enrich with actual unread counts — batch into parallel queries
-    // Threads with lastReadAt need per-thread counts; threads without can be batched.
-    const threadsWithRead = threads.filter(t => {
-      const lastReadAt = isSpecialist ? t.specialistLastReadAt : t.clientLastReadAt;
-      return lastReadAt !== null;
-    });
-    const threadsWithoutRead = threads.filter(t => {
-      const lastReadAt = isSpecialist ? t.specialistLastReadAt : t.clientLastReadAt;
-      return lastReadAt === null;
-    });
+    // Enrich with actual unread counts — batch into parallel queries.
+    // lastReadAt is per-row: pick the column that matches THIS thread's
+    // userId, not the global isSpecialist flag.
+    const lastReadFor = (t: (typeof threads)[number]) =>
+      t.clientId === userId ? t.clientLastReadAt : t.specialistLastReadAt;
+    const threadsWithRead = threads.filter((t) => lastReadFor(t) !== null);
+    const threadsWithoutRead = threads.filter((t) => lastReadFor(t) === null);
 
     const readCounts = await Promise.all(
       threadsWithRead.map(async (thread) => {
-        const lastReadAt = isSpecialist
-          ? thread.specialistLastReadAt
-          : thread.clientLastReadAt;
+        const lastReadAt = lastReadFor(thread);
         return prisma.message.count({
           where: {
             threadId: thread.id,
@@ -485,7 +483,23 @@ router.get("/my", async (req: Request, res: Response) => {
     };
     const groups = new Map<string, Group>();
     for (const th of enriched) {
-      if (!th.requestId) continue;
+      if (!th.requestId) {
+        // Request-less DM (POST /threads/direct). Drop it into its own
+        // group with a synthetic request stub so the inbox renderer —
+        // which expects every thread to carry request.title for the
+        // second line of ThreadCard — still works. Without this branch
+        // DMs were silently dropped from /messages.
+        groups.set(`dm:${th.id}`, {
+          request: {
+            id: `dm:${th.id}`,
+            title: "Личное сообщение",
+            status: "DM",
+            userId: th.clientId,
+          } as typeof th.request,
+          threads: [th],
+        });
+        continue;
+      }
       const existing = groups.get(th.requestId);
       if (existing) {
         existing.threads.push(th);
