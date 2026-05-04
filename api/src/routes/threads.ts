@@ -483,23 +483,29 @@ router.get("/my", async (req: Request, res: Response) => {
     };
     const groups = new Map<string, Group>();
     for (const th of enriched) {
-      if (!th.requestId) {
-        // Request-less DM (POST /threads/direct). Drop it into its own
+      if (!th.requestId || !th.request) {
+        // Request-less DM (POST /threads/direct) — or a thread whose
+        // underlying request was hard-deleted. Drop it into its own
         // group with a synthetic request stub so the inbox renderer —
         // which expects every thread to carry request.title for the
         // second line of ThreadCard — still works. Without this branch
-        // DMs were silently dropped from /messages.
+        // DMs were silently dropped from /messages, and orphaned
+        // threads crashed ThreadCard on item.request.title.
         // The cast goes through `unknown` because RequestStatus is an
         // enum and we want a sentinel value frontend can detect; the
         // FE only reads { id, title, status } from this stub.
+        const stub = {
+          id: `dm:${th.id}`,
+          title: "Личное сообщение",
+          status: "DM",
+          userId: "",
+        } as unknown as typeof th.request;
         groups.set(`dm:${th.id}`, {
-          request: {
-            id: `dm:${th.id}`,
-            title: "Личное сообщение",
-            status: "DM",
-            userId: "",
-          } as unknown as typeof th.request,
-          threads: [th],
+          request: stub,
+          // The thread row carries its own request reference too — the
+          // FE flat-maps groups[].threads and reads th.request directly,
+          // so it must be populated, not left null.
+          threads: [{ ...th, request: stub }],
         });
         continue;
       }
