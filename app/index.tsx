@@ -17,6 +17,7 @@ import HowItWorksFlow from "@/components/landing/HowItWorksFlow";
 import CasesSection from "@/components/landing/CasesSection";
 import type { CaseCardData } from "@/components/landing/CaseCard";
 import SpecialistCTASection from "@/components/landing/SpecialistCTASection";
+import FaqSection from "@/components/landing/FaqSection";
 import FooterSection from "@/components/landing/FooterSection";
 import { colors } from "@/lib/theme";
 
@@ -249,6 +250,8 @@ export default function LandingScreen() {
         <HowItWorksFlow isDesktop={isDesktop} />
 
         <ServicesSection isDesktop={isDesktop} />
+
+        <FaqSection isDesktop={isDesktop} />
 
         <SpecialistCTASection
           isDesktop={isDesktop}
