@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { View, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import {
   FileText,
@@ -26,6 +27,7 @@ import HeaderHome from "@/components/HeaderHome";
  */
 export default function TabLayout() {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isMobile = width < BREAKPOINT;
   const [unreadCount, setUnreadCount] = useState(0);
   const { isAuthenticated } = useAuth();
@@ -53,8 +55,11 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: isMobile
           ? {
-              height: 60,
-              paddingBottom: 8,
+              // Add the device's safe-area inset to the static 8px padding so
+              // labels aren't clipped by the iOS home-indicator / Android
+              // edge-to-edge gesture bar. Total bar height grows accordingly.
+              height: 60 + insets.bottom,
+              paddingBottom: 8 + insets.bottom,
               paddingTop: 6,
               borderTopWidth: 1,
               borderTopColor: colors.border,

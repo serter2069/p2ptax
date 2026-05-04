@@ -61,14 +61,11 @@ export default function Avatar({
   const ink = inkColor ?? colors.white;
 
   if (imageUrl) {
-    // Web rendering bug: when `border-radius: 9999` is applied only to the
-    // outer wrapper (with overflow:hidden) the inner <img> can still bleed
-    // square corners on certain DPR/browser combos — the avatar reads
-    // "square". Fix: round BOTH the wrapper AND the inner image, and shrink
-    // the image by `borderWidth*2` so it fits inside the bordered box
-    // (instead of overflowing it and being clipped by overflow:hidden).
-    const borderW = 2;
-    const inner = wh - borderW * 2;
+    // Single rounded wrapper with overflow:hidden does the clipping; the
+    // inner <Image> fills it (no secondary borderRadius needed). The
+    // previous double-radius approach with a 2px border was eating the
+    // image surface and reading 'square' at small sizes / on certain
+    // DPRs. Now: clean circle, image cropped by parent's overflow:hidden.
     return (
       <View
         style={{
@@ -76,24 +73,14 @@ export default function Avatar({
           height: wh,
           borderRadius: wh / 2,
           overflow: "hidden",
-          borderWidth: borderW,
-          borderColor: colors.border,
-          backgroundColor: colors.background,
-          alignItems: "center",
-          justifyContent: "center",
+          backgroundColor: colors.surface2,
         }}
       >
         <Image
           source={{ uri: imageUrl }}
           accessibilityLabel={name}
-          style={{ width: inner, height: inner, borderRadius: inner / 2 }}
-          // Web only: catalogs and inbox lists render dozens of avatars
-          // at once. Without lazy loading the browser fetches every
-          // off-screen one immediately. RN-Web forwards arbitrary props
-          // to the underlying <img>; Native ignores them safely.
+          style={{ width: wh, height: wh }}
           {...(Platform.OS === "web" ? ({ loading: "lazy" } as object) : {})}
-          // 'cover' keeps non-square legacy avatars (uploaded under
-          // fit:'inside') filling the round mask cleanly.
           resizeMode="cover"
         />
       </View>

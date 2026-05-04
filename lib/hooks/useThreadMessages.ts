@@ -71,6 +71,15 @@ export function useThreadMessages(threadId: string): UseThreadMessagesResult {
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const markAsRead = useCallback(async () => {
+    if (!threadId) return;
+    try {
+      await apiPatch(`/api/messages/${threadId}/read`, {});
+    } catch {
+      // ignore
+    }
+  }, [threadId]);
+
   const fetchMessages = useCallback(async () => {
     if (!threadId) return;
     try {
@@ -79,13 +88,37 @@ export function useThreadMessages(threadId: string): UseThreadMessagesResult {
         hasMore?: boolean;
         nextCursor?: string | null;
       }>(`/api/messages/${threadId}?limit=${PAGE_SIZE}`);
-      setMessages(res.messages);
+      // Preserve object identity for messages we already have. The poll
+      // response is fresh JSON every time — same data, new object refs —
+      // which would otherwise cause every <Image> in MessageBubble to
+      // re-fetch its source on every 5-second poll. Match by id; reuse
+      // the previous reference when content hasn't changed.
+      let hadNewIncoming = false;
+      setMessages((prev) => {
+        const byId = new Map(prev.map((m) => [m.id, m]));
+        let changed = prev.length !== res.messages.length;
+        const merged = res.messages.map((m) => {
+          const existing = byId.get(m.id);
+          if (existing) return existing;
+          changed = true;
+          hadNewIncoming = true;
+          return m;
+        });
+        return changed ? merged : prev;
+      });
       setHasMoreOlder(Boolean(res.hasMore));
       setOldestMessageId(res.nextCursor ?? (res.messages[0]?.id ?? null));
+      // If the poll brought a brand-new message in (almost always from
+      // the counterpart), refresh lastReadAt so the inbox sidebar's
+      // unread dot clears without forcing the user to navigate away
+      // and back.
+      if (hadNewIncoming) {
+        void markAsRead();
+      }
     } catch {
       // ignore
     }
-  }, [threadId]);
+  }, [threadId, markAsRead]);
 
   const loadOlder = useCallback(async () => {
     if (!threadId || !oldestMessageId || loadingOlder || !hasMoreOlder) return;
@@ -118,14 +151,6 @@ export function useThreadMessages(threadId: string): UseThreadMessagesResult {
     }
   }, [threadId]);
 
-  const markAsRead = useCallback(async () => {
-    if (!threadId) return;
-    try {
-      await apiPatch(`/api/messages/${threadId}/read`, {});
-    } catch {
-      // ignore
-    }
-  }, [threadId]);
 
   const loadData = useCallback(async () => {
     setLoading(true);

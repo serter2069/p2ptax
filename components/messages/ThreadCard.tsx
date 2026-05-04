@@ -150,9 +150,7 @@ export default function ThreadCard({
             dot before the timestamp. */}
         <View className="flex-row items-center gap-2">
           <Text
-            className={`flex-1 min-w-0 text-base ${
-              selected ? "font-bold text-text-base" : "font-semibold text-text-base"
-            }`}
+            className="flex-1 min-w-0 text-base font-semibold text-text-base"
             numberOfLines={1}
             ellipsizeMode="tail"
           >
