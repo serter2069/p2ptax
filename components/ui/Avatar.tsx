@@ -26,12 +26,12 @@ function resolveSize(size: AvatarSize): number {
   return sizeMap[size];
 }
 
-function textClassFor(wh: number): string {
-  if (wh >= 120) return "text-4xl font-bold";
-  if (wh >= 80) return "text-3xl font-bold";
-  if (wh >= 60) return "text-xl font-semibold";
-  if (wh >= 40) return "text-sm font-semibold";
-  return "text-xs font-semibold";
+// One proportional formula across every size — no per-bucket classes.
+// fontSize ≈ 42% of diameter is a near-universal initials ratio (matches
+// Material/iOS/Google Chat). Min 11px keeps double-letter initials
+// legible inside very small avatars (≤22px).
+function fontSizeFor(wh: number): number {
+  return Math.max(11, Math.round(wh * 0.42));
 }
 
 function getInitials(name: string): string {
@@ -56,7 +56,7 @@ export default function Avatar({
   inkColor,
 }: AvatarProps) {
   const wh = resolveSize(size);
-  const textClass = textClassFor(wh);
+  const initialsFontSize = fontSizeFor(wh);
   const bg = tint ?? colors.primary;
   const ink = inkColor ?? colors.white;
 
@@ -109,7 +109,21 @@ export default function Avatar({
         backgroundColor: bg,
       }}
     >
-      <Text className={textClass} style={{ color: ink }}>
+      <Text
+        // Use direct style for both fontSize and fontWeight so the
+        // proportions are deterministic across platforms (NativeWind
+        // text-* classes can quietly diverge between web and iOS).
+        style={{
+          color: ink,
+          fontSize: initialsFontSize,
+          fontWeight: "600",
+          // Web only: the default rendering can cause one initial to
+          // sit visually higher than the other when the font has
+          // varying ascender heights (Cyrillic).
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(typeof window !== "undefined" ? ({ lineHeight: initialsFontSize } as any) : {}),
+        }}
+      >
         {getInitials(name)}
       </Text>
     </View>

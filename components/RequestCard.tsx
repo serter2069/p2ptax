@@ -84,7 +84,7 @@ export default function RequestCard({
             <Avatar
               name={authorName}
               imageUrl={user?.avatarUrl ?? undefined}
-              size={20}
+              size="sm"
             />
             <Text className="text-xs font-medium text-text-mute" numberOfLines={1}>
               {authorName}
