@@ -1,6 +1,5 @@
 import { View, Text } from "react-native";
 import { Briefcase, Target, type LucideIcon } from "lucide-react-native";
-import MetricCard from "@/components/ui/MetricCard";
 import { colors, spacing } from "@/lib/theme";
 
 interface SpecialistCredentialsProps {
@@ -79,8 +78,28 @@ export default function SpecialistCredentials({
   specializationText,
 }: SpecialistCredentialsProps) {
   const services = [...serviceNames];
-  const expProse = experienceText?.trim() ?? "";
-  const specProse = specializationText?.trim() ?? "";
+
+  // Compose prose for the cards. Prefer the specialist's own text;
+  // fall back to a single composed sentence so the layout stays
+  // consistent (always 'Опыт' + 'Специализация' as headers, body
+  // is one paragraph). The legacy MetricCard headline+bullets
+  // layout was confusing — title looked like 'Опыт' and value
+  // like '15 лет', so users read the value as the heading.
+  const yearWord = yearsExp === 1 ? "год" : yearsExp < 5 ? "года" : "лет";
+  // Russian prepositional case is messy ('в Москве' / 'в Санкт-Петербурге'
+  // / 'в Уфе') — auto-conjugating from a nominative table is a rabbit
+  // hole. Sidestep it: 'регион: <Город>' (nominative). Reads natural
+  // and avoids 'в Уфа' style ungrammatical fallbacks.
+  const expFallback = [
+    `${yearsExp} ${yearWord} налоговой практики`,
+    cities.length > 0 ? `Регион: ${cities.join(", ")}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const specFallback = services.length > 0 ? services.join(", ") : "Налоговая практика";
+
+  const expProse = experienceText?.trim() || expFallback;
+  const specProse = specializationText?.trim() || specFallback;
 
   return (
     <View className="mt-8">
@@ -88,29 +107,8 @@ export default function SpecialistCredentials({
         className={`${isTablet ? "flex-row" : "flex-col"}`}
         style={{ gap: spacing.md }}
       >
-        {expProse ? (
-          <ProseCard icon={Briefcase} title="Опыт" text={expProse} />
-        ) : (
-          <MetricCard
-            icon={Briefcase}
-            title="Опыт"
-            value={`${yearsExp} ${yearsExp === 1 ? "год" : yearsExp < 5 ? "года" : "лет"}`}
-            lines={[
-              "Налоговая практика",
-              cities.length > 0 ? `Регион: ${cities.join(", ")}` : "",
-            ].filter(Boolean)}
-          />
-        )}
-        {specProse ? (
-          <ProseCard icon={Target} title="Специализация" text={specProse} />
-        ) : (
-          <MetricCard
-            icon={Target}
-            title="Специализация"
-            value={services[0] ?? "Налоговая практика"}
-            lines={services.slice(1, 4)}
-          />
-        )}
+        <ProseCard icon={Briefcase} title="Опыт" text={expProse} />
+        <ProseCard icon={Target} title="Специализация" text={specProse} />
       </View>
     </View>
   );
