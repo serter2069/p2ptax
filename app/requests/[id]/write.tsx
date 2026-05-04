@@ -1,28 +1,29 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Platform,
-} from "react-native";
+import { View, Text, ScrollView, Pressable, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { dialog } from "@/lib/dialog";
+import { ChevronLeft, UserCheck } from "lucide-react-native";
 import LoadingState from "@/components/ui/LoadingState";
-import { UserCheck, ChevronLeft } from "lucide-react-native";
+import EmptyState from "@/components/ui/EmptyState";
+import Avatar from "@/components/ui/Avatar";
+import ChatComposer, { type PendingFile } from "@/components/ChatComposer";
 import { api, ApiError } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
-import EmptyState from "@/components/ui/EmptyState";
-import RequestPreviewCard, { RequestPreviewData } from "@/components/requests/RequestPreviewCard";
-import ChatComposer, { type PendingFile } from "@/components/ChatComposer";
 import { colors } from "@/lib/theme";
 
-
-interface RequestSummary extends RequestPreviewData {
-  user: { id: string; firstName: string | null; lastName: string | null };
+interface RequestSummary {
+  id: string;
+  title: string;
+  status: string;
+  user: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    avatarUrl?: string | null;
+  };
 }
 
 interface RateLimitInfo {
@@ -34,13 +35,16 @@ const MAX_CHARS = 2000;
 const MIN_CHARS = 10;
 const DAILY_LIMIT = 20;
 
+const SAFE_EDGES =
+  Platform.OS === "web" ? (["top"] as const) : (["top", "bottom"] as const);
+
 /**
- * Specialist composes the first message to a client. Layout mirrors a
- * real chat (sticky composer at the bottom, scrollable history above)
- * so the specialist lands in something that already feels like the
- * conversation they're about to have. The form-style version was
- * jarring — it read as 'fill out a contact form' instead of 'start a
- * chat'. Send POSTs /api/threads and redirects to /threads/:id.
+ * Specialist composes the first message to a client. Renders the same
+ * chat scaffold as /threads/:id (ChatThreadHeader-like stub + ChatComposer)
+ * so the screen reads as a real chat — there is no separate 'fill out a
+ * form' interface. On send: POST /api/threads creates the thread and we
+ * router.replace to /threads/<new id>, keeping the same composer/messages
+ * components — the user sees a seamless transition into the live chat.
  */
 export default function SpecialistConfirmWrite() {
   const router = useRouter();
@@ -49,8 +53,8 @@ export default function SpecialistConfirmWrite() {
   const { ready } = useRequireAuth();
   const { isAuthenticated, isSpecialistUser, user, token } = useAuth();
 
-  // Stranded specialists must finish onboarding before they can write.
-  const isStrandedSpecialist = isSpecialistUser && !user?.specialistProfileCompletedAt;
+  const isStrandedSpecialist =
+    isSpecialistUser && !user?.specialistProfileCompletedAt;
 
   const [request, setRequest] = useState<RequestSummary | null>(null);
   const [rateLimit, setRateLimit] = useState<RateLimitInfo | null>(null);
@@ -90,14 +94,18 @@ export default function SpecialistConfirmWrite() {
     }
   }, [ready, isSpecialistUser, load]);
 
-  const isLimitReached = rateLimit !== null && rateLimit.writesToday >= DAILY_LIMIT;
-  const canSend =
-    !sending &&
-    !isLimitReached &&
-    message.trim().length >= MIN_CHARS;
+  const isLimitReached =
+    rateLimit !== null && rateLimit.writesToday >= DAILY_LIMIT;
 
   const handleSend = async () => {
-    if (!canSend) return;
+    if (sending || isLimitReached) return;
+    if (message.trim().length < MIN_CHARS) {
+      dialog.alert({
+        title: "Сообщение слишком короткое",
+        message: `Минимум ${MIN_CHARS} символов.`,
+      });
+      return;
+    }
 
     const uploading = attachedFiles.some(
       (f) => f.status === "uploading" || f.status === "pending"
@@ -122,15 +130,21 @@ export default function SpecialistConfirmWrite() {
           ...(uploadToken ? { uploadToken } : {}),
         },
       });
+      // Drop into the actual chat — same components, now with a real
+      // thread id and message history loading.
       nav.replaceAny(`/threads/${result.id}?requestId=${id}`);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
           const existingThreadId =
-            typeof err.data?.threadId === "string" ? err.data.threadId : null;
+            typeof err.data?.threadId === "string"
+              ? err.data.threadId
+              : null;
           if (existingThreadId) {
             const goToThread = () =>
-              nav.replaceAny(`/threads/${existingThreadId}?requestId=${id}`);
+              nav.replaceAny(
+                `/threads/${existingThreadId}?requestId=${id}`
+              );
             void dialog
               .alert({
                 title: "Вы уже откликнулись",
@@ -138,7 +152,9 @@ export default function SpecialistConfirmWrite() {
               })
               .then(goToThread);
           } else {
-            setSubmitError("Запрос закрыт — сообщение отправить невозможно");
+            setSubmitError(
+              "Запрос закрыт — сообщение отправить невозможно"
+            );
           }
         } else if (err.status === 429) {
           setSubmitError(
@@ -148,17 +164,29 @@ export default function SpecialistConfirmWrite() {
             setRateLimit({ ...rateLimit, writesToday: DAILY_LIMIT });
           }
         } else {
-          setSubmitError("Не удалось отправить сообщение. Попробуйте ещё раз.");
+          setSubmitError(
+            "Не удалось отправить сообщение. Попробуйте ещё раз."
+          );
         }
       } else {
-        setSubmitError("Не удалось отправить сообщение. Попробуйте ещё раз.");
+        setSubmitError(
+          "Не удалось отправить сообщение. Попробуйте ещё раз."
+        );
       }
     } finally {
       setSending(false);
     }
   };
 
-  const header = (
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace(`/requests/${id}/detail` as never);
+    }
+  };
+
+  const headerBar = (
     <View
       className="flex-row items-center px-3 border-b border-border bg-white"
       style={{ height: 52 }}
@@ -166,32 +194,20 @@ export default function SpecialistConfirmWrite() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Назад"
-        onPress={() => router.back()}
+        onPress={handleBack}
         className="flex-row items-center"
         style={{ minHeight: 44, paddingHorizontal: 6 }}
       >
         <ChevronLeft size={22} color={colors.text} />
         <Text className="text-text-base ml-1">Назад</Text>
       </Pressable>
-      <Text
-        className="text-base font-semibold text-text-base ml-2 flex-1"
-        numberOfLines={1}
-      >
-        {request?.user.firstName
-          ? `Написать клиенту ${request.user.firstName}`
-          : "Написать клиенту"}
-      </Text>
     </View>
   );
-
-  const SAFE_EDGES = Platform.OS === "web"
-    ? (["top"] as const)
-    : (["top", "bottom"] as const);
 
   if (!ready || !isSpecialistUser || loading) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={SAFE_EDGES}>
-        {header}
+        {headerBar}
         <LoadingState />
       </SafeAreaView>
     );
@@ -200,56 +216,125 @@ export default function SpecialistConfirmWrite() {
   if (isStrandedSpecialist) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={SAFE_EDGES}>
-        {header}
+        {headerBar}
         <View className="flex-1 justify-center">
           <EmptyState
             icon={UserCheck}
             title="Завершите профиль специалиста"
             subtitle="Перед тем как написать клиенту, нужно указать ИФНС, услуги и описание."
             actionLabel="Завершить"
-            onAction={() => router.replace("/profile?firstTime=true&focus=specialist" as never)}
+            onAction={() =>
+              router.replace(
+                "/profile?firstTime=true&focus=specialist" as never
+              )
+            }
           />
         </View>
       </SafeAreaView>
     );
   }
 
+  if (!request) {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={SAFE_EDGES}>
+        {headerBar}
+        <View className="flex-1 justify-center">
+          <EmptyState
+            title="Запрос не найден"
+            subtitle={submitError ?? "Попробуйте обновить страницу"}
+            actionLabel="Назад"
+            onAction={handleBack}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const clientName =
+    [request.user.firstName, request.user.lastName].filter(Boolean).join(" ") ||
+    "Клиент";
+
+  // ChatThreadHeader-like stub (we don't have a thread id yet; renders the
+  // counterpart's avatar + name + 'переписываетесь по запросу' subtitle).
+  const chatHeader = (
+    <View
+      className="flex-row items-center px-4 py-3 border-b border-border bg-white"
+      style={{ gap: 12 }}
+    >
+      <Avatar
+        name={clientName}
+        imageUrl={request.user.avatarUrl ?? undefined}
+        size="sm"
+      />
+      <View style={{ flex: 1 }}>
+        <Text
+          className="text-base font-semibold"
+          style={{ color: colors.text }}
+          numberOfLines={1}
+        >
+          {clientName}
+        </Text>
+        <Text
+          className="text-xs"
+          style={{ color: colors.textSecondary }}
+          numberOfLines={1}
+        >
+          по запросу «{request.title}»
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={SAFE_EDGES}>
-      {header}
+      {headerBar}
+      {chatHeader}
 
+      {/* Empty messages area — same visual layout as /threads/:id but
+          without history. The first user-typed message becomes message
+          #1 in the new thread once `handleSend` resolves. */}
       <ScrollView
         className="flex-1 bg-surface2"
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "center",
+          padding: 24,
+        }}
       >
-        {request && <RequestPreviewCard request={request} />}
-
-        {rateLimit !== null && (
-          <View
-            className={`rounded-xl px-4 py-3 mb-3 border ${
-              isLimitReached
-                ? "bg-danger-soft border-red-200"
-                : "bg-white border-border"
-            }`}
+        <View className="items-center">
+          <Text
+            className="text-sm text-center"
+            style={{ color: colors.textSecondary, maxWidth: 400 }}
           >
+            Это будет ваш первый диалог с клиентом по этому запросу. После
+            отправки сообщения вы перейдёте в чат.
+          </Text>
+          {rateLimit !== null && (
             <Text
-              className={`text-xs ${
-                isLimitReached ? "text-danger" : "text-text-mute"
-              }`}
+              className="text-xs mt-3 text-center"
+              style={{
+                color: isLimitReached ? colors.danger : colors.textMuted,
+              }}
             >
               {isLimitReached
-                ? "Лимит новых диалогов на сегодня исчерпан (20 в день). Попробуйте завтра."
+                ? "Лимит новых диалогов на сегодня исчерпан (20 в день)"
                 : `Сегодня отправлено ${rateLimit.writesToday} из ${rateLimit.limit}`}
             </Text>
-          </View>
-        )}
-
-        {submitError && (
-          <View className="bg-danger-soft border border-red-200 rounded-xl px-4 py-3">
-            <Text className="text-sm text-danger">{submitError}</Text>
-          </View>
-        )}
+          )}
+          {submitError && (
+            <View
+              className="mt-4 rounded-xl px-4 py-3 border"
+              style={{
+                borderColor: colors.danger,
+                backgroundColor: colors.dangerSoft,
+              }}
+            >
+              <Text className="text-sm" style={{ color: colors.danger }}>
+                {submitError}
+              </Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       <ChatComposer
@@ -262,7 +347,7 @@ export default function SpecialistConfirmWrite() {
         disabled={isLimitReached}
         authToken={token}
         maxLength={MAX_CHARS}
-        placeholder={`Здравствуйте! Я специалист… (минимум ${MIN_CHARS} символов)`}
+        placeholder={`Здравствуйте, ${request.user.firstName ?? ""}…`.trim() + ` (минимум ${MIN_CHARS} символов)`}
       />
     </SafeAreaView>
   );
