@@ -24,6 +24,8 @@ interface SpecialistProfileData {
     workingHours: string | null;
     yearsOfExperience: number | null;
     specialization: string | null;
+    experienceText: string | null;
+    specializationText: string | null;
   } | null;
   fnsServices: FnsServiceItem[];
 }
@@ -35,8 +37,8 @@ interface SpecialistTabProps {
   description: string;
   officeAddress: string;
   workingHours: string;
-  yearsOfExperience: number | null;
-  specialization: string;
+  experienceText: string;
+  specializationText: string;
   contacts: ContactMethodItem[];
   addingContact: boolean;
   newContactType: string;
@@ -46,8 +48,8 @@ interface SpecialistTabProps {
   onDescriptionChange: (v: string) => void;
   onOfficeAddressChange: (v: string) => void;
   onWorkingHoursChange: (v: string) => void;
-  onYearsOfExperienceChange: (v: number | null) => void;
-  onSpecializationChange: (v: string) => void;
+  onExperienceTextChange: (v: string) => void;
+  onSpecializationTextChange: (v: string) => void;
   onContactsChange: (items: ContactMethodItem[]) => void;
   onAddingContactChange: (v: boolean) => void;
   onNewContactTypeChange: (v: string) => void;
@@ -67,8 +69,8 @@ export default function SpecialistTab({
   description,
   officeAddress,
   workingHours,
-  yearsOfExperience,
-  specialization,
+  experienceText,
+  specializationText,
   contacts,
   addingContact,
   newContactType,
@@ -78,8 +80,8 @@ export default function SpecialistTab({
   onDescriptionChange,
   onOfficeAddressChange,
   onWorkingHoursChange,
-  onYearsOfExperienceChange,
-  onSpecializationChange,
+  onExperienceTextChange,
+  onSpecializationTextChange,
   onContactsChange,
   onAddingContactChange,
   onNewContactTypeChange,
@@ -107,10 +109,10 @@ export default function SpecialistTab({
         onBlur={onSpecialistBlur}
       />
       <ExperienceSection
-        yearsOfExperience={yearsOfExperience}
-        specialization={specialization}
-        onYearsOfExperienceChange={onYearsOfExperienceChange}
-        onSpecializationChange={onSpecializationChange}
+        experienceText={experienceText}
+        specializationText={specializationText}
+        onExperienceTextChange={onExperienceTextChange}
+        onSpecializationTextChange={onSpecializationTextChange}
         onBlur={onSpecialistBlur}
       />
       <ContactsEditor

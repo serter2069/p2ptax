@@ -176,65 +176,73 @@ export default function ProfileTab({
                 чтобы увидеть, как страница выглядит для других.
               </Text>
             )}
-            {userId && (
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Посмотреть мой профиль"
-                  onPress={() => router.push(`/profile/${userId}` as never)}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    borderRadius: 8,
-                    backgroundColor: colors.surface2,
-                    alignSelf: "flex-start",
-                  }}
-                >
-                  <ExternalLink size={14} color={colors.accent} />
-                  <Text
-                    style={{
-                      marginLeft: 6,
-                      fontSize: 13,
-                      fontWeight: "600",
-                      color: colors.accent,
-                    }}
-                  >
-                    Посмотреть мой профиль
-                  </Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Поделиться профилем"
-                  onPress={handleShareProfile}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    borderRadius: 8,
-                    backgroundColor: colors.surface2,
-                    alignSelf: "flex-start",
-                  }}
-                >
-                  <Share2 size={14} color={colors.accent} />
-                  <Text
-                    style={{
-                      marginLeft: 6,
-                      fontSize: 13,
-                      fontWeight: "600",
-                      color: colors.accent,
-                    }}
-                  >
-                    Поделиться профилем
-                  </Text>
-                </Pressable>
-              </View>
-            )}
           </View>
         )}
       </View>
+
+      {/* Preview / share buttons. Live OUTSIDE the specialist toggle so
+          a regular user can also see how their profile looks to others
+          and copy a share-link — same workflow whether they're a
+          specialist or just a client. */}
+      {userId && (
+        <View
+          className="bg-white border border-border rounded-2xl px-4 py-4 mb-4"
+          style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Посмотреть мой профиль"
+            onPress={() => router.push(`/profile/${userId}` as never)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              borderRadius: 8,
+              backgroundColor: colors.surface2,
+              alignSelf: "flex-start",
+            }}
+          >
+            <ExternalLink size={14} color={colors.accent} />
+            <Text
+              style={{
+                marginLeft: 6,
+                fontSize: 13,
+                fontWeight: "600",
+                color: colors.accent,
+              }}
+            >
+              Посмотреть мой профиль
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Поделиться профилем"
+            onPress={handleShareProfile}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              borderRadius: 8,
+              backgroundColor: colors.surface2,
+              alignSelf: "flex-start",
+            }}
+          >
+            <Share2 size={14} color={colors.accent} />
+            <Text
+              style={{
+                marginLeft: 6,
+                fontSize: 13,
+                fontWeight: "600",
+                color: colors.accent,
+              }}
+            >
+              Поделиться профилем
+            </Text>
+          </Pressable>
+        </View>
+      )}
     </>
   );
 }

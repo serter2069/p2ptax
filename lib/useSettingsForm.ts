@@ -44,12 +44,13 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
   const [description, setDescription] = useState("");
   const [officeAddress, setOfficeAddress] = useState("");
   const [workingHours, setWorkingHours] = useState("");
-  // Editable fields surfaced on the public profile detail page.
-  // yearsOfExperience appears as 'N лет/года/год' in the credentials
-  // strip; specialization is the primary service-line label below the
-  // name. Stored on the SpecialistProfile model.
-  const [yearsOfExperience, setYearsOfExperience] = useState<number | null>(null);
-  const [specialization, setSpecialization] = useState("");
+  // Free-text long-form fields for the public profile. Replaces the
+  // earlier numeric/short-text inputs (yearsOfExperience + single
+  // specialization label) which felt mechanical — users wanted to
+  // write a paragraph each. Legacy numeric column stays in DB for
+  // back-compat with seed data.
+  const [experienceText, setExperienceText] = useState("");
+  const [specializationText, setSpecializationText] = useState("");
   const [isAvailable, setIsAvailable] = useState(user?.isAvailable ?? false);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
@@ -94,8 +95,18 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         setDescription(profile.profile.description ?? "");
         setOfficeAddress(profile.profile.officeAddress ?? "");
         setWorkingHours(profile.profile.workingHours ?? "");
-        setYearsOfExperience(profile.profile.yearsOfExperience ?? null);
-        setSpecialization(profile.profile.specialization ?? "");
+        // Prefer the new long-form text columns; fall back to legacy
+        // numeric/single-label values so existing seeded specialists
+        // see something prefilled instead of an empty box.
+        setExperienceText(
+          profile.profile.experienceText ??
+            (profile.profile.yearsOfExperience !== null && profile.profile.yearsOfExperience !== undefined
+              ? `${profile.profile.yearsOfExperience} лет опыта`
+              : ""),
+        );
+        setSpecializationText(
+          profile.profile.specializationText ?? profile.profile.specialization ?? "",
+        );
       }
       setContacts(contactsData.items);
     } catch (err) {
@@ -137,9 +148,9 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
       (description !== (specData.profile?.description ?? "") ||
         officeAddress !== (specData.profile?.officeAddress ?? "") ||
         workingHours !== (specData.profile?.workingHours ?? "") ||
-        yearsOfExperience !== (specData.profile?.yearsOfExperience ?? null) ||
-        specialization !== (specData.profile?.specialization ?? "")),
-    [specData, description, officeAddress, workingHours, yearsOfExperience, specialization],
+        experienceText !== (specData.profile?.experienceText ?? "") ||
+        specializationText !== (specData.profile?.specializationText ?? "")),
+    [specData, description, officeAddress, workingHours, experienceText, specializationText],
   );
 
   const showSaveBar =
@@ -199,8 +210,8 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         description: description.trim() || null,
         officeAddress: officeAddress.trim() || null,
         workingHours: workingHours.trim() || null,
-        yearsOfExperience,
-        specialization: specialization.trim() || null,
+        experienceText: experienceText.trim() || null,
+        specializationText: specializationText.trim() || null,
       });
       updateUser({
         firstName: firstName.trim(),
@@ -221,8 +232,8 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     description,
     officeAddress,
     workingHours,
-    yearsOfExperience,
-    specialization,
+    experienceText,
+    specializationText,
     updateUser,
     loadSpecialistData,
   ]);
@@ -405,8 +416,8 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         description: description.trim() || null,
         officeAddress: officeAddress.trim() || null,
         workingHours: workingHours.trim() || null,
-        yearsOfExperience,
-        specialization: specialization.trim() || null,
+        experienceText: experienceText.trim() || null,
+        specializationText: specializationText.trim() || null,
       });
       // Reload to keep `specData` in sync (so dirty-flag math doesn't lie).
       await loadSpecialistData();
@@ -415,8 +426,8 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     description,
     officeAddress,
     workingHours,
-    yearsOfExperience,
-    specialization,
+    experienceText,
+    specializationText,
     loadSpecialistData,
     runAutosave,
   ]);
@@ -459,10 +470,10 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     setOfficeAddress,
     workingHours,
     setWorkingHours,
-    yearsOfExperience,
-    setYearsOfExperience,
-    specialization,
-    setSpecialization,
+    experienceText,
+    setExperienceText,
+    specializationText,
+    setSpecializationText,
     isAvailable,
     availabilityLoading,
     contacts,

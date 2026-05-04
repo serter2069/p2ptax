@@ -79,7 +79,13 @@ model SpecialistProfile {
   exFnsOffice       String? @map("ex_fns_office")
   verifiedExFns     Boolean @default(false) @map("verified_ex_fns")
   yearsOfExperience Int?    @map("years_of_experience")
-  specializations   Json? // array of strings
+  // Long-form free-text fields surfaced under the specialist's name on
+  // the public profile detail. yearsOfExperience above stays for back-
+  // compat (some seed data uses it); the user-editable surface in
+  // settings now writes prose into these columns.
+  experienceText    String?  @map("experience_text")
+  specializationText String? @map("specialization_text")
+  specializations   Json? // array of strings (legacy seed data)
   certifications    Json? // array of strings
   // Cached median response time (minutes) — backfilled by recompute-response-times.ts cron.
   // Falls back to live computation when null and >=5 closed threads exist.

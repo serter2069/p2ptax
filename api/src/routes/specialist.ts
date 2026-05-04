@@ -221,6 +221,11 @@ router.get("/profile", async (req: Request, res: Response) => {
             whatsapp: user.specialistProfile.whatsapp,
             officeAddress: user.specialistProfile.officeAddress,
             workingHours: user.specialistProfile.workingHours,
+            // Long-form text — preferred for editing.
+            experienceText: user.specialistProfile.experienceText,
+            specializationText: user.specialistProfile.specializationText,
+            // Legacy numeric / array fields kept on the wire so older
+            // clients keep rendering until they update.
             yearsOfExperience: user.specialistProfile.yearsOfExperience,
             specialization:
               Array.isArray(user.specialistProfile.specializations) &&
@@ -252,12 +257,14 @@ router.patch("/profile", async (req: Request, res: Response) => {
       whatsapp,
       officeAddress,
       workingHours,
-      // Editable fields surfaced on the public profile detail page —
-      // 'Опыт' (years of experience) and 'Специализация' (primary
-      // service line). Without these the public profile rendered
-      // values the specialist couldn't change. specialization is
-      // stored as JSON string[] (existing column) so the schema
-      // stays compatible.
+      // Free-text fields surfaced on the public profile detail page,
+      // edited from the merged Profile page. Long-form prose, not
+      // single integers / single labels — the user wanted to write a
+      // paragraph about their experience, not pick a number.
+      experienceText,
+      specializationText,
+      // Legacy fields kept for back-compat with older clients still
+      // sending them. Newer FE only sends *_Text.
       yearsOfExperience,
       specialization,
     } = req.body;
@@ -293,6 +300,14 @@ router.patch("/profile", async (req: Request, res: Response) => {
       const trimmed = typeof specialization === "string" ? specialization.trim() : "";
       profileUpdate.specializations = trimmed ? [trimmed] : null;
     }
+    if (experienceText !== undefined) {
+      const t = typeof experienceText === "string" ? experienceText.trim().slice(0, 2000) : "";
+      profileUpdate.experienceText = t || null;
+    }
+    if (specializationText !== undefined) {
+      const t = typeof specializationText === "string" ? specializationText.trim().slice(0, 2000) : "";
+      profileUpdate.specializationText = t || null;
+    }
 
     if (Object.keys(profileUpdate).length > 0) {
       await prisma.specialistProfile.upsert({
@@ -308,6 +323,34 @@ router.patch("/profile", async (req: Request, res: Response) => {
           workingHours: profileUpdate.workingHours as string | undefined,
         },
       });
+    }
+
+    // Auto-stamp specialistProfileCompletedAt the first time a
+    // specialist with at least one FNS office saves any profile field.
+    // Без этого баннер «Профиль не завершён» висит даже после того
+    // как юзер заполнил всё что мог в Settings — чтобы баннер ушёл,
+    // ему нужно отдельно дёрнуть PUT /onboarding/work-area, что
+    // непрозрачно. Now any save closes the loop.
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        isSpecialist: true,
+        specialistProfileCompletedAt: true,
+      },
+    });
+    if (
+      me?.isSpecialist &&
+      me.specialistProfileCompletedAt === null
+    ) {
+      const fnsCount = await prisma.specialistFns.count({
+        where: { specialistId: userId },
+      });
+      if (fnsCount > 0) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { specialistProfileCompletedAt: new Date() },
+        });
+      }
     }
 
     res.json({ success: true });

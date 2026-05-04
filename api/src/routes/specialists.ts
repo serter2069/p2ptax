@@ -513,12 +513,13 @@ router.get("/:id/reviews", async (_req: Request, res: Response) => {
 router.get("/:id", async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
+    // Drop the isSpecialist gate: clients click 'Посмотреть мой профиль'
+    // from settings even when they haven't toggled specialist mode on,
+    // and DM senders need to land on a renderable page after creating a
+    // direct thread with anyone. We still 404 banned / soft-deleted.
     const specialist = await prisma.user.findFirst({
       where: {
         id,
-        // Iter11: specialist detail checks the flag, not the legacy role.
-        // Hide soft-deleted accounts from the public detail page.
-        isSpecialist: true,
         isBanned: false,
         deletedAt: null,
       },
@@ -547,12 +548,14 @@ router.get("/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    // Closed profile — return minimal data only.
-    // Privacy rule: when a specialist hides their profile, callers see
-    // first name + last initial and nothing else — no avatar, no contacts,
-    // no work area, no description. The page renders a "Профиль закрыт"
-    // card so old links / chat references stay routable but reveal nothing.
-    if (!specialist.isAvailable) {
+    // Minimal payload for two cases:
+    //   * non-specialist users (haven't toggled 'Я специалист' on)
+    //   * specialist with isAvailable=false (hid from catalog)
+    // In both cases the FE renders the 'Профиль закрыт' card with first
+    // name + last initial only — никаких аватаров, контактов, рабочей
+    // зоны или описания. Это даёт владельцу профиля честное preview
+    // того, как его видят другие, не вскрывая приватных полей.
+    if (!specialist.isSpecialist || !specialist.isAvailable) {
       const lastNameInitial =
         specialist.lastName ? specialist.lastName[0] + "." : null;
       res.json({
