@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, View, Text, ActivityIndicator, TextInput } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import FileUploadZone, {
@@ -83,15 +83,35 @@ export default function ChatComposer({
   const canSend =
     !disabled && !sending && (value.trim().length > 0 || files.length > 0);
 
-  // Auto-expand: track TextInput content height, clamped between
-  // MIN_HEIGHT and MAX_HEIGHT (≈5 rows). MIN_HEIGHT matches the 44px
-  // square of the paperclip + send buttons so the single-line state
-  // sits perfectly centered on the icons (was 36 before — left the
-  // placeholder visually below the icons). When the input grows past
-  // 44, items-end pins the icons to the bottom and the text wraps up.
+  // Auto-expand: textarea grows with content up to MAX_HEIGHT (≈5 rows)
+  // then scrolls. MIN_HEIGHT matches the 44px paperclip + send buttons so
+  // the single-line state sits centered on the icons.
+  //
+  // Web and native take different paths:
+  //   - Web: classic textarea-autogrow trick — set height='auto' to let
+  //     the textarea collapse, read scrollHeight, set height. Both grow
+  //     and shrink work cleanly. Driven by useEffect on `value`.
+  //   - Native: onContentSizeChange fires reliably on both grow and
+  //     shrink for native multiline TextInput, so a state-driven
+  //     `height: inputHeight` is enough.
   const MIN_HEIGHT = 44;
   const MAX_HEIGHT = 140;
   const [inputHeight, setInputHeight] = useState(MIN_HEIGHT);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const captureTextareaRef = (node: unknown) => {
+    textareaRef.current = (node as HTMLTextAreaElement | null) ?? null;
+  };
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const el = textareaRef.current;
+    if (!el) return;
+    // Reset to auto so scrollHeight reflects the natural content size,
+    // not the previous applied height. Then clamp to [MIN, MAX].
+    el.style.height = "auto";
+    const measured = el.scrollHeight;
+    const next = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, measured));
+    el.style.height = next + "px";
+  }, [value]);
 
   // Composer-wide drop target — used by FileUploadZone via dropTargetRef.
   // RN-Web forwards the ref to the underlying <div>, but RN's typings still
@@ -170,32 +190,36 @@ export default function ChatComposer({
             squares. textAlignVertical="top" keeps the cursor at the top
             once content wraps to multiple lines. */}
         <TextInput
+          ref={captureTextareaRef as never}
           accessibilityLabel={accessibilityLabel}
           placeholder={placeholder}
           placeholderTextColor={colors.placeholder}
           value={value}
-          onChangeText={(next) => {
-            // Reset to MIN_HEIGHT BEFORE the contentSize callback fires.
-            // Without this the textarea on web sticks at whatever height
-            // it grew to (a multi-line entry never shrinks back when the
-            // user deletes the newlines). Resetting first lets
-            // onContentSizeChange measure the true natural height.
-            setInputHeight(MIN_HEIGHT);
-            onChangeText(next);
-          }}
+          onChangeText={onChangeText}
           multiline
           maxLength={maxLength}
           editable={!disabled}
           textAlignVertical="top"
-          onContentSizeChange={(e) => {
-            const h = e.nativeEvent.contentSize.height;
-            setInputHeight(Math.min(Math.max(MIN_HEIGHT, h), MAX_HEIGHT));
-          }}
+          // Native-only: height comes from contentSize. On web the
+          // useEffect above measures scrollHeight via the textarea ref.
+          onContentSizeChange={
+            Platform.OS === "web"
+              ? undefined
+              : (e) => {
+                  const h = e.nativeEvent.contentSize.height;
+                  setInputHeight(Math.min(Math.max(MIN_HEIGHT, h), MAX_HEIGHT));
+                }
+          }
           style={{
             flex: 1,
-            height: inputHeight,
+            // Web: no fixed `height` — the useEffect manages it on the
+            // raw textarea so both grow and shrink work. minHeight pins
+            // the single-line state to the 44px button row; maxHeight
+            // caps it before the textarea takes over the screen.
+            // Native: explicit height driven by contentSize.
             minHeight: MIN_HEIGHT,
             maxHeight: MAX_HEIGHT,
+            ...(Platform.OS === "web" ? {} : { height: inputHeight }),
             paddingVertical: 12,
             paddingHorizontal: 12,
             fontSize: 14,
