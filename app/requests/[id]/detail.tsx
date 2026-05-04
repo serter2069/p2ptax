@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { dialog } from "@/lib/dialog";
-import { File, FileImage, Download, ChevronLeft, MessageSquare, Search, Lock, RefreshCw } from "lucide-react-native";
+import { File, FileImage, Download, ChevronLeft, MessageSquare, Search, XCircle, RefreshCw } from "lucide-react-native";
 import LandingHeader from "@/components/landing/LandingHeader";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/ui/Button";
@@ -276,7 +276,7 @@ function OwnerView({
           className="border border-danger rounded-xl py-3 flex-row items-center justify-center mb-6"
           style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >
-          <Lock size={16} color={colors.danger} />
+          <XCircle size={16} color={colors.danger} />
           <Text className="text-danger font-semibold text-sm ml-2">Закрыть заявку</Text>
         </Pressable>
       )}
