@@ -6,7 +6,6 @@ import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { api } from "@/lib/api";
 import { useAuth, UserData } from "@/contexts/AuthContext";
-import { useTypedRouter } from "@/lib/navigation";
 import { colors } from "@/lib/theme";
 
 const CODE_LENGTH = 6;
@@ -30,10 +29,8 @@ interface Props {
 export default function InlineOtpFlow({
   onAuthenticated,
   parentSubmitting = false,
-  returnTo = "/requests/new",
 }: Props) {
   const { signIn } = useAuth();
-  const nav = useTypedRouter();
 
   const [stage, setStage] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
@@ -85,18 +82,31 @@ export default function InlineOtpFlow({
         body: { email, code },
         noAuth: true,
       });
-      // New users with null role: route to /otp for role choice; we keep JWT.
+      // First login: assign USER role inline instead of bouncing the
+      // visitor over to /otp (the legacy role-picker page). Iter11
+      // dropped role-choice — every new visitor is USER, toggles
+      // 'Я специалист' later if needed. Without this fix the user
+      // landed on /otp?returnTo=/requests/new with the same OTP form
+      // and no clear path forward.
       if (!data.user.role) {
-        await signIn(data.accessToken, data.refreshToken, data.user);
-        nav.any({
-          pathname: "/otp",
-          params: { email, returnTo },
+        await signIn(data.accessToken, data.refreshToken, {
+          ...data.user,
+          role: "USER",
         });
-        return;
+        try {
+          await api("/api/auth/set-role", {
+            method: "POST",
+            body: { role: "USER" },
+          });
+        } catch {
+          // Optimistic update already applied; next /me sync reconciles.
+        }
+      } else {
+        // Store tokens first, then call parent directly with fresh
+        // token — avoids stale-closure race waiting for AuthContext
+        // re-render.
+        await signIn(data.accessToken, data.refreshToken, data.user);
       }
-      // Store tokens first, then call parent directly with fresh token —
-      // avoids stale-closure race waiting for AuthContext re-render.
-      await signIn(data.accessToken, data.refreshToken, data.user);
       onAuthenticated(data.accessToken);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Неверный код";
@@ -105,7 +115,7 @@ export default function InlineOtpFlow({
     } finally {
       setVerifying(false);
     }
-  }, [code, email, signIn, nav, returnTo, onAuthenticated]);
+  }, [code, email, signIn, onAuthenticated]);
 
   return (
     <Card
