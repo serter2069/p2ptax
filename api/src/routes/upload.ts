@@ -140,10 +140,15 @@ router.post("/avatar", authMiddleware, uploadRateLimiter, avatarUpload.single("f
     // UUID-only storage key, ext derived from validated mimetype.
     const key = generateKey("avatars", req.file.originalname, "image/jpeg");
 
-    // Resize avatar to 400x400 max (fit, preserving aspect ratio) and convert to JPEG
+    // Avatars only ever render at ≤160px (xxl on hero) and ≤96px on
+    // catalog cards. 256px gives ~1.6× retina headroom; bigger was wire-
+    // weight for nothing. fit:'cover' crops to a real square so non-
+    // square uploads no longer render with whitespace inside the round
+    // mask. JPEG q80 (mozjpeg) is visually indistinguishable from q85
+    // but ~20% smaller.
     const { data: resized, info } = await sharp(req.file.buffer)
-      .resize(400, 400, { fit: "inside", withoutEnlargement: true })
-      .jpeg({ quality: 85 })
+      .resize(256, 256, { fit: "cover", position: "attention" })
+      .jpeg({ quality: 80, mozjpeg: true })
       .toBuffer({ resolveWithObject: true });
 
     await minioClient.putObject(MINIO_BUCKET, key, resized, info.size, {

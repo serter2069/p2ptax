@@ -1,4 +1,4 @@
-import { View, Text, Image } from "react-native";
+import { View, Text, Image, Platform } from "react-native";
 import { colors } from "../../lib/theme";
 
 export type AvatarSize = "sm" | "md" | "lg" | "xl" | "xxl" | number;
@@ -87,6 +87,14 @@ export default function Avatar({
           source={{ uri: imageUrl }}
           accessibilityLabel={name}
           style={{ width: inner, height: inner, borderRadius: inner / 2 }}
+          // Web only: catalogs and inbox lists render dozens of avatars
+          // at once. Without lazy loading the browser fetches every
+          // off-screen one immediately. RN-Web forwards arbitrary props
+          // to the underlying <img>; Native ignores them safely.
+          {...(Platform.OS === "web" ? ({ loading: "lazy" } as object) : {})}
+          // 'cover' keeps non-square legacy avatars (uploaded under
+          // fit:'inside') filling the round mask cleanly.
+          resizeMode="cover"
         />
       </View>
     );
