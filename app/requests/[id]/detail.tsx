@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
+  Image,
   ScrollView,
   Pressable,
   Modal,
@@ -357,15 +358,136 @@ function SpecialistView({
 
 // ─── AnonymousView ────────────────────────────────────────────────────────────
 
-function AnonymousView({ request, onLogin }: { request: Partial<RequestDetailData> & { title: string; description: string }; onLogin: () => void }) {
+interface AnonymousViewRequest {
+  title: string;
+  description: string;
+  status?: string;
+  createdAt?: string;
+  city?: { name: string } | null;
+  fns?: { name: string; code: string } | null;
+  user?: {
+    firstName: string | null;
+    lastName: string | null;
+    avatarUrl: string | null;
+  } | null;
+  files?: FileItem[];
+}
+
+function AnonymousView({
+  request,
+  onLogin,
+  onFilePress,
+}: {
+  request: AnonymousViewRequest;
+  onLogin: () => void;
+  onFilePress: (f: FileItem) => void;
+}) {
+  const initials =
+    [request.user?.firstName?.[0], request.user?.lastName?.[0]]
+      .filter(Boolean)
+      .join("")
+      .toUpperCase() || "?";
+  const dateLabel = request.createdAt
+    ? new Date(request.createdAt).toLocaleDateString("ru-RU", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
   return (
     <>
+      {/* Hero — mirrors what the owner / authenticated visitor sees,
+          minus the threads list and the close-request controls. Anon
+          viewers can read the full request before deciding to log in. */}
       <Card className="mb-4">
-        <Text className="text-base font-semibold text-text-base mb-2">{request.title}</Text>
-        <Text className="text-base text-text-mute leading-6">
-          {request.description.slice(0, 200)}{request.description.length > 200 ? "…" : ""}
+        <View className="flex-row items-center mb-3">
+          <View
+            className="w-10 h-10 rounded-full items-center justify-center mr-3"
+            style={{ backgroundColor: colors.accentSoft }}
+          >
+            {request.user?.avatarUrl ? (
+              <Image
+                source={{ uri: request.user.avatarUrl }}
+                style={{ width: 40, height: 40, borderRadius: 20 }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={{ color: colors.primary, fontWeight: "600" }}>{initials}</Text>
+            )}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text className="text-sm font-semibold text-text-base" numberOfLines={1}>
+              {[request.user?.firstName, request.user?.lastName]
+                .filter(Boolean)
+                .join(" ") || "Клиент"}
+            </Text>
+            {dateLabel && (
+              <Text className="text-xs text-text-mute mt-0.5">{dateLabel}</Text>
+            )}
+          </View>
+          {request.status === "CLOSED" && (
+            <View
+              className="px-2 py-1 rounded-md ml-2"
+              style={{ backgroundColor: colors.surface2 }}
+            >
+              <Text
+                className="text-xs font-semibold"
+                style={{ color: colors.textSecondary }}
+              >
+                Закрыта
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {(request.city?.name || request.fns?.code) && (
+          <View
+            className="flex-row flex-wrap mb-3"
+            style={{ gap: 8 }}
+          >
+            {request.city?.name && (
+              <View
+                className="px-2.5 py-1 rounded-md"
+                style={{ backgroundColor: colors.accentSoft }}
+              >
+                <Text className="text-xs font-medium" style={{ color: colors.primary }}>
+                  {request.city.name}
+                </Text>
+              </View>
+            )}
+            {request.fns && (
+              <View
+                className="px-2.5 py-1 rounded-md"
+                style={{ backgroundColor: colors.surface2 }}
+              >
+                <Text className="text-xs" style={{ color: colors.textSecondary }}>
+                  {request.fns.code} · {request.fns.name}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        <Text className="text-base font-semibold text-text-base mb-2">
+          {request.title}
+        </Text>
+        <Text className="text-base text-text-base leading-6" style={{ color: colors.text }}>
+          {request.description}
         </Text>
       </Card>
+
+      {(request.files ?? []).length > 0 && (
+        <Card className="mb-4">
+          <Text
+            className="uppercase mb-2"
+            style={{ fontSize: 12, letterSpacing: 2, color: colors.textSecondary, fontWeight: "600" }}
+          >
+            Документы
+          </Text>
+          <FileList files={request.files ?? []} onPress={onFilePress} />
+        </Card>
+      )}
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Войти, чтобы откликнуться"
@@ -396,16 +518,29 @@ export default function RequestDetail() {
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [closing, setClosing] = useState(false);
 
-  // Public fallback for anonymous / unauthenticated
-  const [publicRequest, setPublicRequest] = useState<{ title: string; description: string } | null>(null);
+  // Public fallback for anonymous / unauthenticated. Now mirrors the
+  // shape the FE renders for the owner so the anon view can show the
+  // same hero (title, author, city/FNS, date, description, files).
+  const [publicRequest, setPublicRequest] = useState<{
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+    isPublic: boolean;
+    createdAt: string;
+    city: { id: string; name: string };
+    fns: { id: string; name: string; code: string };
+    user: { id: string; firstName: string | null; lastName: string | null; avatarUrl: string | null };
+    files: FileItem[];
+  } | null>(null);
 
   const fetchAll = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
       if (!isAuthenticated) {
-        // Anonymous: load public endpoint
-        const pub = await api<{ title: string; description: string }>(`/api/requests/${id}/public`);
+        // Anonymous: load public endpoint with full request payload.
+        const pub = await api<typeof publicRequest>(`/api/requests/${id}/public`);
         setPublicRequest(pub);
       } else {
         const [detail, threadsRes] = await Promise.all([
@@ -508,7 +643,18 @@ export default function RequestDetail() {
 
   // Anonymous
   if (!isAuthenticated) {
-    const pub = publicRequest ?? { title: "Заявка", description: "" };
+    const pub = publicRequest ?? {
+      id: id ?? "",
+      title: "Заявка",
+      description: "",
+      status: "ACTIVE",
+      isPublic: true,
+      createdAt: new Date().toISOString(),
+      city: { id: "", name: "" },
+      fns: { id: "", name: "", code: "" },
+      user: { id: "", firstName: null, lastName: null, avatarUrl: null },
+      files: [],
+    };
     return (
       <SafeAreaView className="flex-1 bg-surface2">
         <ScrollView className="flex-1">
@@ -526,7 +672,13 @@ export default function RequestDetail() {
               </Pressable>
             </View>
             <View className="py-4">
-              <AnonymousView request={pub} onLogin={() => nav.any("/login")} />
+              <AnonymousView
+                request={pub}
+                onLogin={() =>
+                  nav.dynamic.loginWithReturnTo(`/requests/${id}/detail`)
+                }
+                onFilePress={handleFilePress}
+              />
             </View>
           </View>
         </ScrollView>

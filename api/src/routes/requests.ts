@@ -7,7 +7,7 @@ import { authMiddleware } from "../middleware/auth";
 import { verifyAccessToken } from "../lib/jwt";
 import { sendNotification } from "../notifications/notification.service";
 import { notSeedRequestWhere } from "../lib/seedFilter";
-import { minioClient, MINIO_BUCKET } from "../lib/minio";
+import { minioClient, MINIO_BUCKET, presignAvatarUrl } from "../lib/minio";
 
 // Strip all HTML tags to prevent XSS
 function stripHtml(str: string): string {
@@ -191,11 +191,23 @@ router.get("/:id/public", async (req: Request, res: Response) => {
         city: true,
         fns: true,
         user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        files: {
+          select: { id: true, url: true, filename: true, size: true, mimeType: true },
+        },
         _count: { select: { threads: true } },
       },
     });
 
     if (!result) {
+      res.status(404).json({ error: "Request not found" });
+      return;
+    }
+
+    // Anon visibility gate: only the request owner sees a non-public
+    // request via this route. The /detail endpoint (auth required)
+    // covers the owner's own non-public view. Strangers querying a
+    // private request through /public get a 404.
+    if (!result.isPublic && callerId !== result.userId) {
       res.status(404).json({ error: "Request not found" });
       return;
     }
@@ -214,6 +226,11 @@ router.get("/:id/public", async (req: Request, res: Response) => {
       }
     }
 
+    // Mask the author's last name to a single initial so we don't leak
+    // a full name to anonymous viewers. Owner gets the full name back
+    // via the /detail endpoint.
+    const lastNameInitial = result.user.lastName ? `${result.user.lastName[0]}.` : null;
+
     res.json({
       id: result.id,
       title: result.title,
@@ -227,9 +244,17 @@ router.get("/:id/public", async (req: Request, res: Response) => {
       user: {
         id: result.user.id,
         firstName: result.user.firstName,
-        lastName: result.user.lastName,
-        avatarUrl: result.user.avatarUrl,
+        lastName: lastNameInitial,
+        // Storage key → presigned URL so <Image> renders directly.
+        avatarUrl: await presignAvatarUrl(result.user.avatarUrl).catch(() => null),
       },
+      files: result.files.map((f) => ({
+        id: f.id,
+        url: f.url,
+        filename: f.filename,
+        size: f.size,
+        mimeType: f.mimeType,
+      })),
       threadsCount: result._count.threads,
       hasExistingThread,
       existingThreadId,
