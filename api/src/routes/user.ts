@@ -1,9 +1,87 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
+import { verifyAccessToken } from "../lib/jwt";
 import { presignAvatarUrl } from "../lib/minio";
 
 const router = Router();
+
+/**
+ * GET /api/user/:id/public — minimal client profile readable by both
+ * anonymous visitors and authenticated specialists.
+ *
+ * Returned shape (always safe — never email, phone, or last full name):
+ *   { id, firstName, lastInitial, avatarUrl, createdAt,
+ *     isSpecialist, totalRequestsCount, activeRequestsCount }
+ *
+ * Anonymous viewers get firstName masked to first initial too, and
+ * avatarUrl=null. Specialist subjects redirect to /api/specialists/:id
+ * implicitly (FE checks isSpecialist and routes accordingly).
+ */
+router.get("/:id/public", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRe.test(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+
+    let callerId: string | null = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        callerId = verifyAccessToken(authHeader.slice(7)).userId;
+      } catch {
+        // anon — fine
+      }
+    }
+    const isAnonViewer = callerId === null;
+
+    const user = await prisma.user.findFirst({
+      where: { id, isBanned: false, deletedAt: null },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        createdAt: true,
+        isSpecialist: true,
+      },
+    });
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const [activeRequestsCount, totalRequestsCount] = await Promise.all([
+      prisma.request.count({
+        where: { userId: id, status: { in: ["ACTIVE", "CLOSING_SOON"] } },
+      }),
+      prisma.request.count({ where: { userId: id } }),
+    ]);
+
+    const lastInitial = user.lastName ? `${user.lastName[0]}.` : null;
+    const firstInitial = user.firstName ? `${user.firstName[0]}.` : null;
+    const exposedFirstName = isAnonViewer ? firstInitial : user.firstName;
+
+    res.json({
+      id: user.id,
+      firstName: exposedFirstName,
+      lastInitial,
+      avatarUrl: isAnonViewer
+        ? null
+        : await presignAvatarUrl(user.avatarUrl).catch(() => null),
+      createdAt: user.createdAt,
+      isSpecialist: user.isSpecialist,
+      totalRequestsCount,
+      activeRequestsCount,
+    });
+  } catch (error) {
+    console.error("user/:id/public error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // PATCH /api/user/profile — update profile (auth required)
 router.patch("/profile", authMiddleware, async (req: Request, res: Response) => {

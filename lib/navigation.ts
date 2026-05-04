@@ -101,8 +101,12 @@ export const DYNAMIC_ROUTES = {
   /** /threads/:id */
   thread: (id: string) => `/threads/${id}` as const,
 
-  /** /profile/:id — public profile (any user can be both client and specialist) */
+  /** /profile/:id — specialist public profile (rich credentials view) */
   specialist: (id: string) => `/profile/${id}` as const,
+
+  /** /users/:id — basic public profile of a client. Auto-redirects to
+   *  /profile/:id if the subject is also a specialist. */
+  user: (id: string) => `/users/${id}` as const,
 
   /** /login?returnTo=... */
   loginWithReturnTo: (returnTo: string) =>

@@ -360,7 +360,7 @@ function SpecialistView({
           <Pressable
             accessibilityRole="link"
             accessibilityLabel={`Профиль ${request.client.name}`}
-            onPress={() => nav.dynamic.specialist(request.client!.id)}
+            onPress={() => nav.any(nav.dynamic.user(request.client!.id))}
             className="flex-row items-center"
             style={({ pressed }) => [pressed && { opacity: 0.7 }]}
           >
