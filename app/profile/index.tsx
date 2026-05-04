@@ -411,6 +411,8 @@ export default function UnifiedProfile() {
                       description={form.description}
                       officeAddress={form.officeAddress}
                       workingHours={form.workingHours}
+                      yearsOfExperience={form.yearsOfExperience}
+                      specialization={form.specialization}
                       contacts={form.contacts}
                       addingContact={form.addingContact}
                       newContactType={form.newContactType}
@@ -420,6 +422,8 @@ export default function UnifiedProfile() {
                       onDescriptionChange={form.setDescription}
                       onOfficeAddressChange={form.setOfficeAddress}
                       onWorkingHoursChange={form.setWorkingHours}
+                      onYearsOfExperienceChange={form.setYearsOfExperience}
+                      onSpecializationChange={form.setSpecialization}
                       onContactsChange={form.setContacts}
                       onAddingContactChange={form.setAddingContact}
                       onNewContactTypeChange={form.setNewContactType}

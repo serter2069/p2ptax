@@ -44,6 +44,12 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
   const [description, setDescription] = useState("");
   const [officeAddress, setOfficeAddress] = useState("");
   const [workingHours, setWorkingHours] = useState("");
+  // Editable fields surfaced on the public profile detail page.
+  // yearsOfExperience appears as 'N лет/года/год' in the credentials
+  // strip; specialization is the primary service-line label below the
+  // name. Stored on the SpecialistProfile model.
+  const [yearsOfExperience, setYearsOfExperience] = useState<number | null>(null);
+  const [specialization, setSpecialization] = useState("");
   const [isAvailable, setIsAvailable] = useState(user?.isAvailable ?? false);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
@@ -88,6 +94,8 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         setDescription(profile.profile.description ?? "");
         setOfficeAddress(profile.profile.officeAddress ?? "");
         setWorkingHours(profile.profile.workingHours ?? "");
+        setYearsOfExperience(profile.profile.yearsOfExperience ?? null);
+        setSpecialization(profile.profile.specialization ?? "");
       }
       setContacts(contactsData.items);
     } catch (err) {
@@ -128,8 +136,10 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
       !!specData &&
       (description !== (specData.profile?.description ?? "") ||
         officeAddress !== (specData.profile?.officeAddress ?? "") ||
-        workingHours !== (specData.profile?.workingHours ?? "")),
-    [specData, description, officeAddress, workingHours],
+        workingHours !== (specData.profile?.workingHours ?? "") ||
+        yearsOfExperience !== (specData.profile?.yearsOfExperience ?? null) ||
+        specialization !== (specData.profile?.specialization ?? "")),
+    [specData, description, officeAddress, workingHours, yearsOfExperience, specialization],
   );
 
   const showSaveBar =
@@ -189,6 +199,8 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         description: description.trim() || null,
         officeAddress: officeAddress.trim() || null,
         workingHours: workingHours.trim() || null,
+        yearsOfExperience,
+        specialization: specialization.trim() || null,
       });
       updateUser({
         firstName: firstName.trim(),
@@ -209,6 +221,8 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     description,
     officeAddress,
     workingHours,
+    yearsOfExperience,
+    specialization,
     updateUser,
     loadSpecialistData,
   ]);
@@ -391,11 +405,21 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
         description: description.trim() || null,
         officeAddress: officeAddress.trim() || null,
         workingHours: workingHours.trim() || null,
+        yearsOfExperience,
+        specialization: specialization.trim() || null,
       });
       // Reload to keep `specData` in sync (so dirty-flag math doesn't lie).
       await loadSpecialistData();
     });
-  }, [description, officeAddress, workingHours, loadSpecialistData, runAutosave]);
+  }, [
+    description,
+    officeAddress,
+    workingHours,
+    yearsOfExperience,
+    specialization,
+    loadSpecialistData,
+    runAutosave,
+  ]);
 
   /** Manual retry for the toast — re-runs the last save attempt. */
   const retryAutosave = useCallback(() => {
@@ -435,6 +459,10 @@ export function useSettingsForm({ ready, activeTab, onTabChange }: UseSettingsFo
     setOfficeAddress,
     workingHours,
     setWorkingHours,
+    yearsOfExperience,
+    setYearsOfExperience,
+    specialization,
+    setSpecialization,
     isAvailable,
     availabilityLoading,
     contacts,

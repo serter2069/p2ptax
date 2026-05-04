@@ -221,6 +221,12 @@ router.get("/profile", async (req: Request, res: Response) => {
             whatsapp: user.specialistProfile.whatsapp,
             officeAddress: user.specialistProfile.officeAddress,
             workingHours: user.specialistProfile.workingHours,
+            yearsOfExperience: user.specialistProfile.yearsOfExperience,
+            specialization:
+              Array.isArray(user.specialistProfile.specializations) &&
+              user.specialistProfile.specializations.length > 0
+                ? String(user.specialistProfile.specializations[0])
+                : null,
           }
         : null,
       fnsServices,
@@ -246,6 +252,14 @@ router.patch("/profile", async (req: Request, res: Response) => {
       whatsapp,
       officeAddress,
       workingHours,
+      // Editable fields surfaced on the public profile detail page —
+      // 'Опыт' (years of experience) and 'Специализация' (primary
+      // service line). Without these the public profile rendered
+      // values the specialist couldn't change. specialization is
+      // stored as JSON string[] (existing column) so the schema
+      // stays compatible.
+      yearsOfExperience,
+      specialization,
     } = req.body;
 
     // Update user fields
@@ -270,6 +284,15 @@ router.patch("/profile", async (req: Request, res: Response) => {
     if (whatsapp !== undefined) profileUpdate.whatsapp = whatsapp;
     if (officeAddress !== undefined) profileUpdate.officeAddress = officeAddress;
     if (workingHours !== undefined) profileUpdate.workingHours = workingHours;
+    if (yearsOfExperience !== undefined) {
+      const n = typeof yearsOfExperience === "number" ? Math.round(yearsOfExperience) : NaN;
+      profileUpdate.yearsOfExperience =
+        Number.isFinite(n) && n >= 0 && n <= 80 ? n : null;
+    }
+    if (specialization !== undefined) {
+      const trimmed = typeof specialization === "string" ? specialization.trim() : "";
+      profileUpdate.specializations = trimmed ? [trimmed] : null;
+    }
 
     if (Object.keys(profileUpdate).length > 0) {
       await prisma.specialistProfile.upsert({

@@ -225,9 +225,19 @@ export default function SpecialistPublicProfile() {
     elevation: 1,
   };
 
-  // Role label is derived from the first service the specialist offers via
-  // their work-area entries (the only thing actually editable in settings).
-  const rolePrimary = [...serviceNames][0] ?? null;
+  // Role label: prefer the specialist-edited value
+  // (SpecialistProfile.specializations[0]), fall back to the first
+  // service from work-area entries when nothing's set explicitly. So
+  // the public profile shows what the specialist typed in the
+  // 'Специализация' input — empty means we keep the auto-derived
+  // service-line so the UI never shows blank.
+  const profileSpec = (() => {
+    const specs = (
+      specialist.profile?.specializations as string[] | undefined
+    ) ?? null;
+    return specs && specs.length > 0 ? specs[0] : null;
+  })();
+  const rolePrimary = profileSpec ?? [...serviceNames][0] ?? null;
 
   // Closed profile block shown instead of full content
   const closedBlock = (
