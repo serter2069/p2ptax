@@ -15,6 +15,7 @@ import TrustPillarsSection from "@/components/landing/TrustPillarsSection";
 import ServicesSection from "@/components/landing/ServicesSection";
 import HowItWorksFlow from "@/components/landing/HowItWorksFlow";
 import CasesSection from "@/components/landing/CasesSection";
+import ComparisonBlock from "@/components/landing/ComparisonBlock";
 import type { CaseCardData } from "@/components/landing/CaseCard";
 import SpecialistCTASection from "@/components/landing/SpecialistCTASection";
 import FaqSection from "@/components/landing/FaqSection";
@@ -246,6 +247,8 @@ export default function LandingScreen() {
           cases={cases}
           onCreateRequest={goCreateRequest}
         />
+
+        <ComparisonBlock isDesktop={isDesktop} />
 
         <HowItWorksFlow isDesktop={isDesktop} />
 
