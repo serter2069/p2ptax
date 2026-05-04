@@ -36,24 +36,21 @@ import InlineWorkArea from "@/components/settings/InlineWorkArea";
 import { dialog } from "@/lib/dialog";
 
 /**
- * Unified Profile page (Wave 6 / profile-tabs).
+ * Unified Profile page — Wave 8.
  *
- * Single page with two tabs at the top:
- *   - 'Аккаунт' (default): Личные данные, тумблер 'Я специалист',
- *     Опасная зона (Выйти / Удалить).
- *   - 'Специалист' (visible when isSpecialist=true): Публичный профиль,
- *     рабочая зона, О себе, Опыт+Специализация, Контакты, Офис, плюс
- *     блок 'Готово — что дальше' с Посмотреть/Скопировать/Перейти к
- *     запросам.
+ * Two tabs:
+ *   1. 'Профиль' / 'Специалист' (label flips with isSpecialist)
+ *      → avatar + name + Я специалист toggle.
+ *      When isSpecialist=true: + Публичный профиль toggle + work area
+ *      + О себе + Опыт/Специализация + Контакты + Офис + 'Готово —
+ *      что дальше' block.
+ *      When isSpecialist=false: just personal data + the toggle.
+ *   2. 'Аккаунт' → email + Выйти + Удалить аккаунт. Nothing else.
  *
- * Tab is mirrored in ?tab=specialist so:
- *   - the sidebar 'Я специалист' link can deep-link there
- *   - browser back/forward switches tabs naturally
- *   - toggling 'Я специалист' ON sets ?tab=specialist via setParams
- *     (no page navigation, no history hop, no broken back button).
+ * URL: /profile?tab=profile|account. Default is 'profile'.
  */
 
-type Tab = "account" | "specialist";
+type Tab = "profile" | "account";
 
 function formatRelativeTime(date: Date | null, now: number): string {
   if (!date) return "";
@@ -137,15 +134,14 @@ function FirstTimeBanner({ onDismiss }: FirstTimeBannerProps) {
 
 interface TabStripProps {
   active: Tab;
-  showSpecialist: boolean;
+  profileLabel: string;
   onChange: (t: Tab) => void;
 }
 
-function TabStrip({ active, showSpecialist, onChange }: TabStripProps) {
-  if (!showSpecialist) return null;
+function TabStrip({ active, profileLabel, onChange }: TabStripProps) {
   const items: { key: Tab; label: string }[] = [
+    { key: "profile", label: profileLabel },
     { key: "account", label: "Аккаунт" },
-    { key: "specialist", label: "Специалист" },
   ];
   return (
     <View
@@ -161,9 +157,7 @@ function TabStrip({ active, showSpecialist, onChange }: TabStripProps) {
             accessibilityLabel={it.label}
             onPress={() => onChange(it.key)}
             className="flex-1 items-center justify-center py-3"
-            style={{
-              backgroundColor: isActive ? colors.accent : "transparent",
-            }}
+            style={{ backgroundColor: isActive ? colors.accent : "transparent" }}
           >
             <Text
               className="text-sm"
@@ -202,7 +196,7 @@ export default function UnifiedProfile() {
   const tabFromQuery: Tab = useMemo(() => {
     const t = params.tab;
     const v = typeof t === "string" ? t : Array.isArray(t) ? t[0] : undefined;
-    return v === "specialist" ? "specialist" : "account";
+    return v === "account" ? "account" : "profile";
   }, [params.tab]);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -211,41 +205,28 @@ export default function UnifiedProfile() {
 
   const form = useSettingsForm({
     ready,
-    activeTab: tabFromQuery === "specialist" ? "specialist" : "profile",
+    activeTab: "specialist",
     onTabChange: () => undefined,
   });
   const { router, user, isSpecialistUser } = form;
 
-  // Effective tab — fall back to 'account' if user isn't a specialist
-  // even if the URL says specialist (e.g. they toggled off but the
-  // sidebar link still tries to deep-link).
-  const activeTab: Tab =
-    tabFromQuery === "specialist" && isSpecialistUser ? "specialist" : "account";
+  const setTab = useCallback((next: Tab) => {
+    routerSingleton.setParams({ tab: next });
+  }, []);
 
-  const setTab = useCallback(
-    (next: Tab) => {
-      // setParams keeps URL in sync without pushing a new history entry —
-      // back button still returns to wherever the user was before /profile.
-      routerSingleton.setParams({ tab: next === "specialist" ? "specialist" : "" });
-    },
-    []
-  );
-
-  // Legacy ?focus=specialist links land here. Switch the tab instead of
-  // navigating away.
+  // Legacy ?focus=specialist links — flip to the specialist tab + auto-
+  // open the work-area wizard if needed.
   useEffect(() => {
     if (!ready) return;
-    if (focus === "specialist" && isSpecialistUser) {
-      setTab("specialist");
+    if (focus === "specialist" && tabFromQuery !== "profile") {
+      setTab("profile");
     }
-  }, [ready, focus, isSpecialistUser, setTab]);
+  }, [ready, focus, tabFromQuery, setTab]);
 
-  // Auto-open the work-area wizard when the specialist tab opens with
-  // an empty FNS list — was the old StrandedSpecialistBanner CTA target.
   useEffect(() => {
     if (
       ready &&
-      activeTab === "specialist" &&
+      tabFromQuery === "profile" &&
       isSpecialistUser &&
       !form.specLoading &&
       form.specData &&
@@ -253,7 +234,7 @@ export default function UnifiedProfile() {
     ) {
       setEditingWorkArea(true);
     }
-  }, [ready, activeTab, isSpecialistUser, form.specLoading, form.specData]);
+  }, [ready, tabFromQuery, isSpecialistUser, form.specLoading, form.specData]);
 
   const profileUrl = useCallback((): string => {
     if (!user?.id) return "";
@@ -287,15 +268,7 @@ export default function UnifiedProfile() {
     }
   }, [profileUrl]);
 
-  // Wrap the toggle so flipping ON also switches the active tab in-place.
-  const handleToggleSpecialistTabAware = useCallback(
-    async (value: boolean) => {
-      await form.handleToggleSpecialist(value);
-      if (value) setTab("specialist");
-      else setTab("account");
-    },
-    [form, setTab]
-  );
+  const profileTabLabel = isSpecialistUser ? "Специалист" : "Профиль";
 
   if (!ready) {
     return (
@@ -337,7 +310,7 @@ export default function UnifiedProfile() {
         </View>
       )}
 
-      {/* Sticky top header */}
+      {/* Sticky title + autosave indicator */}
       <View
         className="bg-surface2"
         style={
@@ -389,13 +362,13 @@ export default function UnifiedProfile() {
           )}
 
           <TabStrip
-            active={activeTab}
-            showSpecialist={isSpecialistUser}
+            active={tabFromQuery}
+            profileLabel={profileTabLabel}
             onChange={setTab}
           />
 
-          {/* === ACCOUNT TAB ====================================== */}
-          {activeTab === "account" && (
+          {/* === PROFILE TAB ====================================== */}
+          {tabFromQuery === "profile" && (
             <>
               <ProfileTab
                 firstName={form.firstName}
@@ -404,10 +377,7 @@ export default function UnifiedProfile() {
                 avatarUrl={form.avatarUrl}
                 avatarUploading={form.avatarUploading}
                 isSpecialistUser={isSpecialistUser}
-                isAvailable={form.isAvailable}
-                availabilityLoading={form.availabilityLoading}
                 role={user?.role ?? null}
-                userId={user?.id}
                 onFirstNameChange={form.setFirstName}
                 onLastNameChange={form.setLastName}
                 onAvatarChange={(url, key) => {
@@ -417,12 +387,177 @@ export default function UnifiedProfile() {
                 }}
                 onUploadStart={() => form.setAvatarUploading(true)}
                 onUploadEnd={() => form.setAvatarUploading(false)}
-                onToggleSpecialist={handleToggleSpecialistTabAware}
-                onToggleAvailable={form.handleToggleAvailable}
+                onToggleSpecialist={form.handleToggleSpecialist}
                 onPersonalBlur={form.autosavePersonal}
               />
 
-              <Card className="mt-2 mb-4" style={{ overflow: "hidden" }}>
+              {/* Specialist section appears below personal data when
+                  the toggle is on. Disappears entirely when off. */}
+              {isSpecialistUser && (
+                <>
+                  <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+                    <View className="flex-row items-center justify-between py-1">
+                      <View className="flex-1 mr-4">
+                        <Text className="text-base font-semibold text-text-base">
+                          Публичный профиль
+                        </Text>
+                        <Text className="text-xs text-text-mute mt-0.5 leading-5">
+                          {form.isAvailable
+                            ? "Видны в каталоге, новые клиенты могут вам написать"
+                            : "Скрыты из каталога. Существующие диалоги остаются."}
+                        </Text>
+                      </View>
+                      <StyledSwitch
+                        value={form.isAvailable}
+                        onValueChange={form.handleToggleAvailable}
+                      />
+                    </View>
+                  </View>
+
+                  {editingWorkArea ? (
+                    <InlineWorkArea
+                      initialEntries={(form.specData?.fnsServices ?? []).map((g) => ({
+                        fnsId: g.fns.id,
+                        fnsName: g.fns.name,
+                        fnsCode: g.fns.code,
+                        cityId: g.city.id,
+                        cityName: g.city.name,
+                        serviceIds: g.services.map((s) => s.id),
+                        serviceNames: g.services.map((s) => s.name),
+                        isAnyService: g.services.length === 0,
+                      }))}
+                      onDone={() => {
+                        setEditingWorkArea(false);
+                        form.refreshSpecialistData?.();
+                      }}
+                      onCancel={() => setEditingWorkArea(false)}
+                    />
+                  ) : (
+                    <SpecialistTab
+                      isSpecialistUser={isSpecialistUser}
+                      specLoading={form.specLoading}
+                      specData={form.specData}
+                      description={form.description}
+                      officeAddress={form.officeAddress}
+                      workingHours={form.workingHours}
+                      experienceText={form.experienceText}
+                      specializationText={form.specializationText}
+                      contacts={form.contacts}
+                      addingContact={form.addingContact}
+                      newContactType={form.newContactType}
+                      newContactValue={form.newContactValue}
+                      contactSaving={form.contactSaving}
+                      showTypePicker={form.showTypePicker}
+                      onDescriptionChange={form.setDescription}
+                      onOfficeAddressChange={form.setOfficeAddress}
+                      onWorkingHoursChange={form.setWorkingHours}
+                      onExperienceTextChange={form.setExperienceText}
+                      onSpecializationTextChange={form.setSpecializationText}
+                      onContactsChange={form.setContacts}
+                      onAddingContactChange={form.setAddingContact}
+                      onNewContactTypeChange={form.setNewContactType}
+                      onNewContactValueChange={form.setNewContactValue}
+                      onContactSavingChange={form.setContactSaving}
+                      onShowTypePickerChange={form.setShowTypePicker}
+                      onGoToProfileTab={() => undefined}
+                      onGoToWorkArea={() => setEditingWorkArea(true)}
+                      onSpecialistBlur={form.autosaveSpecialistProfile}
+                    />
+                  )}
+
+                  {!editingWorkArea && (
+                    <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+                      <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+                        Готово — что дальше
+                      </Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Посмотреть мой профиль"
+                        onPress={() => user?.id && form.nav.dynamic.specialist(user.id)}
+                        className="flex-row items-center justify-between py-3 px-4 rounded-xl mb-2"
+                        style={{ backgroundColor: colors.surface2 }}
+                      >
+                        <View className="flex-row items-center">
+                          <ExternalLink size={16} color={colors.accent} />
+                          <Text
+                            className="text-sm font-semibold ml-2"
+                            style={{ color: colors.text }}
+                          >
+                            Посмотреть мой профиль
+                          </Text>
+                        </View>
+                        <ArrowRight size={14} color={colors.textSecondary} />
+                      </Pressable>
+
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Скопировать ссылку на профиль"
+                        onPress={handleCopy}
+                        className="flex-row items-center justify-between py-3 px-4 rounded-xl mb-2"
+                        style={{ backgroundColor: colors.surface2 }}
+                      >
+                        <View className="flex-row items-center">
+                          {linkCopied ? (
+                            <Check size={16} color={colors.success} />
+                          ) : Platform.OS === "web" ? (
+                            <Copy size={16} color={colors.accent} />
+                          ) : (
+                            <Share2 size={16} color={colors.accent} />
+                          )}
+                          <Text
+                            className="text-sm font-semibold ml-2"
+                            style={{ color: linkCopied ? colors.success : colors.text }}
+                          >
+                            {linkCopied
+                              ? "Ссылка скопирована"
+                              : Platform.OS === "web"
+                                ? "Скопировать ссылку"
+                                : "Поделиться профилем"}
+                          </Text>
+                        </View>
+                        <ArrowRight size={14} color={colors.textSecondary} />
+                      </Pressable>
+
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Перейти к запросам"
+                        onPress={() => form.nav.routes.tabsRequests()}
+                        className="flex-row items-center justify-between py-3 px-4 rounded-xl"
+                        style={{ backgroundColor: colors.accent }}
+                      >
+                        <View className="flex-row items-center">
+                          <Text
+                            className="text-sm font-semibold ml-1"
+                            style={{ color: colors.white }}
+                          >
+                            Перейти к запросам
+                          </Text>
+                        </View>
+                        <ArrowRight size={14} color={colors.white} />
+                      </Pressable>
+                    </View>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {/* === ACCOUNT TAB ====================================== */}
+          {tabFromQuery === "account" && (
+            <>
+              <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+                <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
+                  Email
+                </Text>
+                <View className="h-12 border border-border rounded-xl bg-surface2 px-4 justify-center">
+                  <Text className="text-base text-text-mute">{user?.email ?? ""}</Text>
+                </View>
+                <Text className="text-xs text-text-mute mt-2">
+                  Email нельзя изменить — он привязан к OTP-входу.
+                </Text>
+              </View>
+
+              <Card className="mb-4" style={{ overflow: "hidden" }}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Выйти из аккаунта"
@@ -450,159 +585,6 @@ export default function UnifiedProfile() {
               <Text className="text-xs text-text-dim text-center mb-4">
                 Версия {Constants.expoConfig?.version ?? "1.0.0"}
               </Text>
-            </>
-          )}
-
-          {/* === SPECIALIST TAB =================================== */}
-          {activeTab === "specialist" && (
-            <>
-              {/* Public profile toggle */}
-              <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
-                <View className="flex-row items-center justify-between py-1">
-                  <View className="flex-1 mr-4">
-                    <Text className="text-base font-semibold text-text-base">
-                      Публичный профиль
-                    </Text>
-                    <Text className="text-xs text-text-mute mt-0.5 leading-5">
-                      {form.isAvailable
-                        ? "Видны в каталоге, новые клиенты могут вам написать"
-                        : "Скрыты из каталога. Существующие диалоги остаются."}
-                    </Text>
-                  </View>
-                  <StyledSwitch
-                    value={form.isAvailable}
-                    onValueChange={form.handleToggleAvailable}
-                  />
-                </View>
-              </View>
-
-              {editingWorkArea ? (
-                <InlineWorkArea
-                  initialEntries={(form.specData?.fnsServices ?? []).map((g) => ({
-                    fnsId: g.fns.id,
-                    fnsName: g.fns.name,
-                    fnsCode: g.fns.code,
-                    cityId: g.city.id,
-                    cityName: g.city.name,
-                    serviceIds: g.services.map((s) => s.id),
-                    serviceNames: g.services.map((s) => s.name),
-                    isAnyService: g.services.length === 0,
-                  }))}
-                  onDone={() => {
-                    setEditingWorkArea(false);
-                    form.refreshSpecialistData?.();
-                  }}
-                  onCancel={() => setEditingWorkArea(false)}
-                />
-              ) : (
-                <SpecialistTab
-                  isSpecialistUser={isSpecialistUser}
-                  specLoading={form.specLoading}
-                  specData={form.specData}
-                  description={form.description}
-                  officeAddress={form.officeAddress}
-                  workingHours={form.workingHours}
-                  experienceText={form.experienceText}
-                  specializationText={form.specializationText}
-                  contacts={form.contacts}
-                  addingContact={form.addingContact}
-                  newContactType={form.newContactType}
-                  newContactValue={form.newContactValue}
-                  contactSaving={form.contactSaving}
-                  showTypePicker={form.showTypePicker}
-                  onDescriptionChange={form.setDescription}
-                  onOfficeAddressChange={form.setOfficeAddress}
-                  onWorkingHoursChange={form.setWorkingHours}
-                  onExperienceTextChange={form.setExperienceText}
-                  onSpecializationTextChange={form.setSpecializationText}
-                  onContactsChange={form.setContacts}
-                  onAddingContactChange={form.setAddingContact}
-                  onNewContactTypeChange={form.setNewContactType}
-                  onNewContactValueChange={form.setNewContactValue}
-                  onContactSavingChange={form.setContactSaving}
-                  onShowTypePickerChange={form.setShowTypePicker}
-                  onGoToProfileTab={() => setTab("account")}
-                  onGoToWorkArea={() => setEditingWorkArea(true)}
-                  onSpecialistBlur={form.autosaveSpecialistProfile}
-                />
-              )}
-
-              {/* Готово — что дальше */}
-              {!editingWorkArea && (
-                <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
-                  <Text className="text-xs font-semibold text-text-mute uppercase tracking-wider mb-3">
-                    Готово — что дальше
-                  </Text>
-
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Посмотреть мой профиль"
-                    onPress={() =>
-                      user?.id && form.nav.dynamic.specialist(user.id)
-                    }
-                    className="flex-row items-center justify-between py-3 px-4 rounded-xl mb-2"
-                    style={{ backgroundColor: colors.surface2 }}
-                  >
-                    <View className="flex-row items-center">
-                      <ExternalLink size={16} color={colors.accent} />
-                      <Text
-                        className="text-sm font-semibold ml-2"
-                        style={{ color: colors.text }}
-                      >
-                        Посмотреть мой профиль
-                      </Text>
-                    </View>
-                    <ArrowRight size={14} color={colors.textSecondary} />
-                  </Pressable>
-
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Скопировать ссылку на профиль"
-                    onPress={handleCopy}
-                    className="flex-row items-center justify-between py-3 px-4 rounded-xl mb-2"
-                    style={{ backgroundColor: colors.surface2 }}
-                  >
-                    <View className="flex-row items-center">
-                      {linkCopied ? (
-                        <Check size={16} color={colors.success} />
-                      ) : Platform.OS === "web" ? (
-                        <Copy size={16} color={colors.accent} />
-                      ) : (
-                        <Share2 size={16} color={colors.accent} />
-                      )}
-                      <Text
-                        className="text-sm font-semibold ml-2"
-                        style={{ color: linkCopied ? colors.success : colors.text }}
-                      >
-                        {linkCopied
-                          ? "Ссылка скопирована"
-                          : Platform.OS === "web"
-                            ? "Скопировать ссылку"
-                            : "Поделиться профилем"}
-                      </Text>
-                    </View>
-                    <ArrowRight size={14} color={colors.textSecondary} />
-                  </Pressable>
-
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Перейти к запросам"
-                    onPress={() => form.nav.routes.tabsRequests()}
-                    className="flex-row items-center justify-between py-3 px-4 rounded-xl"
-                    style={{ backgroundColor: colors.accent }}
-                  >
-                    <View className="flex-row items-center">
-                      <Text
-                        className="text-sm font-semibold ml-1"
-                        style={{ color: colors.white }}
-                      >
-                        Перейти к запросам
-                      </Text>
-                    </View>
-                    <ArrowRight size={14} color={colors.white} />
-                  </Pressable>
-                </View>
-              )}
             </>
           )}
         </View>
