@@ -3,26 +3,22 @@ import {
   View,
   Text,
   ScrollView,
-  useWindowDimensions,
   Pressable,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import { dialog } from "@/lib/dialog";
-import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
-import { Send, UserCheck, ChevronLeft } from "lucide-react-native";
+import { UserCheck, ChevronLeft } from "lucide-react-native";
 import { api, ApiError } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import EmptyState from "@/components/ui/EmptyState";
 import RequestPreviewCard, { RequestPreviewData } from "@/components/requests/RequestPreviewCard";
-import MessageComposer from "@/components/requests/MessageComposer";
-import FileUploadZone, { type PendingFile } from "@/components/ui/FileUploadZone";
-import { FileUploadChips } from "@/components/ui/FileUploadZone";
-import { colors, BREAKPOINT } from "@/lib/theme";
-
+import ChatComposer, { type PendingFile } from "@/components/ChatComposer";
+import { colors } from "@/lib/theme";
 
 
 interface RequestSummary extends RequestPreviewData {
@@ -38,19 +34,22 @@ const MAX_CHARS = 2000;
 const MIN_CHARS = 10;
 const DAILY_LIMIT = 20;
 
+/**
+ * Specialist composes the first message to a client. Layout mirrors a
+ * real chat (sticky composer at the bottom, scrollable history above)
+ * so the specialist lands in something that already feels like the
+ * conversation they're about to have. The form-style version was
+ * jarring — it read as 'fill out a contact form' instead of 'start a
+ * chat'. Send POSTs /api/threads and redirects to /threads/:id.
+ */
 export default function SpecialistConfirmWrite() {
   const router = useRouter();
   const nav = useTypedRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { ready } = useRequireAuth();
   const { isAuthenticated, isSpecialistUser, user, token } = useAuth();
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= BREAKPOINT;
 
-  // Wave 2/G — hard gate for stranded specialists. They can browse, but
-  // before they can write to a client they MUST finish onboarding (ИФНС,
-  // services, description). Otherwise the message goes out from a profile
-  // that's invisible in the catalog.
+  // Stranded specialists must finish onboarding before they can write.
   const isStrandedSpecialist = isSpecialistUser && !user?.specialistProfileCompletedAt;
 
   const [request, setRequest] = useState<RequestSummary | null>(null);
@@ -79,16 +78,10 @@ export default function SpecialistConfirmWrite() {
     }
   }, [id]);
 
-  // Authed but wrong role: redirect to client-facing requests screen (#P1).
-  // (isAuthenticated comes from the top-level useAuth() — calling a hook
-  // inside an effect is a Rules-of-Hooks violation that React rejects with
-  // 'Invalid hook call'.)
   useEffect(() => {
     if (ready && isAuthenticated && !isSpecialistUser) {
       nav.replaceRoutes.tabsMyRequests();
-      return;
     }
-    // Anon: useRequireAuth handles redirect to /login with returnTo
   }, [ready, isAuthenticated, isSpecialistUser, nav]);
 
   useEffect(() => {
@@ -97,11 +90,15 @@ export default function SpecialistConfirmWrite() {
     }
   }, [ready, isSpecialistUser, load]);
 
-  const handleSend = async () => {
-    if (message.length < MIN_CHARS || sending) return;
-    if (rateLimit && rateLimit.writesToday >= DAILY_LIMIT) return;
+  const isLimitReached = rateLimit !== null && rateLimit.writesToday >= DAILY_LIMIT;
+  const canSend =
+    !sending &&
+    !isLimitReached &&
+    message.trim().length >= MIN_CHARS;
 
-    // Block send if any file is still uploading.
+  const handleSend = async () => {
+    if (!canSend) return;
+
     const uploading = attachedFiles.some(
       (f) => f.status === "uploading" || f.status === "pending"
     );
@@ -114,8 +111,6 @@ export default function SpecialistConfirmWrite() {
     setSubmitError(null);
 
     try {
-      // FileUploadZone uploads immediately on pick → take the token from the
-      // first done file (write screen supports one attachment in first message).
       const doneFile = attachedFiles.find((f) => f.status === "done");
       const uploadToken = doneFile?.uploadedToken;
 
@@ -163,29 +158,40 @@ export default function SpecialistConfirmWrite() {
     }
   };
 
-  const isLimitReached = rateLimit !== null && rateLimit.writesToday >= DAILY_LIMIT;
-  const canSubmit = message.length >= MIN_CHARS && !isLimitReached && !sending;
-
-  const backRow = (
-    <View className="px-4 pt-4">
+  const header = (
+    <View
+      className="flex-row items-center px-3 border-b border-border bg-white"
+      style={{ height: 52 }}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Назад"
         onPress={() => router.back()}
-        className="flex-row items-center mb-2"
-        style={{ minHeight: 44 }}
+        className="flex-row items-center"
+        style={{ minHeight: 44, paddingHorizontal: 6 }}
       >
-        <ChevronLeft size={20} color={colors.text} />
+        <ChevronLeft size={22} color={colors.text} />
         <Text className="text-text-base ml-1">Назад</Text>
       </Pressable>
-      <Text className="text-2xl font-extrabold text-text-base mb-3">Написать клиенту</Text>
+      <Text
+        className="text-base font-semibold text-text-base ml-2 flex-1"
+        numberOfLines={1}
+      >
+        {request?.user.firstName
+          ? `Написать клиенту ${request.user.firstName}`
+          : "Написать клиенту"}
+      </Text>
     </View>
   );
 
+  const SAFE_EDGES = Platform.OS === "web"
+    ? (["top"] as const)
+    : (["top", "bottom"] as const);
+
   if (!ready || !isSpecialistUser || loading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface2" edges={["top"]}>
-        {backRow}
+      <SafeAreaView className="flex-1 bg-white" edges={SAFE_EDGES}>
+        {header}
         <LoadingState />
       </SafeAreaView>
     );
@@ -193,8 +199,8 @@ export default function SpecialistConfirmWrite() {
 
   if (isStrandedSpecialist) {
     return (
-      <SafeAreaView className="flex-1 bg-surface2" edges={["top", "bottom"]}>
-        {backRow}
+      <SafeAreaView className="flex-1 bg-white" edges={SAFE_EDGES}>
+        {header}
         <View className="flex-1 justify-center">
           <EmptyState
             icon={UserCheck}
@@ -209,96 +215,55 @@ export default function SpecialistConfirmWrite() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface2" edges={["top", "bottom"]}>
-      {backRow}
+    <SafeAreaView className="flex-1 bg-white" edges={SAFE_EDGES}>
+      {header}
 
       <ScrollView
-        className="flex-1"
+        className="flex-1 bg-surface2"
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: isDesktop ? 48 : 24 }}
+        contentContainerStyle={{ padding: 16 }}
       >
-        {/* House rule: forms (specialist write) cap at 720 with 24 padding (CLAUDE.md). */}
-        <View style={{ maxWidth: 720, alignSelf: "center", width: "100%", paddingHorizontal: 24 }}>
-          {/* Subtitle */}
-          <Text className="text-sm text-text-mute mt-4 mb-3">
-            Прочитайте запрос и напишите первое сообщение
-          </Text>
+        {request && <RequestPreviewCard request={request} />}
 
-          {/* Rate limit info */}
-          {rateLimit !== null && (
-            <View
-              className={`rounded-xl px-4 py-3 mb-4 border ${
-                isLimitReached
-                  ? "bg-danger-soft border-red-200"
-                  : "bg-surface2 border-border"
+        {rateLimit !== null && (
+          <View
+            className={`rounded-xl px-4 py-3 mb-3 border ${
+              isLimitReached
+                ? "bg-danger-soft border-red-200"
+                : "bg-white border-border"
+            }`}
+          >
+            <Text
+              className={`text-xs ${
+                isLimitReached ? "text-danger" : "text-text-mute"
               }`}
             >
-              <Text
-                className={`text-sm font-medium ${
-                  isLimitReached ? "text-danger" : "text-text-mute"
-                }`}
-              >
-                {isLimitReached
-                  ? "Лимит новых диалогов на сегодня исчерпан (20 в день). Попробуйте завтра."
-                  : `Вы отправили ${rateLimit.writesToday} из ${rateLimit.limit} обращений сегодня`}
-              </Text>
-            </View>
-          )}
-
-          {/* Request summary card */}
-          {request && <RequestPreviewCard request={request} />}
-
-          {/* Message textarea */}
-          <MessageComposer
-            value={message}
-            onChange={setMessage}
-            placeholder="Здравствуйте! Я специалист по... Могу помочь с вашей ситуацией. Расскажите подробнее..."
-            maxLength={MAX_CHARS}
-            minLength={MIN_CHARS}
-            disabled={isLimitReached}
-          />
-
-          {/* File attachment — chips above the upload button */}
-          <FileUploadChips
-            files={attachedFiles}
-            onRemove={(fileId) =>
-              setAttachedFiles((prev) => prev.filter((f) => f.id !== fileId))
-            }
-          />
-          <FileUploadZone
-            files={attachedFiles}
-            onFilesChange={setAttachedFiles}
-            uploadEndpoint="/api/upload/chat-file"
-            authToken={token}
-            maxFiles={1}
-            compact
-            disabled={isLimitReached || sending}
-          />
-
-          {/* Submit error */}
-          {submitError && (
-            <View className="bg-danger-soft border border-red-200 rounded-xl px-4 py-3 mt-3">
-              <Text className="text-sm text-danger">{submitError}</Text>
-            </View>
-          )}
-
-          {/* Action buttons */}
-          <View className="mt-5 gap-3">
-            <Button
-              label="Отправить сообщение"
-              onPress={handleSend}
-              disabled={!canSubmit}
-              loading={sending}
-              icon={Send}
-            />
-            <Button
-              variant="secondary"
-              label="Отмена"
-              onPress={() => router.back()}
-            />
+              {isLimitReached
+                ? "Лимит новых диалогов на сегодня исчерпан (20 в день). Попробуйте завтра."
+                : `Сегодня отправлено ${rateLimit.writesToday} из ${rateLimit.limit}`}
+            </Text>
           </View>
-        </View>
+        )}
+
+        {submitError && (
+          <View className="bg-danger-soft border border-red-200 rounded-xl px-4 py-3">
+            <Text className="text-sm text-danger">{submitError}</Text>
+          </View>
+        )}
       </ScrollView>
+
+      <ChatComposer
+        value={message}
+        onChangeText={setMessage}
+        files={attachedFiles}
+        onFilesChange={setAttachedFiles}
+        onSend={handleSend}
+        sending={sending}
+        disabled={isLimitReached}
+        authToken={token}
+        maxLength={MAX_CHARS}
+        placeholder={`Здравствуйте! Я специалист… (минимум ${MIN_CHARS} символов)`}
+      />
     </SafeAreaView>
   );
 }
