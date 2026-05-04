@@ -95,23 +95,29 @@ async function doRefresh(): Promise<RefreshResult> {
     return { ok: false, reason: "no-refresh-token" };
   }
 
-  // Retry an explicit 401 once after a 1.5s pause. There are two common
-  // causes for a transient 401 right after a successful state:
+  // Retry an explicit 401 up to TWO more times with a growing pause
+  // (1.5s, then 3.0s) before giving up and clearing tokens. There are
+  // two common causes for a transient 401 right after a successful
+  // state:
   //
   //   1) `pm2 restart p2ptax-api` — jwt-verification middleware races
-  //      the api boot. Same refresh token works on retry once the api
-  //      finishes initializing.
+  //      the api boot. Most restarts < 1s, but a slow start can leak
+  //      past the first retry; the second retry buys ~4.5s total which
+  //      covers practically every legit cold-start.
   //   2) Cross-tab refresh race — another tab just rotated the refresh
-  //      token (delete + create new), so OUR copy in storage is stale.
-  //      Re-read REFRESH_KEY before the retry — the storage event from
-  //      the winning tab has likely already written the fresh token.
+  //      token. Re-read REFRESH_KEY before each retry — the storage
+  //      event from the winning tab will have written the fresh token
+  //      well before our retry-delay elapses.
+  //
+  // Real "auth-rejected" outcomes (revoked / expired token) hit the
+  // same 401 twice and we only stretch the user's logout flow by 4.5s
+  // total — acceptable for a path that happens at most once a year
+  // (refresh TTL).
   let attempt = await refreshAttempt(refreshToken);
-
-  if (attempt.kind === "auth-rejected") {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    // Re-read storage in case another tab won the rotation race and
-    // already wrote a fresh refreshToken — retrying with a stale token
-    // would just confirm the false-positive logout.
+  const RETRY_DELAYS_MS = [1500, 3000];
+  for (const delayMs of RETRY_DELAYS_MS) {
+    if (attempt.kind !== "auth-rejected") break;
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
     const fresh = await AsyncStorage.getItem(REFRESH_KEY);
     attempt = await refreshAttempt(fresh ?? refreshToken);
   }
