@@ -427,6 +427,15 @@ export default function RequestDetail() {
   }, [authLoading, fetchAll]);
 
   const handleFilePress = useCallback(async (file: FileItem) => {
+    // Seeded files (and any external attachment) keep their original
+    // http(s) URL in the DB. Feeding /api/upload/signed-url an http URL
+    // produces a presign for 'p2ptax/https:/example.com/...' which MinIO
+    // rejects with NoSuchKey. Open external URLs directly; only presign
+    // genuine MinIO keys.
+    if (/^https?:\/\//i.test(file.url)) {
+      await Linking.openURL(file.url).catch(() => {});
+      return;
+    }
     try {
       const res = await api<{ url: string }>(
         `/api/upload/signed-url/${encodeURIComponent(file.url.replace(/^\/p2ptax\//, ""))}`

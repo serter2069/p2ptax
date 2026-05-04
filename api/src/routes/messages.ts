@@ -21,7 +21,10 @@ const router = Router();
 //   - Presigned URLs are absolute https://<minio-host>/... — they work
 //     identically on web, iOS, Android.
 //   - 1-hour TTL means thumbnails never go stale within a session.
-async function presignAttachmentUrl(storedUrl: string): Promise<string> {
+async function presignAttachmentUrl(
+  storedUrl: string,
+  filename?: string | null,
+): Promise<string> {
   if (storedUrl.startsWith("http")) return storedUrl;
   const withoutLeadingSlash = storedUrl.replace(/^\/+/, "");
   const prefix = `${MINIO_BUCKET}/`;
@@ -29,7 +32,22 @@ async function presignAttachmentUrl(storedUrl: string): Promise<string> {
     ? withoutLeadingSlash.slice(prefix.length)
     : withoutLeadingSlash;
   try {
-    return await minioClient.presignedGetObject(MINIO_BUCKET, key, 60 * 60);
+    // Force-download via Content-Disposition response header. Without it
+    // browsers preview supported types (PDFs, images) inline, which is
+    // useful for thumbs but the user expects a real download when they
+    // click a file in chat. Still safe — inline preview can use a
+    // separate signed URL that omits this header.
+    const respHeaders: Record<string, string> = {};
+    if (filename) {
+      const safe = filename.replace(/"/g, "");
+      respHeaders["response-content-disposition"] = `attachment; filename="${safe}"`;
+    }
+    return await minioClient.presignedGetObject(
+      MINIO_BUCKET,
+      key,
+      60 * 60,
+      respHeaders,
+    );
   } catch {
     return storedUrl; // graceful fallback — better a broken thumb than 500
   }
