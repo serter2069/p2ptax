@@ -395,7 +395,10 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
     const limitSetting = await prisma.setting.findUnique({
       where: { key: "requests_limit" },
     });
-    const requestsLimit = limitSetting ? parseInt(limitSetting.value, 10) : 5;
+    // Default raised from 5 → 20. A user can have several open issues
+    // legitimately (different ИФНС, different periods); 5 was bumping
+    // real flows. Still high enough to cap obvious abuse.
+    const requestsLimit = limitSetting ? parseInt(limitSetting.value, 10) : 20;
 
     const activeCount = await prisma.request.count({
       where: {
@@ -405,7 +408,9 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
     });
 
     if (activeCount >= requestsLimit) {
-      res.status(400).json({ error: "Request limit reached" });
+      res.status(400).json({
+        error: `У вас уже ${activeCount} активных запросов (лимит ${requestsLimit}). Закройте старые в «Мои запросы», чтобы создать новый.`,
+      });
       return;
     }
 
