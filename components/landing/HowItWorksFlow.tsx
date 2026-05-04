@@ -9,17 +9,20 @@ const STEPS = [
   {
     num: "1",
     title: "Создайте запрос",
-    body: "Выберите свою ИФНС, тип обращения и опишите ситуацию — 2–3 минуты",
+    body: "Выберите свою ИФНС, тип обращения и опишите ситуацию",
+    metric: "2–3 минуты · бесплатно",
   },
   {
     num: "2",
     title: "Получите отклик",
     body: "Специалисты, привязанные к вашей инспекции, напишут вам внутри платформы",
+    metric: "обычно в течение суток",
   },
   {
     num: "3",
     title: "Решите вопрос",
-    body: "Общение и сделка — напрямую со специалистом. Без подписок и скрытых платежей",
+    body: "Общение и сделка — напрямую со специалистом, цена и условия — между вами",
+    metric: "напрямую, без подписки",
   },
 ];
 
@@ -138,6 +141,25 @@ export default function HowItWorksFlow({ isDesktop }: HowItWorksFlowProps) {
                 >
                   {s.body}
                 </Text>
+                <View
+                  style={{
+                    marginTop: 10,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 999,
+                    backgroundColor: colors.accentSoft,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colors.accentSoftInk,
+                      fontSize: 12,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {s.metric}
+                  </Text>
+                </View>
               </View>
               {/* index used only for rendering order — unused variable noise */}
               {idx < 0 ? null : null}
