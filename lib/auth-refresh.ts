@@ -95,16 +95,25 @@ async function doRefresh(): Promise<RefreshResult> {
     return { ok: false, reason: "no-refresh-token" };
   }
 
-  // Retry an explicit 401 once after a 1.5s pause — the most common cause
-  // of a single transient 401 right after `pm2 restart p2ptax-api` is the
-  // jwt-verification middleware racing the api boot. A second attempt
-  // either succeeds or confirms the token is genuinely invalid. Without
-  // this retry, every routine api restart could log random users out.
+  // Retry an explicit 401 once after a 1.5s pause. There are two common
+  // causes for a transient 401 right after a successful state:
+  //
+  //   1) `pm2 restart p2ptax-api` — jwt-verification middleware races
+  //      the api boot. Same refresh token works on retry once the api
+  //      finishes initializing.
+  //   2) Cross-tab refresh race — another tab just rotated the refresh
+  //      token (delete + create new), so OUR copy in storage is stale.
+  //      Re-read REFRESH_KEY before the retry — the storage event from
+  //      the winning tab has likely already written the fresh token.
   let attempt = await refreshAttempt(refreshToken);
 
   if (attempt.kind === "auth-rejected") {
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    attempt = await refreshAttempt(refreshToken);
+    // Re-read storage in case another tab won the rotation race and
+    // already wrote a fresh refreshToken — retrying with a stale token
+    // would just confirm the false-positive logout.
+    const fresh = await AsyncStorage.getItem(REFRESH_KEY);
+    attempt = await refreshAttempt(fresh ?? refreshToken);
   }
 
   if (attempt.kind === "ok") {
