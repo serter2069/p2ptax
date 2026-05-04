@@ -187,7 +187,7 @@ export default function ChatComposer({
             sitting visibly below the paperclip + send icons. Here the only
             vertical padding is paddingVertical: (44 - 20) / 2 = 12, so
             the single-line text is centered against the 44px button
-            squares. textAlignVertical="top" keeps the cursor at the top
+            squares. textAlignVertical="center" keeps the cursor at the top
             once content wraps to multiple lines. */}
         <TextInput
           ref={captureTextareaRef as never}
