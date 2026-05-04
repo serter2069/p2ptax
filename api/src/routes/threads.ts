@@ -659,31 +659,44 @@ router.delete("/:id", async (req: Request, res: Response) => {
 router.post("/direct", async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { specialistId } = req.body as { specialistId?: string };
+    // Accept either {targetUserId} (new, role-agnostic) or {specialistId}
+    // (legacy; old clients still in cache). Treat them as the same field.
+    const body = req.body as { targetUserId?: string; specialistId?: string };
+    const targetUserId = body.targetUserId ?? body.specialistId;
 
-    if (!specialistId || typeof specialistId !== "string") {
-      res.status(400).json({ error: "specialistId is required" });
+    if (!targetUserId || typeof targetUserId !== "string") {
+      res.status(400).json({ error: "targetUserId is required" });
       return;
     }
 
-    if (userId === specialistId) {
+    if (userId === targetUserId) {
       res.status(400).json({ error: "Cannot start a thread with yourself" });
       return;
     }
 
-    const specialist = await prisma.user.findUnique({
-      where: { id: specialistId },
-      select: { id: true, isSpecialist: true },
+    const target = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, isBanned: true, deletedAt: true },
     });
 
-    if (!specialist || !specialist.isSpecialist) {
-      res.status(404).json({ error: "Specialist not found" });
+    if (!target || target.isBanned || target.deletedAt) {
+      res.status(404).json({ error: "User not found" });
       return;
     }
 
+    // DM is symmetric: A → B and B → A share one thread. The Thread schema
+    // labels columns clientId/specialistId for historical reasons, but for
+    // request-less DMs the labels are arbitrary — we just look up by either
+    // ordering and reuse whichever exists.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const existing = await (prisma.thread as any).findFirst({
-      where: { requestId: null, clientId: userId, specialistId },
+      where: {
+        requestId: null,
+        OR: [
+          { clientId: userId, specialistId: targetUserId },
+          { clientId: targetUserId, specialistId: userId },
+        ],
+      },
     }) as { id: string } | null;
 
     if (existing) {
@@ -693,7 +706,7 @@ router.post("/direct", async (req: Request, res: Response) => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const thread = await (prisma.thread as any).create({
-      data: { requestId: null, clientId: userId, specialistId },
+      data: { requestId: null, clientId: userId, specialistId: targetUserId },
     }) as { id: string };
 
     res.status(201).json({ threadId: thread.id, created: true });

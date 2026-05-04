@@ -90,12 +90,28 @@ export default function SpecialistPublicProfile() {
       .catch(() => {});
   }, [isAuthenticated, id]);
 
-  const handleWritePress = useCallback(() => {
-    const targetPath = `/requests/new?specialistId=${id}`;
+  const handleWritePress = useCallback(async () => {
+    // 'Написать' is a direct DM, available on any profile (specialist or
+    // client, open or closed). Server dedupes — calling this twice with
+    // the same target lands on the same thread. Falls back to /requests/new
+    // for the legacy 'send a request to this specialist' flow only when
+    // the target is a specialist with an open public profile, since there
+    // the request-creation form makes more sense than a bare chat box.
     if (!isAuthenticated) {
-      router.push(`/login?returnTo=${encodeURIComponent(targetPath)}` as never);
-    } else {
-      nav.any(targetPath);
+      router.push(`/login?returnTo=/profile/${id}` as never);
+      return;
+    }
+    if (!id) return;
+    try {
+      const res = await apiPost<{ threadId: string }>("/api/threads/direct", {
+        targetUserId: id,
+      });
+      nav.dynamic.thread(res.threadId);
+    } catch {
+      // Fall back to the request-creation flow if the DM endpoint is
+      // unavailable for some reason — keeps the button useful instead of
+      // silently doing nothing.
+      nav.any(`/requests/new?specialistId=${id}`);
     }
   }, [isAuthenticated, router, id, nav]);
 
@@ -369,8 +385,11 @@ export default function SpecialistPublicProfile() {
               {mainContent}
             </View>
 
-            {/* Right sidebar (desktop only) */}
-            {isDesktop && !isOwnProfile && !isSpecialist && !isClosed && (
+            {/* Right sidebar (desktop only). 'Написать' is now available
+                on every non-own profile — clients, specialists, even
+                closed accounts — because the underlying flow is a direct
+                DM (POST /api/threads/direct), not a request-creation. */}
+            {isDesktop && !isOwnProfile && (
               <View style={{ width: 320 }}>
                 <View style={{ position: "sticky" as "relative", top: 24 }}>
                   <SpecialistContactCTA
@@ -440,8 +459,9 @@ export default function SpecialistPublicProfile() {
         )}
       </ScrollView>
 
-      {/* Mobile sticky bottom CTA */}
-      {!isDesktop && !isOwnProfile && !isSpecialist && !isClosed && (
+      {/* Mobile sticky bottom CTA — same eligibility as the desktop
+          sidebar: any non-own profile, regardless of role / open state. */}
+      {!isDesktop && !isOwnProfile && (
         <SpecialistMobileBottomCTA
           savedBookmark={savedBookmark}
           onWritePress={handleWritePress}

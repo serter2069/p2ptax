@@ -79,15 +79,17 @@ export default function SpecialistConfirmWrite() {
     }
   }, [id]);
 
-  // Authed but wrong role: redirect to client-facing requests screen (#P1)
+  // Authed but wrong role: redirect to client-facing requests screen (#P1).
+  // (isAuthenticated comes from the top-level useAuth() — calling a hook
+  // inside an effect is a Rules-of-Hooks violation that React rejects with
+  // 'Invalid hook call'.)
   useEffect(() => {
-    const { isAuthenticated } = useAuth();
     if (ready && isAuthenticated && !isSpecialistUser) {
       nav.replaceRoutes.tabsMyRequests();
       return;
     }
     // Anon: useRequireAuth handles redirect to /login with returnTo
-  }, [ready, isSpecialistUser, nav]);
+  }, [ready, isAuthenticated, isSpecialistUser, nav]);
 
   useEffect(() => {
     if (ready && isSpecialistUser) {
