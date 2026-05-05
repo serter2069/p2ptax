@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,9 +7,17 @@ import {
   Linking,
   Platform,
 } from "react-native";
-import { CreditCard, Crown, AlertCircle, Trash2 } from "lucide-react-native";
+import {
+  CreditCard,
+  Crown,
+  AlertCircle,
+  Trash2,
+  Plus,
+  X,
+  CheckCircle2,
+  Clock,
+} from "lucide-react-native";
 import Card from "@/components/ui/Card";
-import StyledSwitch from "@/components/ui/StyledSwitch";
 import { dialog } from "@/lib/dialog";
 import { apiGet, apiPost, apiDelete } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -62,6 +70,11 @@ function formatRub(kopeks: number): string {
   return `${rub.toLocaleString("ru-RU", { maximumFractionDigits: 2 })} ₽`;
 }
 
+function formatActivatedAt(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "long" });
+}
+
 function txKindLabel(kind: string): string {
   switch (kind) {
     case "bind_first_charge":
@@ -80,15 +93,20 @@ function txKindLabel(kind: string): string {
 }
 
 /**
- * Billing tab — recurring autopay model. No top-ups, no balance.
+ * Billing tab — recurring autopay model.
  *
- *   - First VIP-FNS toggle: backend creates a redirect-flow ЮKassa
- *     payment for one day's price + save_payment_method:true. We
- *     send the user to confirmation_url; on return ?vip=ok we
- *     refetch /me until the webhook lands the saved card.
- *   - Subsequent toggles: server-to-server autopay using the saved
- *     card, instant. The toggle returns ok+charged immediately.
- *   - The cron handles daily renewals; nothing for the user to do.
+ * Two-list layout:
+ *   1. "Мои VIP-подписки" — what's active right now, with the price
+ *      and "Отключить" button. Empty-state explains how it works.
+ *   2. "Доступно для подключения" — FNS in the specialist's working
+ *      area with a configured price and no active subscription.
+ *      Each row has a single "Подключить за N ₽/мес" CTA — first
+ *      click redirects to ЮKassa to bind the card; subsequent rows
+ *      autopay instantly.
+ *
+ * Card details + monthly summary live in a top hero card so the
+ * user can see at a glance what they pay and which card it'll come
+ * from. History is collapsed at the bottom — most users won't open it.
  */
 export default function BillingTab({
   topupSuccess = false,
@@ -120,8 +138,8 @@ export default function BillingTab({
     void refresh();
   }, [refresh]);
 
-  // After ЮKassa redirects back with ?vip=ok the webhook may still
-  // be in flight. Refetch on mount + 4s later so the UI catches up.
+  // ЮKassa webhook may take a beat after redirect-back. Refetch on
+  // mount + 4s later so the FE catches up without a manual reload.
   useEffect(() => {
     if (!topupSuccess) return;
     const t = setTimeout(() => void refresh(), 4000);
@@ -136,27 +154,22 @@ export default function BillingTab({
     }
   }, []);
 
-  const handleToggle = useCallback(
-    async (item: FnsCatalogItem, next: boolean) => {
+  const handleSubscribe = useCallback(
+    async (item: FnsCatalogItem) => {
       if (item.monthlyPriceKopeks == null) return;
       setBusyFnsId(item.fnsId);
       try {
-        if (next) {
-          const res = await apiPost<VipFnsResponse>(
-            `/api/billing/vip-fns/${item.fnsId}`,
-            {}
-          );
-          if (res.needsRedirect && res.confirmationUrl) {
-            redirect(res.confirmationUrl);
-            return;
-          }
-          await refresh();
-        } else {
-          await apiDelete(`/api/billing/vip-fns/${item.fnsId}`);
-          await refresh();
+        const res = await apiPost<VipFnsResponse>(
+          `/api/billing/vip-fns/${item.fnsId}`,
+          {}
+        );
+        if (res.needsRedirect && res.confirmationUrl) {
+          redirect(res.confirmationUrl);
+          return;
         }
+        await refresh();
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "Не удалось изменить подписку";
+        const msg = e instanceof Error ? e.message : "Не удалось подключить VIP";
         await dialog.alert({ title: "Ошибка", message: msg });
       } finally {
         setBusyFnsId(null);
@@ -165,11 +178,35 @@ export default function BillingTab({
     [redirect, refresh]
   );
 
+  const handleUnsubscribe = useCallback(
+    async (item: FnsCatalogItem) => {
+      const confirmed = await dialog.confirm({
+        title: `Отключить VIP по «${item.fnsName}»?`,
+        message:
+          "Списания за эту ИФНС прекратятся со следующего дня. Карту это не отвяжет — другие подписки продолжат работать.",
+        confirmLabel: "Отключить",
+        destructive: true,
+      });
+      if (!confirmed) return;
+      setBusyFnsId(item.fnsId);
+      try {
+        await apiDelete(`/api/billing/vip-fns/${item.fnsId}`);
+        await refresh();
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Не удалось отключить VIP";
+        await dialog.alert({ title: "Ошибка", message: msg });
+      } finally {
+        setBusyFnsId(null);
+      }
+    },
+    [refresh]
+  );
+
   const handleUnbind = useCallback(async () => {
     const confirmed = await dialog.confirm({
       title: "Отвязать карту?",
       message:
-        "Это отключит все ваши VIP-подписки. Чтобы возобновить — придётся привязать карту заново.",
+        "Это отключит ВСЕ ваши VIP-подписки. Чтобы возобновить — придётся привязать карту заново через любую подписку.",
       confirmLabel: "Отвязать",
       destructive: true,
     });
@@ -186,6 +223,19 @@ export default function BillingTab({
     }
   }, [refresh]);
 
+  const { activeSubs, available, unavailable } = useMemo(() => {
+    if (!data) return { activeSubs: [], available: [], unavailable: [] };
+    const active: FnsCatalogItem[] = [];
+    const avail: FnsCatalogItem[] = [];
+    const unav: FnsCatalogItem[] = [];
+    for (const item of data.fnsCatalog) {
+      if (item.vipActive) active.push(item);
+      else if (item.monthlyPriceKopeks == null) unav.push(item);
+      else avail.push(item);
+    }
+    return { activeSubs: active, available: avail, unavailable: unav };
+  }, [data]);
+
   if (loading || !data) {
     return (
       <View className="items-center justify-center py-12">
@@ -198,65 +248,55 @@ export default function BillingTab({
     return (
       <Card>
         <Text className="text-base" style={{ color: colors.text }}>
-          Биллинг доступен только специалистам. Заполните профиль специалиста, чтобы получать запросы клиентов и подписаться на приоритетные уведомления по вашим ИФНС.
+          Биллинг доступен только специалистам. Заполните профиль специалиста, чтобы получать запросы клиентов и подключать приоритетные уведомления по вашим ИФНС.
         </Text>
       </Card>
     );
   }
 
-  const activeCount = data.fnsCatalog.filter((f) => f.vipActive).length;
-
   return (
     <View style={{ gap: 16 }}>
-      {/* CARD HEADER */}
+      {/* HERO — что такое VIP + что я уже плачу */}
       <Card>
-        <View className="flex-row items-center mb-3" style={{ gap: 8 }}>
-          <CreditCard size={18} color={colors.primary} />
-          <Text className="text-base font-semibold" style={{ color: colors.text }}>
-            Способ оплаты
+        <View className="flex-row items-center" style={{ gap: 8, marginBottom: 8 }}>
+          <Crown size={20} color={colors.primary} />
+          <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
+            VIP-уведомления по ИФНС
           </Text>
         </View>
+        <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20 }}>
+          Подключаете подписку на нужные ИФНС — приходит email сразу, как только клиент создаст запрос. Без VIP уведомление приходит с задержкой 5 минут. Списания каждый день автоматически с привязанной карты.
+        </Text>
 
-        {data.hasPaymentMethod ? (
-          <>
-            <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text, marginBottom: 4 }}>
-              {data.paymentMethodTitle ?? "Карта"}
+        {activeSubs.length > 0 && (
+          <View
+            style={{
+              marginTop: 16,
+              paddingTop: 16,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+              Сейчас вы платите
             </Text>
-            <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 12 }}>
-              Списания происходят раз в день автоматически. Включите подписку у нужной ИФНС ниже.
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Отвязать карту"
-              onPress={handleUnbind}
-              disabled={unbindBusy}
-              style={({ pressed }) => [
-                {
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  alignSelf: "flex-start",
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  backgroundColor: colors.white,
-                },
-                pressed && { opacity: 0.7 },
-                unbindBusy && { opacity: 0.5 },
-              ]}
+            <Text
+              style={{
+                fontSize: 28,
+                fontWeight: "700",
+                color: colors.text,
+                marginTop: 2,
+              }}
             >
-              <Trash2 size={14} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                {unbindBusy ? "..." : "Отвязать карту"}
+              {formatRub(data.monthlyEstimateKopeks)}
+              <Text style={{ fontSize: 14, fontWeight: "400", color: colors.textSecondary }}>
+                {" "}/ месяц
               </Text>
-            </Pressable>
-          </>
-        ) : (
-          <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-            Карта пока не привязана. Включите VIP у любой ИФНС ниже — сначала вы оплатите первый день и привяжете карту, дальше списания автоматические.
-          </Text>
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+              ≈ {formatRub(data.dailyChargeKopeks)} в день · {activeSubs.length} {activeSubs.length === 1 ? "подписка" : "подписки"}
+            </Text>
+          </View>
         )}
 
         {data.lastChargeFailedAt && (
@@ -268,12 +308,12 @@ export default function BillingTab({
               backgroundColor: colors.dangerSoft,
               padding: 10,
               borderRadius: 10,
-              marginTop: 12,
+              marginTop: 16,
             }}
           >
             <AlertCircle size={16} color={colors.error} />
             <Text style={{ color: colors.error, fontSize: 13, flex: 1 }}>
-              Последнее списание не прошло. Привяжите действующую карту, чтобы возобновить подписки.
+              Последнее списание не прошло. Все подписки отключены — обновите карту, чтобы возобновить.
             </Text>
           </View>
         )}
@@ -287,9 +327,10 @@ export default function BillingTab({
               backgroundColor: colors.limeSoft,
               padding: 10,
               borderRadius: 10,
-              marginTop: 12,
+              marginTop: 16,
             }}
           >
+            <CheckCircle2 size={16} color={colors.success} />
             <Text style={{ color: colors.success, fontSize: 13, flex: 1 }}>
               Платёж принят. Подписка активируется в течение нескольких секунд.
             </Text>
@@ -297,92 +338,247 @@ export default function BillingTab({
         )}
       </Card>
 
-      {/* SUMMARY */}
-      {activeCount > 0 && (
+      {/* CARD ON FILE */}
+      {data.hasPaymentMethod && (
         <Card>
-          <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-            Активных подписок: <Text style={{ color: colors.text, fontWeight: "600" }}>{activeCount}</Text>
-          </Text>
-          <Text style={{ fontSize: 28, fontWeight: "700", color: colors.text, marginTop: 4 }}>
-            {formatRub(data.dailyChargeKopeks)}
-            <Text style={{ fontSize: 14, fontWeight: "400", color: colors.textSecondary }}>
-              {" "}/ день
-            </Text>
-          </Text>
-          <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
-            ≈ {formatRub(data.monthlyEstimateKopeks)} в месяц
-          </Text>
+          <View className="flex-row items-center justify-between" style={{ gap: 12 }}>
+            <View className="flex-row items-center" style={{ gap: 10, flex: 1 }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  backgroundColor: colors.accentSoft,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <CreditCard size={18} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                  Карта для автосписаний
+                </Text>
+                <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text }}>
+                  {data.paymentMethodTitle ?? "Карта"}
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Отвязать карту"
+              onPress={handleUnbind}
+              disabled={unbindBusy}
+              style={({ pressed }) => [
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.white,
+                },
+                pressed && { opacity: 0.7 },
+                unbindBusy && { opacity: 0.5 },
+              ]}
+            >
+              <Trash2 size={14} color={colors.textSecondary} />
+              <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                {unbindBusy ? "..." : "Отвязать"}
+              </Text>
+            </Pressable>
+          </View>
         </Card>
       )}
 
-      {/* FNS LIST */}
-      <Card>
-        <View className="flex-row items-center mb-3" style={{ gap: 8 }}>
-          <Crown size={18} color={colors.primary} />
-          <Text className="text-base font-semibold" style={{ color: colors.text }}>
-            Приоритетные уведомления по ИФНС
+      {/* MY SUBSCRIPTIONS */}
+      {activeSubs.length > 0 && (
+        <Card>
+          <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
+            Мои подписки
           </Text>
-        </View>
-        <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 12 }}>
-          VIP получает email о новом запросе сразу, остальные специалисты — через 5 минут.
-          Стоимость списывается ежедневно из месячного тарифа ÷ 30.
-        </Text>
-        {data.fnsCatalog.length === 0 ? (
-          <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-            Сначала добавьте ИФНС в рабочую зону на вкладке «Профиль».
+          <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
+            За эти ИФНС вы получаете уведомления мгновенно
           </Text>
-        ) : (
-          data.fnsCatalog.map((item) => {
-            const noTariff = item.monthlyPriceKopeks == null;
+          {activeSubs.map((item, idx) => {
             const busy = busyFnsId === item.fnsId;
             return (
               <View
                 key={item.fnsId}
-                className="flex-row items-center py-3"
+                className="flex-row items-center"
                 style={{
                   gap: 12,
-                  borderTopWidth: 1,
+                  paddingTop: idx === 0 ? 0 : 12,
+                  paddingBottom: 12,
+                  borderTopWidth: idx === 0 ? 0 : 1,
                   borderTopColor: colors.border,
                 }}
               >
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text }} numberOfLines={1}>
+                <CheckCircle2 size={18} color={colors.success} style={{ flexShrink: 0 }} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={{ fontSize: 14, fontWeight: "600", color: colors.text }}
+                    numberOfLines={1}
+                  >
                     {item.fnsName}
                   </Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                    {item.cityName}
-                    {!noTariff && ` · ${formatRub(item.monthlyPriceKopeks!)}/мес`}
+                    {item.cityName} · {formatRub(item.monthlyPriceKopeks!)}/мес
+                    {item.activatedAt && ` · с ${formatActivatedAt(item.activatedAt)}`}
                   </Text>
                 </View>
-                {noTariff ? (
-                  <Text style={{ fontSize: 12, color: colors.textMuted }}>
-                    тариф не настроен
-                  </Text>
-                ) : busy ? (
+                {busy ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <StyledSwitch
-                    value={item.vipActive}
-                    onValueChange={(v) => handleToggle(item, v)}
-                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Отключить VIP по ${item.fnsName}`}
+                    onPress={() => handleUnsubscribe(item)}
+                    style={({ pressed }) => [
+                      {
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        backgroundColor: colors.white,
+                      },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <X size={12} color={colors.textSecondary} />
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                      Отключить
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            );
+          })}
+        </Card>
+      )}
+
+      {/* AVAILABLE TO SUBSCRIBE */}
+      <Card>
+        <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
+          Доступно для подключения
+        </Text>
+        <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
+          {data.hasPaymentMethod
+            ? "Подключение списывает первый день сразу с привязанной карты."
+            : "При первом подключении вы привяжете карту и оплатите первый день."}
+        </Text>
+
+        {available.length === 0 && unavailable.length === 0 && (
+          <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+            Сначала добавьте ИФНС в рабочую зону на вкладке «Профиль».
+          </Text>
+        )}
+
+        {available.length === 0 && unavailable.length === 0 ? null : available.length === 0 ? (
+          <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+            Все доступные ИФНС вашей рабочей зоны уже подключены.
+          </Text>
+        ) : (
+          available.map((item, idx) => {
+            const busy = busyFnsId === item.fnsId;
+            return (
+              <View
+                key={item.fnsId}
+                className="flex-row items-center"
+                style={{
+                  gap: 12,
+                  paddingTop: idx === 0 ? 0 : 12,
+                  paddingBottom: 12,
+                  borderTopWidth: idx === 0 ? 0 : 1,
+                  borderTopColor: colors.border,
+                }}
+              >
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={{ fontSize: 14, fontWeight: "600", color: colors.text }}
+                    numberOfLines={1}
+                  >
+                    {item.fnsName}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                    {item.cityName} · код {item.fnsCode}
+                  </Text>
+                </View>
+                {busy ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Подключить VIP по ${item.fnsName}`}
+                    onPress={() => handleSubscribe(item)}
+                    style={({ pressed }) => [
+                      {
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 10,
+                        backgroundColor: colors.primary,
+                      },
+                      pressed && { opacity: 0.85 },
+                    ]}
+                  >
+                    <Plus size={14} color={colors.white} />
+                    <Text style={{ color: colors.white, fontSize: 13, fontWeight: "600" }}>
+                      {formatRub(item.monthlyPriceKopeks!)}/мес
+                    </Text>
+                  </Pressable>
                 )}
               </View>
             );
           })
         )}
+
+        {unavailable.length > 0 && (
+          <View
+            style={{
+              marginTop: available.length > 0 ? 16 : 0,
+              paddingTop: available.length > 0 ? 12 : 0,
+              borderTopWidth: available.length > 0 ? 1 : 0,
+              borderTopColor: colors.border,
+            }}
+          >
+            <View
+              className="flex-row items-center"
+              style={{ gap: 6, marginBottom: 6 }}
+            >
+              <Clock size={12} color={colors.textMuted} />
+              <Text style={{ fontSize: 11, color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Тариф пока не настроен
+              </Text>
+            </View>
+            {unavailable.map((item) => (
+              <Text
+                key={item.fnsId}
+                style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}
+              >
+                {item.fnsName} · {item.cityName}
+              </Text>
+            ))}
+          </View>
+        )}
       </Card>
 
-      {/* TRANSACTION HISTORY */}
-      <Card>
-        <Text className="text-base font-semibold mb-3" style={{ color: colors.text }}>
-          История операций
-        </Text>
-        {!txs || txs.length === 0 ? (
-          <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-            Операций пока нет.
+      {/* HISTORY */}
+      {txs && txs.length > 0 && (
+        <Card>
+          <Text className="text-base font-semibold mb-3" style={{ color: colors.text }}>
+            История операций
           </Text>
-        ) : (
-          txs.map((t) => {
+          {txs.map((t) => {
             const isFailed = t.kind === "charge_failed";
             return (
               <View
@@ -415,9 +611,9 @@ export default function BillingTab({
                 )}
               </View>
             );
-          })
-        )}
-      </Card>
+          })}
+        </Card>
+      )}
     </View>
   );
 }
