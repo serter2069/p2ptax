@@ -1223,6 +1223,72 @@ const NOTIFICATION_SAMPLES = [
 // EMAIL (FEATURED_PINNED_EMAILS in routes/specialists.ts), not by UUID, so we
 // don't need to force any UUID here. Email is the deterministic key.
 
+// ─── ContactMethod seeding ─────────────────────────────────────────
+// Until this helper existed, only the legacy phone/telegram columns on
+// SpecialistProfile got populated — the actual ContactMethod rows that
+// /api/specialists/:id/contacts reads from were empty, so the
+// "Показать контакты" UI on /profile/:id had nothing to show even
+// after a fresh seed. This rebuilds the ContactMethod set per profile
+// from scratch (delete-and-recreate), so re-running the seeder always
+// produces a consistent state.
+//
+// Each specialist gets a deterministic mix that varies by index so the
+// catalog doesn't look monotonous — some have 3 channels, others have
+// 5–6. Caps at MAX_CONTACTS=6 to match the API constraint.
+async function seedContactMethodsForProfile(
+  profileId: string,
+  spec: { email: string; phone?: string; telegram?: string; firstName: string; lastName: string },
+  idx: number
+) {
+  await prisma.contactMethod.deleteMany({ where: { profileId } });
+
+  const slug = (spec.firstName + spec.lastName)
+    .toLowerCase()
+    .replace(/[^a-zа-я0-9]/gi, "")
+    .slice(0, 20);
+  const phoneDigits = spec.phone?.replace(/\D/g, "") ?? `7495${(1000000 + idx * 11317).toString().slice(0, 7)}`;
+
+  type Pending = { type: string; value: string; label?: string | null };
+  const pending: Pending[] = [];
+
+  // Always have email + phone — the two table-stakes channels.
+  pending.push({ type: "email", value: spec.email, label: "Рабочая почта" });
+  pending.push({
+    type: "phone",
+    value: spec.phone ?? `+7 (495) ${phoneDigits.slice(0, 3)}-${phoneDigits.slice(3, 5)}-${phoneDigits.slice(5, 7)}`,
+    label: "Мобильный",
+  });
+  // Telegram present on most rows in seed data — fall back to a
+  // username derived from the specialist's slug.
+  pending.push({
+    type: "telegram",
+    value: spec.telegram ?? `@${slug}_tax`,
+    label: null,
+  });
+
+  // Sprinkle the remaining channel types across specialists so the UI
+  // shows realistic variety. Modulo offsets give different overlaps,
+  // capped to MAX_CONTACTS=6.
+  if (idx % 2 === 0) pending.push({ type: "whatsapp", value: phoneDigits, label: "WhatsApp" });
+  if (idx % 3 === 0) pending.push({ type: "max", value: `@${slug}`, label: "MAX" });
+  if (idx % 4 === 0) pending.push({ type: "website", value: `https://${slug}.ru`, label: "Сайт" });
+  if (idx % 5 === 0) pending.push({ type: "vk", value: `https://vk.com/${slug}`, label: null });
+
+  const capped = pending.slice(0, 6);
+  for (let order = 0; order < capped.length; order++) {
+    const c = capped[order];
+    await prisma.contactMethod.create({
+      data: {
+        profileId,
+        type: c.type,
+        value: c.value,
+        label: c.label ?? null,
+        order,
+      },
+    });
+  }
+}
+
 // ─── Main ──────────────────────────────────────────────────────────
 
 async function main() {
@@ -1262,7 +1328,8 @@ async function main() {
   const nowSeed = new Date();
   const specialistUsers: Array<{ id: string; email: string }> = [];
   let specialistCount = 0;
-  for (const spec of SPECIALISTS) {
+  for (let sIdx = 0; sIdx < SPECIALISTS.length; sIdx++) {
+    const spec = SPECIALISTS[sIdx];
     const user = await prisma.user.upsert({
       where: { email: spec.email },
       update: {
@@ -1288,7 +1355,7 @@ async function main() {
       },
     });
 
-    await prisma.specialistProfile.upsert({
+    const profile = await prisma.specialistProfile.upsert({
       where: { userId: user.id },
       update: {
         description: spec.description,
@@ -1315,7 +1382,10 @@ async function main() {
         specializations: spec.specializations ?? undefined,
         certifications: spec.certifications ?? undefined,
       },
+      select: { id: true },
     });
+
+    await seedContactMethodsForProfile(profile.id, spec, sIdx);
 
     for (const fnsCode of spec.fnsCodes) {
       const fns = fnsMap[fnsCode];
@@ -1583,7 +1653,11 @@ async function main() {
   // ─── Issue #1625: Extra specialists (+25) ────────────────────────
   const extraSpecialistUsers: Array<{ id: string; email: string }> = [];
   let extraSpecialistCount = 0;
-  for (const spec of EXTRA_SPECIALISTS) {
+  for (let eIdx = 0; eIdx < EXTRA_SPECIALISTS.length; eIdx++) {
+    const spec = EXTRA_SPECIALISTS[eIdx];
+    // Offset by SPECIALISTS.length so the modulo-based contact mix
+    // produces a different pattern across the two cohorts.
+    const contactIdx = SPECIALISTS.length + eIdx;
     const user = await prisma.user.upsert({
       where: { email: spec.email },
       update: {
@@ -1609,7 +1683,7 @@ async function main() {
       },
     });
 
-    await prisma.specialistProfile.upsert({
+    const profile = await prisma.specialistProfile.upsert({
       where: { userId: user.id },
       update: {
         description: spec.description,
@@ -1636,7 +1710,10 @@ async function main() {
         specializations: spec.specializations ?? undefined,
         certifications: spec.certifications ?? undefined,
       },
+      select: { id: true },
     });
+
+    await seedContactMethodsForProfile(profile.id, spec, contactIdx);
 
     for (const fnsCode of spec.fnsCodes) {
       const fns = fnsMap[fnsCode];
