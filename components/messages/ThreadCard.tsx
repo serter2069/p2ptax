@@ -18,6 +18,10 @@ export interface ThreadCardItem {
     firstName: string | null;
     lastName: string | null;
     avatarUrl: string | null;
+    /** Small WebP thumbnail companion served by the API for ≤64px
+     *  avatar slots — see Avatar component. Null for legacy / external
+     *  avatars where no thumb exists. */
+    avatarThumbUrl?: string | null;
     isDeleted?: boolean;
     // TODO: populate from API once lastSeenAt is tracked on User model
     isOnline?: boolean;
@@ -118,6 +122,7 @@ export default function ThreadCard({
           <Avatar
             name={name}
             imageUrl={item.otherUser.avatarUrl ?? undefined}
+            thumbUrl={item.otherUser.avatarThumbUrl}
             size="md"
           />
           {item.otherUser.isOnline && (

@@ -6,6 +6,13 @@ export type AvatarSize = "sm" | "md" | "lg" | "xl" | "xxl" | number;
 export interface AvatarProps {
   name: string;
   imageUrl?: string;
+  /** Optional small WebP thumbnail companion (≤80px) generated server-
+   *  side. When the rendered avatar is small (≤lg, i.e. ≤64px), the
+   *  thumb is preferred over the full 256px JPEG so a 32px slot
+   *  doesn't pull ~20KB through the wire when ~3KB would do. Falls
+   *  back to imageUrl when null (legacy uploads, external pravatar,
+   *  no avatar set). */
+  thumbUrl?: string | null;
   size?: AvatarSize;
   /** Override background tint when no imageUrl. Defaults to accentSoft. */
   tint?: string;
@@ -51,6 +58,7 @@ function getInitials(name: string): string {
 export default function Avatar({
   name,
   imageUrl,
+  thumbUrl,
   size = "md",
   tint,
   inkColor,
@@ -60,7 +68,13 @@ export default function Avatar({
   const bg = tint ?? colors.primary;
   const ink = inkColor ?? colors.white;
 
-  if (imageUrl) {
+  // For small/medium avatars (≤64px) prefer the WebP thumbnail when
+  // the server has one — a thread-card row at 40px doesn't need the
+  // full 256×256 JPEG. Past lg (96px+) we keep the full original so
+  // the hero/profile-card avatar stays sharp.
+  const effectiveUrl = thumbUrl && wh <= 64 ? thumbUrl : imageUrl;
+
+  if (effectiveUrl) {
     // Single rounded wrapper with overflow:hidden does the clipping; the
     // inner <Image> fills it (no secondary borderRadius needed). The
     // previous double-radius approach with a 2px border was eating the
@@ -77,7 +91,7 @@ export default function Avatar({
         }}
       >
         <Image
-          source={{ uri: imageUrl }}
+          source={{ uri: effectiveUrl }}
           accessibilityLabel={name}
           style={{ width: wh, height: wh }}
           {...(Platform.OS === "web" ? ({ loading: "lazy" } as object) : {})}

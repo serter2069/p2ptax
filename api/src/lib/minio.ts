@@ -123,3 +123,48 @@ export async function presignReadStable(key: string): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * Presign the optional small WebP thumbnail companion for an avatar
+ * key. Convention: thumb lives at `<key>.thumb.webp` next to the
+ * original (generated server-side at upload time). Returns null when
+ * the avatar key is falsy, points at an external URL (pravatar/etc),
+ * or the thumbnail object is not present in MinIO — callers fall
+ * back to the full avatar in those cases.
+ */
+export async function presignAvatarThumbUrl(
+  avatarKey: string | null | undefined
+): Promise<string | null> {
+  if (!avatarKey) return null;
+  if (avatarKey.startsWith("http")) return null;
+  const thumbKey = `${avatarKey}.thumb.webp`;
+  try {
+    const stat = await minioClient.statObject(MINIO_BUCKET, thumbKey);
+    if (!stat) return null;
+    return await minioClient.presignedGetObject(
+      MINIO_BUCKET,
+      thumbKey,
+      PRESIGN_EXPIRY_SECONDS,
+      undefined,
+      startOfHour()
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Convenience: presign both the full and the thumbnail variant of an
+ * avatar in parallel and return them as { avatarUrl, avatarThumbUrl }.
+ * Either may be null — callers should fall back to the full URL when
+ * thumb is missing (legacy uploads, external pravatar URLs).
+ */
+export async function presignAvatarPair(
+  avatarKey: string | null | undefined
+): Promise<{ avatarUrl: string | null; avatarThumbUrl: string | null }> {
+  const [avatarUrl, avatarThumbUrl] = await Promise.all([
+    presignAvatarUrl(avatarKey),
+    presignAvatarThumbUrl(avatarKey),
+  ]);
+  return { avatarUrl, avatarThumbUrl };
+}

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import * as Minio from "minio";
 import { prisma } from "../lib/prisma";
-import { minioClient, MINIO_BUCKET } from "../lib/minio";
+import { minioClient, MINIO_BUCKET, presignAvatarPair } from "../lib/minio";
 import { authMiddleware } from "../middleware/auth";
 import { sendNotification } from "../notifications/notification.service";
 
@@ -448,6 +448,14 @@ router.get("/my", async (req: Request, res: Response) => {
       );
 
       const masked = maskClosedParty(otherUser);
+      // Presign both the full avatar AND the small WebP thumbnail
+      // companion. The inbox renders the avatar at 40×40 in every
+      // ThreadCard — without the thumbnail variant the browser was
+      // pulling the 256×256 jpeg through that slot for every row,
+      // which Сергей felt as "аватарка долго грузится". When the
+      // user has no custom avatar (masked or null), both come back
+      // null and the FE falls back to initials.
+      const { avatarUrl, avatarThumbUrl } = await presignAvatarPair(masked.avatarUrl);
       return {
         id: thread.id,
         requestId: thread.requestId,
@@ -457,7 +465,8 @@ router.get("/my", async (req: Request, res: Response) => {
           id: otherUser.id,
           firstName: masked.firstName,
           lastName: masked.lastName,
-          avatarUrl: masked.avatarUrl,
+          avatarUrl,
+          avatarThumbUrl,
           isClosed: masked.isClosed,
           isDeleted: otherUser.deletedAt !== null,
           isOnline: computeIsOnline(otherUser.lastSeenAt),

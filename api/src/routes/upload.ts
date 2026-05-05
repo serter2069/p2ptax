@@ -153,6 +153,22 @@ router.post("/avatar", authMiddleware, uploadRateLimiter, avatarUpload.single("f
 
     await minioClient.putObject(MINIO_BUCKET, key, resized, info.size, {
       "Content-Type": "image/jpeg",
+      "Cache-Control": "public, max-age=31536000, immutable",
+    });
+
+    // Generate a small WebP thumbnail companion (80×80, q60) for places
+    // where the avatar renders tiny — thread cards, message bubbles,
+    // catalog lists. Without this every 32px slot still forces the
+    // browser to fetch the 256×256 jpeg, which is ~10× more bytes than
+    // it needs to be. Stored next to the original at <key>.thumb.webp.
+    const thumbBuffer = await sharp(req.file.buffer)
+      .resize(80, 80, { fit: "cover", position: "attention" })
+      .webp({ quality: 60 })
+      .toBuffer();
+    const thumbKey = `${key}.thumb.webp`;
+    await minioClient.putObject(MINIO_BUCKET, thumbKey, thumbBuffer, thumbBuffer.length, {
+      "Content-Type": "image/webp",
+      "Cache-Control": "public, max-age=31536000, immutable",
     });
 
     // Save the storage key in user.avatarUrl so URLs never expire in the DB.
