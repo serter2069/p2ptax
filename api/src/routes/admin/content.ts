@@ -160,6 +160,9 @@ router.get("/ifns", async (req: Request, res: Response) => {
         orderBy: [{ city: { name: "asc" } }, { name: "asc" }],
         skip,
         take: limit,
+        // description + vipMonthlyPriceKopeks land here so the admin
+        // editor can show + write them; the public catalog has its
+        // own narrower select clauses.
         include: { city: { select: { id: true, name: true, slug: true } } },
       }),
       prisma.fnsOffice.count({ where }),
@@ -216,12 +219,22 @@ router.post("/ifns", adminWriteRateLimiter, async (req: Request, res: Response) 
 router.patch("/ifns/:id", async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
-    const { name, code, cityId, address, searchAliases } = req.body as {
+    const {
+      name,
+      code,
+      cityId,
+      address,
+      searchAliases,
+      description,
+      vipMonthlyPriceKopeks,
+    } = req.body as {
       name?: string;
       code?: string;
       cityId?: string;
       address?: string;
       searchAliases?: string;
+      description?: string | null;
+      vipMonthlyPriceKopeks?: number | null;
     };
     const data: Prisma.FnsOfficeUpdateInput = {};
     if (name !== undefined) data.name = name;
@@ -229,6 +242,25 @@ router.patch("/ifns/:id", async (req: Request, res: Response) => {
     if (cityId !== undefined) data.city = { connect: { id: cityId } };
     if (address !== undefined) data.address = address;
     if (searchAliases !== undefined) data.searchAliases = searchAliases;
+    if (description !== undefined) data.description = description;
+    // Explicit null lets an admin clear the price (i.e. take VIP off
+    // the menu for this office). Numbers are validated as positive
+    // integer kopeks; min 1 ₽ / month, max 1 000 000 ₽ / month.
+    if (vipMonthlyPriceKopeks !== undefined) {
+      if (vipMonthlyPriceKopeks === null) {
+        data.vipMonthlyPriceKopeks = null;
+      } else if (
+        Number.isFinite(vipMonthlyPriceKopeks) &&
+        Number.isInteger(vipMonthlyPriceKopeks) &&
+        vipMonthlyPriceKopeks >= 100 &&
+        vipMonthlyPriceKopeks <= 100_000_000
+      ) {
+        data.vipMonthlyPriceKopeks = vipMonthlyPriceKopeks;
+      } else {
+        res.status(400).json({ error: "vipMonthlyPriceKopeks must be 100…100 000 000 or null" });
+        return;
+      }
+    }
 
     const office = await prisma.fnsOffice.update({
       where: { id },

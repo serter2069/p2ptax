@@ -31,6 +31,7 @@ import { colors } from "@/lib/theme";
 import { Z } from "@/lib/zIndex";
 import { useSettingsForm, type AutosaveStatus } from "@/lib/useSettingsForm";
 import ProfileTab from "@/components/settings/ProfileTab";
+import BillingTab from "@/components/settings/BillingTab";
 import SpecialistTab from "@/components/settings/SpecialistTab";
 import InlineWorkArea from "@/components/settings/InlineWorkArea";
 import { dialog } from "@/lib/dialog";
@@ -53,7 +54,7 @@ import { useNoIndex } from "@/components/seo/NoIndex";
  * 'Профиль / Специалист' tab to edit identity / role.
  */
 
-type Tab = "profile" | "account";
+type Tab = "profile" | "account" | "billing";
 
 function formatRelativeTime(date: Date | null, now: number): string {
   if (!date) return "";
@@ -138,13 +139,15 @@ function FirstTimeBanner({ onDismiss }: FirstTimeBannerProps) {
 interface TabStripProps {
   active: Tab;
   profileLabel: string;
+  showBilling: boolean;
   onChange: (t: Tab) => void;
 }
 
-function TabStrip({ active, profileLabel, onChange }: TabStripProps) {
+function TabStrip({ active, profileLabel, showBilling, onChange }: TabStripProps) {
   const items: { key: Tab; label: string }[] = [
     { key: "account", label: "Аккаунт" },
     { key: "profile", label: profileLabel },
+    ...(showBilling ? [{ key: "billing" as const, label: "Биллинг" }] : []),
   ];
   return (
     <View
@@ -184,6 +187,7 @@ export default function UnifiedProfile() {
     firstTime?: string;
     focus?: string;
     tab?: string;
+    topup?: string;
   }>();
   const { ready } = useRequireAuth();
   const { width } = useWindowDimensions();
@@ -204,7 +208,9 @@ export default function UnifiedProfile() {
   const tabFromQuery: Tab = useMemo(() => {
     const t = params.tab;
     const v = typeof t === "string" ? t : Array.isArray(t) ? t[0] : undefined;
-    return v === "profile" ? "profile" : "account";
+    if (v === "profile") return "profile";
+    if (v === "billing") return "billing";
+    return "account";
   }, [params.tab]);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -372,6 +378,7 @@ export default function UnifiedProfile() {
           <TabStrip
             active={tabFromQuery}
             profileLabel={profileTabLabel}
+            showBilling={isSpecialistUser}
             onChange={setTab}
           />
 
@@ -548,6 +555,11 @@ export default function UnifiedProfile() {
                 </>
               )}
             </>
+          )}
+
+          {/* === BILLING TAB ====================================== */}
+          {tabFromQuery === "billing" && isSpecialistUser && (
+            <BillingTab topupSuccess={params.topup === "ok"} />
           )}
 
           {/* === ACCOUNT TAB ====================================== */}

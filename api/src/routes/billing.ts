@@ -29,35 +29,41 @@ function dailyChargeKopeks(monthlyKopeks: number): number {
   return Math.ceil(monthlyKopeks / 30);
 }
 
-// GET /api/billing/balance — current balance + active VIP subscriptions
-// + today's burn rate. Returned both in kopeks (for math) and a human
-// rouble string the FE can render directly.
+// GET /api/billing/balance — current balance + the specialist's full
+// FNS catalog (each row carries a `vipActive` flag + price), plus
+// today's burn rate. The FE renders this as a single page — wallet
+// header on top, list of FNS-toggle rows below. Returning everything
+// in one shape avoids two round-trips on every render.
 router.get("/balance", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const [user, vipFns] = await Promise.all([
+    const [user, specialistFns, vipRows] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        select: { vipBalanceKopeks: true },
+        select: { vipBalanceKopeks: true, isSpecialist: true },
       }),
-      prisma.specialistVipFns.findMany({
+      // The specialist's working area — every FNS they cover, with
+      // its current VIP price. Sorted by city then FNS so the list
+      // reads top-down geographically.
+      prisma.specialistFns.findMany({
         where: { specialistId: userId },
         select: {
-          id: true,
           fnsId: true,
-          activatedAt: true,
           fns: {
             select: {
               id: true,
               name: true,
               code: true,
-              cityId: true,
               vipMonthlyPriceKopeks: true,
-              city: { select: { name: true } },
+              city: { select: { id: true, name: true } },
             },
           },
         },
-        orderBy: { activatedAt: "desc" },
+        orderBy: [{ fns: { city: { name: "asc" } } }, { fns: { name: "asc" } }],
+      }),
+      prisma.specialistVipFns.findMany({
+        where: { specialistId: userId },
+        select: { fnsId: true, activatedAt: true },
       }),
     ]);
 
@@ -66,32 +72,43 @@ router.get("/balance", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    const dailyTotalKopeks = vipFns.reduce(
-      (sum, v) => sum + dailyChargeKopeks(v.fns.vipMonthlyPriceKopeks ?? 0),
+    const vipMap = new Map(vipRows.map((v) => [v.fnsId, v.activatedAt]));
+    const fnsCatalog = specialistFns.map((sf) => {
+      const monthly = sf.fns.vipMonthlyPriceKopeks;
+      return {
+        fnsId: sf.fns.id,
+        fnsName: sf.fns.name,
+        fnsCode: sf.fns.code,
+        cityId: sf.fns.city.id,
+        cityName: sf.fns.city.name,
+        // null = VIP isn't available on this office (admin hasn't set
+        // a price). FE renders the row read-only with "Тариф ещё не
+        // настроен" instead of a toggle.
+        monthlyPriceKopeks: monthly,
+        monthlyPriceRub: monthly == null ? null : monthly / KOPEKS_IN_RUB,
+        dailyChargeKopeks: monthly == null ? null : dailyChargeKopeks(monthly),
+        vipActive: vipMap.has(sf.fns.id),
+        activatedAt: vipMap.get(sf.fns.id) ?? null,
+      };
+    });
+
+    const dailyTotalKopeks = fnsCatalog.reduce(
+      (sum, f) => sum + (f.vipActive ? f.dailyChargeKopeks ?? 0 : 0),
       0
     );
 
     res.json({
+      isSpecialist: user.isSpecialist,
       balanceKopeks: user.vipBalanceKopeks,
       balanceRub: user.vipBalanceKopeks / KOPEKS_IN_RUB,
       dailyChargeKopeks: dailyTotalKopeks,
       dailyChargeRub: dailyTotalKopeks / KOPEKS_IN_RUB,
-      // Days the wallet covers at the current burn rate. Infinity when
-      // nothing is active — surfaced as null so the FE can render "—".
+      // Days the wallet covers at the current burn rate. null when
+      // nothing is active — FE renders "—".
       daysCovered: dailyTotalKopeks > 0
         ? Math.floor(user.vipBalanceKopeks / dailyTotalKopeks)
         : null,
-      activeVipFns: vipFns.map((v) => ({
-        id: v.id,
-        fnsId: v.fnsId,
-        fnsName: v.fns.name,
-        fnsCode: v.fns.code,
-        cityName: v.fns.city.name,
-        activatedAt: v.activatedAt,
-        monthlyPriceKopeks: v.fns.vipMonthlyPriceKopeks ?? 0,
-        monthlyPriceRub: (v.fns.vipMonthlyPriceKopeks ?? 0) / KOPEKS_IN_RUB,
-        dailyChargeKopeks: dailyChargeKopeks(v.fns.vipMonthlyPriceKopeks ?? 0),
-      })),
+      fnsCatalog,
     });
   } catch (error) {
     console.error("billing/balance error:", error);
