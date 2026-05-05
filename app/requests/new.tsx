@@ -308,6 +308,7 @@ export default function CreateRequest() {
         confirmLabel: "Найти специалистов",
         cancelLabel: "Перейти к запросу",
         tone: "success",
+        confirmIcon: "search",
       });
       if (findThem) {
         goToSpecialists();

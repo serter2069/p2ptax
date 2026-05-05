@@ -73,18 +73,18 @@ export default function ThreadCard({
       style={({ pressed }) => [
         {
           backgroundColor: selected
-            ? colors.accentTintShape
+            ? overlay.accent20
             : hasUnread
               ? overlay.accent10
               : colors.surface,
           minHeight: 72,
-          // Open-row affordance was too subtle (just a pale accentSoft tint
-          // + 4px left bar) — Сергей couldn't tell which thread the right
-          // pane was showing. Now: a denser accentTintShape background,
-          // a thicker 5px primary-color left bar, and bold name (handled
-          // in the row content via a `selected` flag). The unread state
-          // keeps its lighter overlay so 'unread vs open' is still
-          // distinguishable.
+          // Selected affordance: 20% primary tint + 5px left bar.
+          // The previous accentTintShape (#dce6fa) was barely darker
+          // than the 10% unread tint, so selected/unread/idle were
+          // nearly indistinguishable. 20% alpha doubles the visual
+          // weight of the open row while staying inside the brand
+          // palette — Сергей confirmed font/typography should NOT
+          // change between states (only the bg).
           borderLeftWidth: selected ? 5 : hasUnread ? 3 : 0,
           borderLeftColor: selected
             ? colors.primary

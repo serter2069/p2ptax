@@ -244,7 +244,7 @@ export default function InlineChatView({ threadId, onThreadRead }: InlineChatVie
   const canViewSpecialistProfile = thread && myId && thread.clientId === myId;
 
   return (
-    <View className="flex-1 bg-white">
+    <View ref={setChatRootRef as never} className="flex-1 bg-white">
       <ChatThreadHeader
         isDesktop={isDesktop}
         otherUser={otherUser}
@@ -293,15 +293,14 @@ export default function InlineChatView({ threadId, onThreadRead }: InlineChatVie
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={0}
       >
-        {/* chatRootRef sits on a plain View wrapper, NOT on
-            KeyboardAvoidingView. RN-Web's KAV ref does not reliably
-            return a DOM node with addEventListener, which silently
-            broke whole-chat drag&drop (FileUploadZone bailed early on
-            `typeof node.addEventListener !== "function"`). A regular
-            <View> is just a forwardRef'd <div> on web, so listeners
-            attach correctly and a file dropped anywhere over the chat
-            (messages list + composer) is captured. */}
-        <View ref={setChatRootRef as never} style={{ flex: 1 }}>
+        {/* chatRootRef now sits on the OUTERMOST View of the chat
+            view (above the header bar), not the KAV inner. This way
+            a file dragged anywhere over the chat — including the
+            header strip and the "По запросу: …" banner — is captured
+            as a drop target. The earlier inner-View placement only
+            covered the messages list + composer, leaving the header
+            bands above as dead drop space. RN-Web's KAV ref is still
+            avoided because it doesn't reliably return a DOM node. */}
         <FlatList
           ref={flatListRef}
           data={sortedMessages}
@@ -391,7 +390,6 @@ export default function InlineChatView({ threadId, onThreadRead }: InlineChatVie
             authToken={token}
           />
         )}
-        </View>
       </KeyboardAvoidingView>
 
       <Lightbox

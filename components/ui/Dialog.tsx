@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
 import { Modal, View, Text, Pressable, Platform } from "react-native";
-import { CheckCircle2, AlertTriangle } from "lucide-react-native";
+import {
+  CheckCircle2, AlertTriangle, Search, Send, Plus, Check, ExternalLink,
+  type LucideIcon,
+} from "lucide-react-native";
 import { colors } from "@/lib/theme";
 import { dialog, type DialogRequest } from "@/lib/dialog";
+
+const CONFIRM_ICON_MAP: Record<NonNullable<DialogRequest["confirmIcon"]>, LucideIcon> = {
+  search: Search,
+  send: Send,
+  plus: Plus,
+  check: Check,
+  external: ExternalLink,
+};
 
 /**
  * DialogHost — global popup renderer. Mount once in app/_layout.tsx and call
@@ -85,7 +96,11 @@ export default function DialogHost() {
                     ? "#dcfce7"
                     : "#fef3c7",
                 marginBottom: 12,
-                alignSelf: "flex-start",
+                // Center the tone icon (success/warning) above the
+                // dialog content. Earlier `flex-start` left it pinned
+                // to the left edge, which read like a stray badge —
+                // not the centerpiece of a celebratory popup.
+                alignSelf: "center",
               }}
             >
               {current.tone === "success" ? (
@@ -103,6 +118,13 @@ export default function DialogHost() {
                 color: colors.text,
                 marginBottom: current.message ? 8 : 16,
                 lineHeight: 24,
+                // When the dialog has a tone icon (and therefore lives
+                // in centered-celebration mode), title + message
+                // follow the icon's center alignment so the whole
+                // composition reads as a single column. Without it the
+                // icon sits centered while the text starts at the left
+                // edge — visually disconnected.
+                textAlign: current.tone ? "center" : "left",
               }}
             >
               {current.title}
@@ -115,6 +137,7 @@ export default function DialogHost() {
                 color: colors.textSecondary,
                 lineHeight: 20,
                 marginBottom: 20,
+                textAlign: current.tone ? "center" : "left",
               }}
             >
               {current.message}
@@ -130,6 +153,9 @@ export default function DialogHost() {
             const cancelLabel = current.cancelLabel ?? "Отмена";
             const confirmLabel = current.confirmLabel ?? (isConfirm ? "Подтвердить" : "OK");
             const stack = isConfirm && cancelLabel.length + confirmLabel.length > 24;
+            const ConfirmIcon = current.confirmIcon
+              ? CONFIRM_ICON_MAP[current.confirmIcon]
+              : null;
             const PrimaryBtn = (
               <Pressable
                 key="primary"
@@ -141,9 +167,13 @@ export default function DialogHost() {
                   paddingVertical: 12,
                   borderRadius: 12,
                   backgroundColor: destructive ? colors.error : colors.primary,
+                  flexDirection: "row",
                   alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
                 }}
               >
+                {ConfirmIcon ? <ConfirmIcon size={16} color={colors.white} /> : null}
                 <Text style={{ fontSize: 15, color: colors.white, fontWeight: "600" }}>
                   {confirmLabel}
                 </Text>

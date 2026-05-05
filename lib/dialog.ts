@@ -28,6 +28,10 @@ export interface DialogOptions {
   /** Optional accent — renders an icon at the top of the dialog.
    *  'success' → green CheckCircle, 'warning' → orange AlertTriangle. */
   tone?: "success" | "warning";
+  /** Optional icon name placed BEFORE the primary-button label.
+   *  String-keyed (not a LucideIcon component) so this module stays
+   *  free of UI deps; DialogHost owns the keyword → component map. */
+  confirmIcon?: "search" | "send" | "plus" | "check" | "external";
 }
 
 export interface DialogRequest extends DialogOptions {
