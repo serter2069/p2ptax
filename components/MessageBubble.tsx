@@ -19,6 +19,9 @@ function resolveAttachmentUrl(url: string): string {
 interface FileAttachment {
   id: string;
   url: string;
+  /** Server-generated WebP preview, used by image bubbles for the
+   *  200×200 slot. Falls back to `url` when null (legacy files). */
+  thumbUrl?: string | null;
   filename: string;
   size: number;
   mimeType: string;
@@ -114,20 +117,25 @@ export default function MessageBubble({
             : { borderBottomLeftRadius: 4 }),
         }}
       >
-        {/* Image thumbnails */}
+        {/* Image thumbnails — server-generated WebP preview when available,
+            full-size original only on lightbox click. Pre-thumbnail files
+            still work because thumbUrl falls back to the original url. */}
         {imageFiles.map((img) => {
-          const resolvedUri = resolveAttachmentUrl(img.url);
+          const fullUri = resolveAttachmentUrl(img.url);
+          const previewUri = img.thumbUrl
+            ? resolveAttachmentUrl(img.thumbUrl)
+            : fullUri;
           return (
             <Pressable
               accessibilityRole="button"
               key={img.id}
               accessibilityLabel={`Изображение ${img.filename}. Нажмите для просмотра.`}
-              onPress={() => handleImagePress(resolvedUri, img.filename)}
+              onPress={() => handleImagePress(fullUri, img.filename)}
               className="mb-2"
               style={({ pressed }) => [pressed && { opacity: 0.85 }]}
             >
               <Image
-                source={{ uri: resolvedUri }}
+                source={{ uri: previewUri }}
                 style={{ width: 200, height: 200, borderRadius: 12 }}
                 resizeMode="cover"
                 accessibilityLabel={img.filename}

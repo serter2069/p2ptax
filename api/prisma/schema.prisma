@@ -212,6 +212,7 @@ model Service {
   name String @unique
 
   specialistServices SpecialistService[]
+  requests           Request[]
 
   @@map("services")
 }
@@ -284,6 +285,11 @@ model File {
   entityType String   @map("entity_type")
   entityId   String   @map("entity_id")
   url        String
+  // Optional small WebP preview generated server-side at upload time.
+  // Lets a 200×200 chat-bubble slot avoid pulling a multi-MB original
+  // through the wire. Older rows (uploaded before thumbnails existed)
+  // keep this null and fall back to `url`.
+  thumbUrl   String?  @map("thumb_url")
   filename   String
   size       Int
   mimeType   String   @map("mime_type")

@@ -11,20 +11,28 @@ import { minioClient, MINIO_BUCKET, presignAvatarUrl } from "../lib/minio";
 
 const router = Router();
 
-// 1-hour presigned URL so the <Image> component (web + native) can load
-// attachments without auth headers and without relying on the
-// API-relative `/p2ptax/<key>` proxy. Why presign on every fetch:
+// Long-lived presigned URL (7 days) signed with a top-of-hour date so
+// the URL is stable for ~60 minutes — the browser can actually cache
+// the response across renders / poll cycles. Without the stable date,
+// every /api/messages refresh produced a different X-Amz-Date /
+// X-Amz-Signature pair, so even though the underlying object hadn't
+// changed the browser had to re-fetch it on every render — exactly
+// the lag Сергей saw on chat thumbnails.
 //
-//   - Stored DB url is `/<bucket>/<key>` (a relative path). On web the
-//     RN `<Image>` resolves that relative to the page origin (Expo dev
-//     port 8081), 404'ing instead of hitting the API proxy on 3812.
-//   - Presigned URLs are absolute https://<minio-host>/... — they work
-//     identically on web, iOS, Android.
-//   - 1-hour TTL means thumbnails never go stale within a session.
-async function presignAttachmentUrl(
-  storedUrl: string,
-  filename?: string | null,
-): Promise<string> {
+// We deliberately do NOT set Content-Disposition: attachment here —
+// inline rendering is what chat bubbles need (<Image>) and what the
+// lightbox needs (full-size view). The download button in the
+// lightbox uses an `<a download>` attribute on the client side to
+// force the save dialog without server help.
+function startOfHour(d: Date = new Date()): Date {
+  const out = new Date(d);
+  out.setMinutes(0, 0, 0);
+  return out;
+}
+
+const ATTACHMENT_PRESIGN_EXPIRY = 7 * 24 * 60 * 60; // 7 days
+
+async function presignAttachmentUrl(storedUrl: string): Promise<string> {
   if (storedUrl.startsWith("http")) return storedUrl;
   const withoutLeadingSlash = storedUrl.replace(/^\/+/, "");
   const prefix = `${MINIO_BUCKET}/`;
@@ -32,24 +40,15 @@ async function presignAttachmentUrl(
     ? withoutLeadingSlash.slice(prefix.length)
     : withoutLeadingSlash;
   try {
-    // Force-download via Content-Disposition response header. Without it
-    // browsers preview supported types (PDFs, images) inline, which is
-    // useful for thumbs but the user expects a real download when they
-    // click a file in chat. Still safe — inline preview can use a
-    // separate signed URL that omits this header.
-    const respHeaders: Record<string, string> = {};
-    if (filename) {
-      const safe = filename.replace(/"/g, "");
-      respHeaders["response-content-disposition"] = `attachment; filename="${safe}"`;
-    }
     return await minioClient.presignedGetObject(
       MINIO_BUCKET,
       key,
-      60 * 60,
-      respHeaders,
+      ATTACHMENT_PRESIGN_EXPIRY,
+      undefined,
+      startOfHour()
     );
   } catch {
-    return storedUrl; // graceful fallback — better a broken thumb than 500
+    return storedUrl; // graceful fallback — better a broken link than 500
   }
 }
 
@@ -126,6 +125,23 @@ async function resolveUploadToken(
     return { key: pendingHit.name, fileUrl: `/${MINIO_BUCKET}/${pendingHit.name}` };
   }
   return null;
+}
+
+/**
+ * Resolve the optional thumbnail companion object for a chat-file key.
+ * The upload route writes thumbnails at `<key>.thumb.webp` for image
+ * uploads — files predating the thumbnail feature don't have one, so
+ * we statObject before claiming the URL exists.
+ */
+async function resolveThumbUrl(originalKey: string): Promise<string | null> {
+  const thumbKey = `${originalKey}.thumb.webp`;
+  try {
+    const stat = await minioClient.statObject(MINIO_BUCKET, thumbKey);
+    if (!stat) return null;
+    return `/${MINIO_BUCKET}/${thumbKey}`;
+  } catch {
+    return null;
+  }
 }
 
 function param(val: string | string[] | undefined): string {
@@ -335,7 +351,7 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
     const files = messageIds.length > 0
       ? await prisma.file.findMany({
           where: { entityType: "message", entityId: { in: messageIds } },
-          select: { id: true, entityId: true, url: true, filename: true, size: true, mimeType: true },
+          select: { id: true, entityId: true, url: true, thumbUrl: true, filename: true, size: true, mimeType: true },
         })
       : [];
 
@@ -352,6 +368,7 @@ router.get("/:threadId", authMiddleware, async (req: Request, res: Response) => 
           rawFiles.map(async (f) => ({
             ...f,
             url: await presignAttachmentUrl(f.url),
+            thumbUrl: f.thumbUrl ? await presignAttachmentUrl(f.thumbUrl) : null,
           }))
         );
         return {
@@ -440,10 +457,13 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
     // resolved we 422 — the client already showed the file as "uploaded",
     // so silently dropping it would lose data. Stat the object to capture
     // real size + mime so the rendered chip shows accurate metadata.
+    // Also resolve the optional thumbnail URL so chat bubbles can render
+    // a small WebP preview instead of pulling the full original.
     const resolvedTokenFiles: {
       fileUrl: string;
       size: number;
       mimeType: string;
+      thumbUrl: string | null;
     }[] = [];
     for (const t of tokens) {
       const resolved = await resolveUploadToken(threadId, t);
@@ -451,11 +471,15 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
         res.status(422).json({ error: "Файл не найден, загрузите повторно" });
         return;
       }
-      const stat = await statObject(resolved.key);
+      const [stat, thumbUrl] = await Promise.all([
+        statObject(resolved.key),
+        resolveThumbUrl(resolved.key),
+      ]);
       resolvedTokenFiles.push({
         fileUrl: resolved.fileUrl,
         size: stat?.size ?? 0,
         mimeType: stat?.contentType ?? "application/octet-stream",
+        thumbUrl,
       });
     }
 
@@ -505,8 +529,9 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
       // Multiple uploadTokens are now supported (each chip in the chat composer
       // becomes a separate file row). Size + mimeType come from the MinIO stat
       // call above when available, so the rendered chip is accurate.
-      let savedFiles: { id: string; url: string; filename: string; size: number; mimeType: string }[] = [];
-      const allFilesToSave: FileInput[] = [...attachedFiles];
+      let savedFiles: { id: string; url: string; thumbUrl: string | null; filename: string; size: number; mimeType: string }[] = [];
+      type FileToSave = FileInput & { thumbUrl?: string | null };
+      const allFilesToSave: FileToSave[] = [...attachedFiles];
       for (const tokenFile of resolvedTokenFiles) {
         const keyParts = tokenFile.fileUrl.split("/");
         const rawName = keyParts[keyParts.length - 1] ?? "file";
@@ -517,6 +542,7 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
           filename: resolvedFilename,
           size: tokenFile.size,
           mimeType: tokenFile.mimeType,
+          thumbUrl: tokenFile.thumbUrl,
         });
       }
       if (allFilesToSave.length > 0) {
@@ -527,11 +553,12 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
                 entityType: "message",
                 entityId: message.id,
                 url: f.url,
+                thumbUrl: f.thumbUrl ?? null,
                 filename: f.filename,
                 size: f.size,
                 mimeType: f.mimeType,
               },
-              select: { id: true, url: true, filename: true, size: true, mimeType: true },
+              select: { id: true, url: true, thumbUrl: true, filename: true, size: true, mimeType: true },
             })
           )
         );
@@ -580,6 +607,7 @@ router.post("/:threadId", authMiddleware, messageRateLimiter, async (req: Reques
       savedFiles.map(async (f) => ({
         ...f,
         url: await presignAttachmentUrl(f.url),
+        thumbUrl: f.thumbUrl ? await presignAttachmentUrl(f.thumbUrl) : null,
       }))
     );
 

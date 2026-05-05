@@ -360,7 +360,38 @@ router.post("/chat-file", authMiddleware, uploadRateLimiter, chatFileUpload.sing
 
     await minioClient.putObject(MINIO_BUCKET, key, req.file.buffer, req.file.size, {
       "Content-Type": req.file.mimetype,
+      // Long-lived caching since the storage key is content-addressable
+      // (uploadToken is unique per upload). The browser will reuse the
+      // bytes across navigations once it has them, no re-fetch needed.
+      "Cache-Control": "public, max-age=31536000, immutable",
     });
+
+    // For images, generate a small WebP thumbnail (≤800px on the long
+    // edge) and store it next to the original at <key>.thumb.webp.
+    // Chat bubbles render the thumb (200×200 cover) — without this we
+    // were forcing the browser to download the full multi-MB original
+    // through the 200px slot, which is exactly the lag Сергей saw.
+    // Sharp is already a dependency (used by avatar uploads). We log
+    // and swallow errors so a thumb-generation failure never blocks
+    // the message from being sent.
+    let thumbKey: string | null = null;
+    if (req.file.mimetype.startsWith("image/")) {
+      try {
+        const thumbBuffer = await sharp(req.file.buffer)
+          .rotate() // honor EXIF orientation
+          .resize(800, 800, { fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 70 })
+          .toBuffer();
+        thumbKey = `${key}.thumb.webp`;
+        await minioClient.putObject(MINIO_BUCKET, thumbKey, thumbBuffer, thumbBuffer.length, {
+          "Content-Type": "image/webp",
+          "Cache-Control": "public, max-age=31536000, immutable",
+        });
+      } catch (thumbErr) {
+        console.error("chat-file thumbnail generation failed:", thumbErr);
+        thumbKey = null;
+      }
+    }
 
     res.json({
       uploadToken,
@@ -368,6 +399,7 @@ router.post("/chat-file", authMiddleware, uploadRateLimiter, chatFileUpload.sing
       fileName: safeName,
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
+      thumbUrl: thumbKey ? `/${MINIO_BUCKET}/${thumbKey}` : null,
     });
   } catch (error) {
     console.error("chat-file upload error:", error);

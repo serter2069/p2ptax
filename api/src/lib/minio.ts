@@ -62,16 +62,63 @@ export async function ensureBucket() {
 const PRESIGN_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 /**
- * Generate a fresh presigned GET URL for an avatar key.
+ * Snap a Date down to the start of the current hour. The MinIO/AWS
+ * presign signature includes the request date — if we pass `new Date()`
+ * every call, every render of /api/threads/my returns avatar URLs with
+ * a different X-Amz-Date / X-Amz-Signature, so the browser cache misses
+ * on every refetch. Pinning to the top-of-hour gives the same URL for
+ * up to ~60 minutes, which the browser can cache.
+ */
+function startOfHour(d: Date = new Date()): Date {
+  const out = new Date(d);
+  out.setMinutes(0, 0, 0);
+  return out;
+}
+
+/**
+ * Generate a presigned GET URL for an avatar key.
  * avatarKey is the raw storage key, e.g. "avatars/1234-uuid.jpg".
  * Returns null if key is falsy (no avatar set).
+ *
+ * The signing date is snapped to the top of the current hour so the
+ * URL is stable across calls within the same hour — that lets the
+ * browser actually cache the avatar image instead of re-fetching it
+ * on every /api/threads/my refresh.
  */
 export async function presignAvatarUrl(avatarKey: string | null | undefined): Promise<string | null> {
   if (!avatarKey) return null;
   // If the value is already a full URL (legacy presigned URL), return as-is.
   if (avatarKey.startsWith("http")) return avatarKey;
   try {
-    return await minioClient.presignedGetObject(MINIO_BUCKET, avatarKey, PRESIGN_EXPIRY_SECONDS);
+    return await minioClient.presignedGetObject(
+      MINIO_BUCKET,
+      avatarKey,
+      PRESIGN_EXPIRY_SECONDS,
+      undefined,
+      startOfHour()
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Generic stable presigner for any non-secret read URL (chat file
+ * thumbnails, public previews, etc). Same hour-stable signing date as
+ * presignAvatarUrl. Use only for content where a 60-minute caching
+ * window is acceptable.
+ */
+export async function presignReadStable(key: string): Promise<string | null> {
+  if (!key) return null;
+  if (key.startsWith("http")) return key;
+  try {
+    return await minioClient.presignedGetObject(
+      MINIO_BUCKET,
+      key,
+      PRESIGN_EXPIRY_SECONDS,
+      undefined,
+      startOfHour()
+    );
   } catch {
     return null;
   }

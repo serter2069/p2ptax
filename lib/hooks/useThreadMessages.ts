@@ -7,6 +7,11 @@ const POLL_INTERVAL = 5000;
 interface FileAttachment {
   id: string;
   url: string;
+  /** Optional small WebP preview generated server-side. Image bubbles
+   *  render this for previews so a 200×200 slot doesn't pull a multi-MB
+   *  original through the wire. Older files (uploaded before the
+   *  thumbnail feature) have null and fall back to `url`. */
+  thumbUrl: string | null;
   filename: string;
   size: number;
   mimeType: string;
