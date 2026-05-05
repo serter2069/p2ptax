@@ -13,7 +13,6 @@ import {
 } from "react-native";
 import { colors } from "@/lib/theme";
 import { getShortServiceName, isAllCoreServicesSelected } from "@/lib/services";
-import { layer } from "@/lib/zIndex";
 // MessageSquare matches the icon on the public profile detail page
 // (SpecialistContactCTA / SpecialistMobileBottomCTA) so the catalog and
 // detail use a single 'Написать' visual.
@@ -113,10 +112,6 @@ function DesktopSpecialistRow({
     : allFns;
   const visibleFns = fnsList.slice(0, 2);
   const fnsOverflow = fnsList.length - visibleFns.length;
-
-  // Hover tooltip lists ALL groups up to 5, with a "see profile" link if more remain.
-  const tooltipFns = fnsList.slice(0, 5);
-  const tooltipOverflow = fnsList.length - tooltipFns.length;
 
   const hoverProps =
     Platform.OS === "web"
@@ -346,79 +341,11 @@ function DesktopSpecialistRow({
         />
       </Pressable>
 
-      {/* Hover tooltip — show all FNS groups up to 5, link to profile if more */}
-      {hovered && Platform.OS === "web" && fnsList.length > 2 && (
-        <View
-          style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
-            backgroundColor: colors.white,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 12,
-            padding: 14,
-            shadowColor: colors.black,
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.12,
-            shadowRadius: 12,
-            ...layer("POPOVER"),
-            gap: 10,
-          }}
-          {...hoverProps}
-        >
-          <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>
-            Все инспекции
-          </Text>
-          <View style={{ gap: 6 }}>
-            {tooltipFns.map((g) => (
-              <View
-                key={g.fnsId}
-                style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 }}
-              >
-                <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }} numberOfLines={1}>
-                  {g.fnsName}
-                </Text>
-                {g.services.map((s) => (
-                  <View
-                    key={`${g.fnsId}-${s.id}`}
-                    style={{
-                      backgroundColor: colors.accentSoft,
-                      borderRadius: 99,
-                      paddingHorizontal: 8,
-                      paddingVertical: 2,
-                    }}
-                  >
-                    <Text style={{ color: colors.primary, fontSize: 11 }}>{s.name}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-          {tooltipOverflow > 0 && (
-            <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-              И ещё {tooltipOverflow}…
-            </Text>
-          )}
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel="Посмотреть профиль специалиста"
-            onPress={(e) => {
-              e.stopPropagation?.();
-              onPress(item.id);
-            }}
-            style={({ pressed }) => [
-              { paddingTop: 4 },
-              pressed && { opacity: 0.7 },
-            ]}
-          >
-            <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>
-              Посмотреть профиль →
-            </Text>
-          </Pressable>
-        </View>
-      )}
+      {/* Hover popover with the full FNS list was removed — its
+          z-index was unreliable against the sticky filter bar above
+          and the "+N" inline counter on the card already conveys
+          there are more inspections. The card itself is a link to
+          the profile, where the full list lives. */}
     </View>
   );
 }

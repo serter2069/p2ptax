@@ -30,7 +30,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const isMobile = width < BREAKPOINT;
   const [unreadCount, setUnreadCount] = useState(0);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isSpecialistUser } = useAuth();
 
   // Only poll unread count when authenticated — avoid 401 noise (#P3)
   useEffect(() => {
@@ -83,6 +83,11 @@ export default function TabLayout() {
         options={{
           title: "Запросы",
           tabBarIcon: ({ color, size }) => <Inbox size={size} color={color} />,
+          // Public "Запросы" feed is a specialist-only tab — clients
+          // author their own requests via "Мои запросы" and have no
+          // reason to browse the marketplace stream. href: null hides
+          // the tab from the bar without removing the route.
+          href: isSpecialistUser ? "/(tabs)/requests" : null,
         }}
       />
       <Tabs.Screen

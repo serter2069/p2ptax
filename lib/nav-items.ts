@@ -68,16 +68,8 @@ export const topLevelMatch = (ctx: MatchContext, prefix: string): boolean => {
 
 // ─────────────────────────────────────────── nav item arrays
 
-// #1615 — unified USER nav: public Запросы + Мои запросы for everyone.
+// Items every signed-in user sees regardless of role.
 export const USER_BASE_ITEMS: NavItem[] = [
-  {
-    label: "Запросы",
-    href: "/(tabs)/requests",
-    icon: Inbox,
-    match: (ctx) =>
-      groupMatch(ctx, "(tabs)", "requests") ||
-      groupMatch(ctx, "(tabs)", "public-requests"),
-  },
   {
     label: "Мои запросы",
     href: "/(tabs)/my-requests",
@@ -108,10 +100,21 @@ export const USER_CLIENT_EXTRA: NavItem[] = [
   },
 ];
 
-// Specialist-only addition: empty. Wave 6 / profile-tabs — the
-// specialist editor was folded back into /profile as a tab, so a
-// dedicated sidebar item is redundant.
-export const USER_SPECIALIST_EXTRA: NavItem[] = [];
+// Specialist-only addition: the public "Запросы" feed. Сергей: a
+// non-specialist client has no reason to see the marketplace stream
+// of other people's requests — they author their own from "Мои
+// запросы". Specialists, by contrast, browse the public feed to find
+// new work to respond to.
+export const USER_SPECIALIST_EXTRA: NavItem[] = [
+  {
+    label: "Запросы",
+    href: "/(tabs)/requests",
+    icon: Inbox,
+    match: (ctx) =>
+      groupMatch(ctx, "(tabs)", "requests") ||
+      groupMatch(ctx, "(tabs)", "public-requests"),
+  },
+];
 
 export const USER_TAIL_ITEMS: NavItem[] = [];
 
@@ -153,8 +156,10 @@ export const ADMIN_ITEMS: NavItem[] = [
 export function buildUserItems(isSpecialist: boolean): NavItem[] {
   // Issue #1603 — specialists can also search for other specialists and save
   // favourites, so CLIENT_EXTRA items are included for both roles.
+  // Specialist-only items (the public "Запросы" feed) lead with priority
+  // so it sits at the top of a specialist's nav.
   return isSpecialist
-    ? [...USER_BASE_ITEMS, ...USER_SPECIALIST_EXTRA, ...USER_CLIENT_EXTRA, ...USER_TAIL_ITEMS]
+    ? [...USER_SPECIALIST_EXTRA, ...USER_BASE_ITEMS, ...USER_CLIENT_EXTRA, ...USER_TAIL_ITEMS]
     : [...USER_BASE_ITEMS, ...USER_CLIENT_EXTRA, ...USER_TAIL_ITEMS];
 }
 
