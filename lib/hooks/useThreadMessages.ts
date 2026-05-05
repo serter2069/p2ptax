@@ -60,7 +60,10 @@ export interface UseThreadMessagesResult {
   loadOlder: () => Promise<void>;
 }
 
-export function useThreadMessages(threadId: string): UseThreadMessagesResult {
+export function useThreadMessages(
+  threadId: string,
+  onMarkRead?: (threadId: string) => void
+): UseThreadMessagesResult {
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [thread, setThread] = useState<ThreadInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,10 +78,11 @@ export function useThreadMessages(threadId: string): UseThreadMessagesResult {
     if (!threadId) return;
     try {
       await apiPatch(`/api/messages/${threadId}/read`, {});
+      onMarkRead?.(threadId);
     } catch {
       // ignore
     }
-  }, [threadId]);
+  }, [threadId, onMarkRead]);
 
   const fetchMessages = useCallback(async () => {
     if (!threadId) return;

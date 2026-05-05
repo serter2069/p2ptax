@@ -213,7 +213,16 @@ export default function UnifiedInbox() {
             </View>
             <View className="flex-1" style={{ minWidth: 0 }}>
               {selectedThreadId ? (
-                <InlineChatView threadId={selectedThreadId} />
+                <InlineChatView
+                  threadId={selectedThreadId}
+                  onThreadRead={(tid) => {
+                    setThreads((prev) =>
+                      prev.map((t) =>
+                        t.id === tid ? { ...t, unreadCount: 0 } : t
+                      )
+                    );
+                  }}
+                />
               ) : (
                 <MessengerEmptyPane
                   title="Начните общение"

@@ -121,7 +121,7 @@ export default function SpecialistFilter({
 
   return (
     <View>
-      <View className="px-4" style={{ zIndex: Z.STICKY, paddingBottom: 24 }}>
+      <View style={{ zIndex: Z.STICKY, paddingBottom: 16 }}>
         <CityFnsServicePicker
           mode="entry"
           multiService

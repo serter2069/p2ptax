@@ -41,6 +41,14 @@ interface ChatComposerProps {
   maxLength?: number;
   /** Accessibility label for the text field. */
   accessibilityLabel?: string;
+  /**
+   * Optional ref to a parent element that should be the drag-and-drop
+   * target instead of the composer itself. When present, files dropped
+   * anywhere over that element are uploaded — used by InlineChatView
+   * so the whole chat surface (messages list + composer) accepts a
+   * file drop, not just the input row.
+   */
+  externalDropTargetRef?: React.RefObject<HTMLElement | null>;
 }
 
 /**
@@ -79,6 +87,7 @@ export default function ChatComposer({
   placeholder = "Введите сообщение...",
   maxLength = 5000,
   accessibilityLabel = "Введите сообщение",
+  externalDropTargetRef,
 }: ChatComposerProps) {
   const canSend =
     !disabled && !sending && (value.trim().length > 0 || files.length > 0);
@@ -183,7 +192,7 @@ export default function ChatComposer({
           allowedTypes={allowedTypes}
           compact
           disabled={disabled || sending}
-          dropTargetRef={dropZoneRef}
+          dropTargetRef={externalDropTargetRef ?? dropZoneRef}
           onDragStateChange={setIsDragOver}
         />
 
@@ -223,19 +232,20 @@ export default function ChatComposer({
                   }
             }
             style={{
-              // ALL paddings + borders zeroed. <textarea> on web has
-              // native defaults (border 1px, padding 2px 6px) that the
-              // wrapper's justifyContent:center can't compensate for —
-              // they shift the cap-baseline of the placeholder upward
-              // by 2-3px relative to the icons. With these zeroed, the
-              // textarea is a flat 20px (lineHeight) for single-line
-              // content and the wrapper centers it perfectly against
-              // the 44px icon row.
               padding: 0,
               paddingHorizontal: 12,
               borderWidth: 0,
               fontSize: 14,
-              lineHeight: 20,
+              // Tactical center-via-line-height: when the input is in
+              // single-line state (no newline in value) we set
+              // line-height = full row height (44px). Browsers center a
+              // single line of text against its line-box, so the
+              // placeholder/typed text now sits exactly at y=22 — the
+              // same vertical center as the paperclip and send icons.
+              // Once the user enters a '\n' (or pastes multi-line text)
+              // we drop back to lineHeight=20 so each line stacks at the
+              // normal type rhythm.
+              lineHeight: value.includes("\n") ? 20 : 44,
               color: colors.text,
               backgroundColor: "transparent",
               borderRadius: radiusValue.xl,

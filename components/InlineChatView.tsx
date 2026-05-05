@@ -28,6 +28,11 @@ import { track } from "@/lib/analytics";
 
 interface InlineChatViewProps {
   threadId: string;
+  /** Called when this thread's messages were marked as read on the
+   *  server. Lets the parent inbox-sidebar drop the unread dot
+   *  immediately rather than waiting for the next /api/threads/my
+   *  refetch. */
+  onThreadRead?: (threadId: string) => void;
 }
 
 /** Slim header shown only during loading / error states (no thread data yet). */
@@ -49,7 +54,7 @@ function MinimalChatHeader({ isDesktop }: { isDesktop: boolean }) {
   );
 }
 
-export default function InlineChatView({ threadId }: InlineChatViewProps) {
+export default function InlineChatView({ threadId, onThreadRead }: InlineChatViewProps) {
   const { user, isSpecialistUser, token } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 640;
@@ -95,7 +100,15 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
     setMessages,
     loadData,
     loadOlder,
-  } = useThreadMessages(threadId);
+  } = useThreadMessages(threadId, onThreadRead);
+
+  // Whole-chat drop target — refs into the topmost View so dragging a
+  // file anywhere over the chat (messages list + composer) accepts it,
+  // not only the input row. Сергей's ask: 'drag&drop по всему чату'.
+  const chatRootRef = useRef<HTMLElement | null>(null);
+  const setChatRootRef = (node: unknown) => {
+    chatRootRef.current = (node as HTMLElement | null) ?? null;
+  };
 
   const { lightbox, handleFilePress, handleImagePress, closeLightbox } = useLightbox();
 
@@ -275,7 +288,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
         </Pressable>
       ) : null}
 
-      <KeyboardAvoidingView
+      <KeyboardAvoidingView ref={setChatRootRef as never}
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={0}
@@ -359,6 +372,7 @@ export default function InlineChatView({ threadId }: InlineChatViewProps) {
 
         {!isClosed && (
           <ChatComposer
+            externalDropTargetRef={chatRootRef}
             value={text}
             onChangeText={setText}
             files={pendingFiles}

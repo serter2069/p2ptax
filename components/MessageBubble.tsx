@@ -123,7 +123,7 @@ export default function MessageBubble({
               key={img.id}
               accessibilityLabel={`Изображение ${img.filename}. Нажмите для просмотра.`}
               onPress={() => handleImagePress(resolvedUri, img.filename)}
-              className="mb-1"
+              className="mb-2"
               style={({ pressed }) => [pressed && { opacity: 0.85 }]}
             >
               <Image
