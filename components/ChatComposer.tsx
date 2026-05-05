@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Platform, Pressable, View, Text, ActivityIndicator, TextInput } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import FileUploadZone, {
@@ -110,22 +110,21 @@ export default function ChatComposer({
   const captureTextareaRef = (node: unknown) => {
     textareaRef.current = (node as HTMLTextAreaElement | null) ?? null;
   };
-  useEffect(() => {
+  // Run autogrow synchronously *after* DOM mutation but *before* paint,
+  // so the user never sees a frame with the previous height. Plain
+  // useEffect runs after paint → one stale frame → the visible "jump"
+  // the user noticed when typing fast or pressing Enter.
+  useLayoutEffect(() => {
     if (Platform.OS !== "web") return;
     const el = textareaRef.current;
     if (!el) return;
     // Reset to auto so scrollHeight reflects the natural content size,
-    // not the previous applied height. Then clamp.
-    //
-    // The textarea sits inside a wrapper View with minHeight=MIN_HEIGHT
-    // and justifyContent:center, so a single-line textarea naturally
-    // ~20px tall is vertically centered inside the 44px row. We clamp
-    // to ≥ lineHeight (20) so the textarea doesn't collapse to 0, and
-    // ≤ MAX_HEIGHT so it scrolls instead of growing forever.
+    // not the previous applied height. Then clamp to MAX_HEIGHT so the
+    // textarea scrolls instead of growing forever. The lower bound is
+    // enforced by paddingVertical (12+20+12 = 44) baked into the
+    // textarea style — no Math.max needed.
     el.style.height = "auto";
-    const measured = el.scrollHeight;
-    const next = Math.min(MAX_HEIGHT, Math.max(20, measured));
-    el.style.height = next + "px";
+    el.style.height = Math.min(MAX_HEIGHT, el.scrollHeight) + "px";
   }, [value]);
 
   // Composer-wide drop target — used by FileUploadZone via dropTargetRef.
@@ -196,20 +195,16 @@ export default function ChatComposer({
           onDragStateChange={setIsDragOver}
         />
 
-        {/* Wrapper around the TextInput. justifyContent: 'center' anchors
-            a single-line textarea exactly to the vertical midpoint of
-            the row — so the placeholder / first row of text shares its
-            center line with the paperclip and send icons (44 / 2 = 22
-            from the top). When the user adds more lines and the textarea
-            grows past 44, the wrapper grows with it (alignSelf:stretch +
-            justifyContent has no effect when content > container) and
-            the icons stay pinned to the bottom thanks to row's items-end. */}
+        {/* Wrapper around the TextInput. The textarea itself owns its
+            min height via paddingVertical (12+20+12 = 44), so the
+            wrapper just bounds it from above (maxHeight) and stretches
+            with grown content. items-end on the parent row keeps the
+            paperclip/send icons pinned to the bottom as the textarea
+            grows. */}
         <View
           style={{
             flex: 1,
-            minHeight: MIN_HEIGHT,
             maxHeight: MAX_HEIGHT,
-            justifyContent: "center",
           }}
         >
           <TextInput
@@ -222,7 +217,7 @@ export default function ChatComposer({
             multiline
             maxLength={maxLength}
             editable={!disabled}
-            textAlignVertical="center"
+            textAlignVertical="top"
             onContentSizeChange={
               Platform.OS === "web"
                 ? undefined
@@ -232,20 +227,21 @@ export default function ChatComposer({
                   }
             }
             style={{
-              padding: 0,
+              // Vertical centering of single-line text is done via
+              // paddingVertical, NOT by toggling line-height between
+              // 20 and 44. The toggle was the source of the "jump":
+              // the moment a user pressed Enter, line-height collapsed
+              // from 44→20 and the first line of text shifted ~12px up
+              // while scrollHeight (= lines × line-height) shrank from
+              // 44 to 40 — so the textarea got SHORTER as the user
+              // added content. Stable line-height + symmetric padding
+              // gives a smooth grow: 44 → 64 → 84 → 104 → 124 → 140.
+              paddingTop: 12,
+              paddingBottom: 12,
               paddingHorizontal: 12,
               borderWidth: 0,
               fontSize: 14,
-              // Tactical center-via-line-height: when the input is in
-              // single-line state (no newline in value) we set
-              // line-height = full row height (44px). Browsers center a
-              // single line of text against its line-box, so the
-              // placeholder/typed text now sits exactly at y=22 — the
-              // same vertical center as the paperclip and send icons.
-              // Once the user enters a '\n' (or pastes multi-line text)
-              // we drop back to lineHeight=20 so each line stacks at the
-              // normal type rhythm.
-              lineHeight: value.includes("\n") ? 20 : 44,
+              lineHeight: 20,
               color: colors.text,
               backgroundColor: "transparent",
               borderRadius: radiusValue.xl,

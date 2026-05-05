@@ -256,14 +256,14 @@ function OwnerView({
       {!isClosed && request.fns?.id && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Найти специалистов самостоятельно"
+          accessibilityLabel="Найти специалистов"
           onPress={() => nav.any(`/specialists?fns_ids=${request.fns.id}`)}
           className="bg-accent rounded-xl py-3 flex-row items-center justify-center mb-3"
           style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >
           <Search size={16} color="#fff" />
           <Text className="text-white font-semibold text-sm ml-2">
-            Найти специалистов самостоятельно
+            Найти специалистов
           </Text>
         </Pressable>
       )}

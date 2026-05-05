@@ -305,7 +305,7 @@ export default function CreateRequest() {
         title: "Запрос опубликован",
         message:
           "Специалисты по вашей ИФНС увидят его и напишут вам. Обычно первый отклик приходит в течение 24 часов.",
-        confirmLabel: "Найти специалистов самостоятельно",
+        confirmLabel: "Найти специалистов",
         cancelLabel: "Перейти к запросу",
         tone: "success",
       });

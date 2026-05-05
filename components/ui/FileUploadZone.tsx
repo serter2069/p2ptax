@@ -329,7 +329,14 @@ export default function FileUploadZone({
     if (Platform.OS !== "web") return;
     const externalNode = dropTargetRef?.current ?? null;
     const internalNode = containerRef.current as unknown as HTMLElement | null;
-    const node = externalNode ?? internalNode;
+    // Fall back to the internal container if the external ref turned
+    // out not to be a real DOM node (e.g. caller attached the ref to a
+    // RN component whose ref isn't a host element on web). Without
+    // this, drag&drop silently broke whenever the chat passed a ref
+    // that didn't expose addEventListener.
+    const externalIsValid =
+      externalNode && typeof externalNode.addEventListener === "function";
+    const node = externalIsValid ? externalNode : internalNode;
     if (!node || typeof node.addEventListener !== "function") return;
 
     const setDrag = (next: boolean) => {

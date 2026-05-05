@@ -288,11 +288,20 @@ export default function InlineChatView({ threadId, onThreadRead }: InlineChatVie
         </Pressable>
       ) : null}
 
-      <KeyboardAvoidingView ref={setChatRootRef as never}
+      <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={0}
       >
+        {/* chatRootRef sits on a plain View wrapper, NOT on
+            KeyboardAvoidingView. RN-Web's KAV ref does not reliably
+            return a DOM node with addEventListener, which silently
+            broke whole-chat drag&drop (FileUploadZone bailed early on
+            `typeof node.addEventListener !== "function"`). A regular
+            <View> is just a forwardRef'd <div> on web, so listeners
+            attach correctly and a file dropped anywhere over the chat
+            (messages list + composer) is captured. */}
+        <View ref={setChatRootRef as never} style={{ flex: 1 }}>
         <FlatList
           ref={flatListRef}
           data={sortedMessages}
@@ -382,6 +391,7 @@ export default function InlineChatView({ threadId, onThreadRead }: InlineChatVie
             authToken={token}
           />
         )}
+        </View>
       </KeyboardAvoidingView>
 
       <Lightbox
