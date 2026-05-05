@@ -1,50 +1,53 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
-import { createPayment, fetchPayment } from "../lib/yookassa";
+import {
+  createPayment,
+  chargeWithSavedMethod,
+  fetchPayment,
+  paymentMethodTitle,
+} from "../lib/yookassa";
 
 const router = Router();
 
 /**
- * Billing routes — VIP wallet + per-FNS subscription toggles.
+ * Billing routes — recurring autopay model (no pre-paid wallet).
  *
- * Architecture (see decisions in PR thread):
- *   - User has a kopek-denominated `vipBalanceKopeks` running balance.
- *   - Specialist toggles VIP per FnsOffice via SpecialistVipFns rows.
- *   - Each FnsOffice carries an optional `vipMonthlyPriceKopeks`.
- *     Daily burn = monthlyPrice / 30 (round up to integer kopeks so
- *     the cron never charges fractional and never under-charges).
- *   - Daily cron `vip-daily-charge.ts` deducts the day's total from
- *     balance and writes a BillingTx row per FNS. When balance can't
- *     cover all active rows, ALL VIP-FNS rows for that user are
- *     deleted (deterministic — no partial-active state).
- *   - Top-ups happen via /api/billing/topup → ЮKassa → webhook
- *     (separate route file).
+ *   - First VIP-FNS activation creates a redirect-flow ЮKassa payment
+ *     for one day's price with `save_payment_method: true`. The webhook
+ *     captures the returned payment_method.id on the user and creates
+ *     the SpecialistVipFns row.
+ *   - Subsequent activations on other FNS reuse the saved card —
+ *     server-to-server charge for one day, instant activation, no
+ *     redirect.
+ *   - Daily cron `vipDailyCharge.ts` autopays the day's total per user
+ *     using the saved payment_method_id. Failed charges deactivate ALL
+ *     of that user's VIP-FNS rows + flip lastChargeFailedAt.
+ *   - `DELETE /payment-method` clears the saved card and wipes all VIP
+ *     rows in the same transaction (otherwise tomorrow's cron would
+ *     have nothing to charge against).
  */
 
 const KOPEKS_IN_RUB = 100;
 
 function dailyChargeKopeks(monthlyKopeks: number): number {
-  // Ceiling division — never under-charge by a fraction of a kopek.
   return Math.ceil(monthlyKopeks / 30);
 }
 
-// GET /api/billing/balance — current balance + the specialist's full
-// FNS catalog (each row carries a `vipActive` flag + price), plus
-// today's burn rate. The FE renders this as a single page — wallet
-// header on top, list of FNS-toggle rows below. Returning everything
-// in one shape avoids two round-trips on every render.
-router.get("/balance", authMiddleware, async (req: Request, res: Response) => {
+// GET /api/billing/me — single shape for the entire billing tab.
+router.get("/me", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const [user, specialistFns, vipRows] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        select: { vipBalanceKopeks: true, isSpecialist: true },
+        select: {
+          isSpecialist: true,
+          yookassaPaymentMethodId: true,
+          yookassaPaymentMethodTitle: true,
+          lastChargeFailedAt: true,
+        },
       }),
-      // The specialist's working area — every FNS they cover, with
-      // its current VIP price. Sorted by city then FNS so the list
-      // reads top-down geographically.
       prisma.specialistFns.findMany({
         where: { specialistId: userId },
         select: {
@@ -81,9 +84,6 @@ router.get("/balance", authMiddleware, async (req: Request, res: Response) => {
         fnsCode: sf.fns.code,
         cityId: sf.fns.city.id,
         cityName: sf.fns.city.name,
-        // null = VIP isn't available on this office (admin hasn't set
-        // a price). FE renders the row read-only with "Тариф ещё не
-        // настроен" instead of a toggle.
         monthlyPriceKopeks: monthly,
         monthlyPriceRub: monthly == null ? null : monthly / KOPEKS_IN_RUB,
         dailyChargeKopeks: monthly == null ? null : dailyChargeKopeks(monthly),
@@ -99,37 +99,50 @@ router.get("/balance", authMiddleware, async (req: Request, res: Response) => {
 
     res.json({
       isSpecialist: user.isSpecialist,
-      balanceKopeks: user.vipBalanceKopeks,
-      balanceRub: user.vipBalanceKopeks / KOPEKS_IN_RUB,
+      hasPaymentMethod: !!user.yookassaPaymentMethodId,
+      paymentMethodTitle: user.yookassaPaymentMethodTitle ?? null,
+      lastChargeFailedAt: user.lastChargeFailedAt ?? null,
       dailyChargeKopeks: dailyTotalKopeks,
       dailyChargeRub: dailyTotalKopeks / KOPEKS_IN_RUB,
-      // Days the wallet covers at the current burn rate. null when
-      // nothing is active — FE renders "—".
-      daysCovered: dailyTotalKopeks > 0
-        ? Math.floor(user.vipBalanceKopeks / dailyTotalKopeks)
-        : null,
+      monthlyEstimateKopeks: dailyTotalKopeks * 30,
+      monthlyEstimateRub: (dailyTotalKopeks * 30) / KOPEKS_IN_RUB,
       fnsCatalog,
     });
   } catch (error) {
-    console.error("billing/balance error:", error);
+    console.error("billing/me error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// POST /api/billing/vip-fns/:fnsId — activate VIP on an FNS.
-// Requires the FNS to have a non-null vipMonthlyPriceKopeks (admin
-// has set a price) and the wallet to cover at least one day at the
-// new burn rate (otherwise toggling on would just immediately gas
-// itself out at the next cron tick).
+/**
+ * POST /api/billing/vip-fns/:fnsId — activate VIP on an FNS.
+ *
+ * Two paths:
+ *   (a) No card on file → create a ЮKassa redirect payment for one
+ *       day's price + save_payment_method:true. metadata.fnsId tells
+ *       the webhook which row to create after the user pays. Returns
+ *       { confirmationUrl } so the FE can redirect.
+ *   (b) Card already saved → server-to-server autopay for one day,
+ *       creates the row immediately on success.
+ */
 router.post("/vip-fns/:fnsId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
     const fnsId = req.params.fnsId as string;
 
-    const fns = await prisma.fnsOffice.findUnique({
-      where: { id: fnsId },
-      select: { id: true, vipMonthlyPriceKopeks: true },
-    });
+    const [fns, user] = await Promise.all([
+      prisma.fnsOffice.findUnique({
+        where: { id: fnsId },
+        select: { id: true, name: true, vipMonthlyPriceKopeks: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          isSpecialist: true,
+          yookassaPaymentMethodId: true,
+        },
+      }),
+    ]);
     if (!fns) {
       res.status(404).json({ error: "FNS not found" });
       return;
@@ -138,39 +151,114 @@ router.post("/vip-fns/:fnsId", authMiddleware, async (req: Request, res: Respons
       res.status(400).json({ error: "VIP не настроен для этой ИФНС" });
       return;
     }
-
-    // Reject if balance can't cover today's charge for the new row.
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { vipBalanceKopeks: true, isSpecialist: true },
-    });
     if (!user || !user.isSpecialist) {
       res.status(403).json({ error: "VIP доступен только специалистам" });
       return;
     }
-    const newDaily = dailyChargeKopeks(fns.vipMonthlyPriceKopeks);
-    if (user.vipBalanceKopeks < newDaily) {
-      res.status(402).json({
-        error: "Недостаточно средств — пополните баланс",
-        required: newDaily,
+    // Already on? Idempotent success.
+    const existing = await prisma.specialistVipFns.findUnique({
+      where: { specialistId_fnsId: { specialistId: userId, fnsId } },
+      select: { id: true },
+    });
+    if (existing) {
+      res.json({ ok: true, alreadyActive: true });
+      return;
+    }
+
+    const dayPrice = dailyChargeKopeks(fns.vipMonthlyPriceKopeks);
+    const returnBase =
+      process.env.YK_RETURN_URL_BASE ?? "https://p2ptax.smartlaunchhub.com";
+
+    if (!user.yookassaPaymentMethodId) {
+      // Path (a) — first time: redirect to ЮKassa, bind card,
+      // first day pre-paid as part of the same payment.
+      const payment = await createPayment({
+        amountKopeks: dayPrice,
+        description: `VIP по «${fns.name}» (день 1) + привязка карты`,
+        userId,
+        returnUrl: `${returnBase}/profile?tab=billing&vip=ok`,
+        savePaymentMethod: true,
+        extraMetadata: { fnsId, kind: "bind_first_charge" },
+      });
+      // Pending ledger row, will be replaced on webhook success.
+      await prisma.billingTx.create({
+        data: {
+          userId,
+          amountKopeks: -dayPrice,
+          kind: "bind_pending",
+          fnsId,
+          externalRef: payment.paymentId,
+          description: `Ожидание оплаты привязки карты (${fns.name})`,
+        },
+      });
+      res.json({
+        ok: true,
+        needsRedirect: true,
+        confirmationUrl: payment.confirmationUrl,
+        paymentId: payment.paymentId,
       });
       return;
     }
 
-    await prisma.specialistVipFns.upsert({
-      where: { specialistId_fnsId: { specialistId: userId, fnsId } },
-      create: { specialistId: userId, fnsId },
-      update: { activatedAt: new Date() },
+    // Path (b) — autopay one day with the saved method.
+    const idempotenceKey = `vip-bind-${userId}-${fnsId}`;
+    let charge;
+    try {
+      charge = await chargeWithSavedMethod({
+        amountKopeks: dayPrice,
+        description: `VIP по «${fns.name}» (день 1)`,
+        paymentMethodId: user.yookassaPaymentMethodId,
+        idempotenceKey,
+        metadata: { userId, fnsId, kind: "bind_first_charge" },
+      });
+    } catch (err) {
+      console.error("billing/vip-fns autopay error:", err);
+      res.status(402).json({
+        error: "Не удалось списать с карты. Попробуйте привязать карту заново.",
+      });
+      return;
+    }
+
+    if (charge.status !== "succeeded" || !charge.paid) {
+      res.status(402).json({
+        error: "ЮKassa отклонила платёж — обновите карту.",
+        status: charge.status,
+      });
+      return;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.specialistVipFns.upsert({
+        where: { specialistId_fnsId: { specialistId: userId, fnsId } },
+        create: { specialistId: userId, fnsId },
+        update: { activatedAt: new Date() },
+      });
+      await tx.billingTx.create({
+        data: {
+          userId,
+          amountKopeks: -dayPrice,
+          kind: "bind_first_charge",
+          fnsId,
+          externalRef: charge.paymentId,
+          description: `VIP по «${fns.name}» — день 1`,
+        },
+      });
+      // Successful autopay clears any prior failure flag.
+      await tx.user.update({
+        where: { id: userId },
+        data: { lastChargeFailedAt: null },
+      });
     });
 
-    res.json({ ok: true });
+    res.json({ ok: true, charged: dayPrice });
   } catch (error) {
     console.error("billing/vip-fns POST error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// DELETE /api/billing/vip-fns/:fnsId — deactivate VIP. Idempotent.
+// DELETE /api/billing/vip-fns/:fnsId — deactivate VIP on a single FNS.
+// Idempotent. The card stays bound for other active FNS rows.
 router.delete("/vip-fns/:fnsId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -185,69 +273,54 @@ router.delete("/vip-fns/:fnsId", authMiddleware, async (req: Request, res: Respo
   }
 });
 
-// POST /api/billing/topup — start a ЮKassa Payment for top-up.
-// Body: { amountKopeks: number }. Returns { confirmationUrl } so the
-// FE can redirect the user to ЮKassa's hosted checkout. The actual
-// balance credit happens in /webhook once ЮKassa confirms 'succeeded'.
-router.post("/topup", authMiddleware, async (req: Request, res: Response) => {
+// DELETE /api/billing/payment-method — unbind the saved card.
+// Wipes all VIP-FNS rows in the same transaction (autopay can't run
+// without a card, so leaving rows would just trip charge_failed at
+// the next cron tick).
+router.delete("/payment-method", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { amountKopeks } = req.body as { amountKopeks?: number };
-
-    // Sanity caps: min 100₽, max 100 000₽ per transaction. Keeps
-    // accidental fat-finger mistakes contained on staging too.
-    if (
-      typeof amountKopeks !== "number" ||
-      !Number.isFinite(amountKopeks) ||
-      !Number.isInteger(amountKopeks) ||
-      amountKopeks < 10000 ||
-      amountKopeks > 10_000_000
-    ) {
-      res.status(400).json({ error: "amountKopeks must be 10 000…10 000 000" });
-      return;
-    }
-
-    const returnBase =
-      process.env.YK_RETURN_URL_BASE ?? "https://p2ptax.smartlaunchhub.com";
-    const payment = await createPayment({
-      amountKopeks,
-      description: "Пополнение VIP-баланса P2PTax",
-      userId,
-      returnUrl: `${returnBase}/profile?tab=billing&topup=ok`,
+    await prisma.$transaction(async (tx) => {
+      await tx.specialistVipFns.deleteMany({ where: { specialistId: userId } });
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          yookassaPaymentMethodId: null,
+          yookassaPaymentMethodTitle: null,
+          lastChargeFailedAt: null,
+        },
+      });
+      await tx.billingTx.create({
+        data: {
+          userId,
+          amountKopeks: 0,
+          kind: "card_unbound",
+          description: "Карта отвязана пользователем",
+        },
+      });
     });
-
-    // Pre-record a 'pending' ledger entry tagged with the ЮKassa id.
-    // The webhook will look it up by externalRef and switch it to a
-    // posted credit when 'succeeded' arrives.
-    await prisma.billingTx.create({
-      data: {
-        userId,
-        amountKopeks,
-        kind: "topup_pending",
-        externalRef: payment.paymentId,
-        description: "Создан платёж ЮKassa",
-      },
-    });
-
-    res.json({
-      paymentId: payment.paymentId,
-      confirmationUrl: payment.confirmationUrl,
-    });
+    res.json({ ok: true });
   } catch (error) {
-    console.error("billing/topup error:", error);
-    res.status(500).json({ error: "Не удалось создать платёж" });
+    console.error("billing/payment-method DELETE error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// POST /api/billing/webhook — ЮKassa notification endpoint.
-// IMPORTANT: NOT auth-protected (ЮKassa calls it without bearer).
-// Security model: we DON'T trust the body — we re-fetch the payment
-// by id from ЮKassa and act on the canonical status. Webhook can
-// also fire multiple times for the same event; we de-dupe on the
-// pending ledger row (externalRef is unique-ish per payment id).
+/**
+ * POST /api/billing/webhook — ЮKassa notification endpoint.
+ *
+ * NOT auth-protected (ЮKassa calls without bearer). Trust model:
+ * re-fetch the payment by id and act on the canonical record. We
+ * de-dupe on (externalRef, kind=bind_first_charge) so retried
+ * webhooks can't double-create rows.
+ *
+ * Two events we actually care about:
+ *   - payment.succeeded with metadata.kind=bind_first_charge → save
+ *     payment_method on user, create SpecialistVipFns row.
+ *   - everything else → 200 OK so ЮKassa stops retrying.
+ */
 router.post("/webhook", async (req: Request, res: Response) => {
   try {
-    // Body shape: { event, object: { id, status, ... } }
     const body = req.body as {
       event?: string;
       object?: { id?: string };
@@ -258,63 +331,72 @@ router.post("/webhook", async (req: Request, res: Response) => {
       return;
     }
 
-    // Re-fetch — never trust the webhook payload directly. If the
-    // status really is succeeded the canonical fetch will say so.
     const payment = await fetchPayment(paymentId);
     if (payment.status !== "succeeded" || !payment.paid) {
-      // Acknowledge non-success events so ЮKassa stops retrying, but
-      // don't credit anything.
       res.json({ ok: true, ignored: payment.status });
       return;
     }
 
     const userId = payment.metadata?.userId;
-    if (!userId) {
-      res.status(200).json({ ok: true, error: "No userId in metadata" });
-      return;
-    }
-    const valueRub = parseFloat(payment.amount.value);
-    const amountKopeks = Math.round(valueRub * 100);
-    if (!Number.isFinite(amountKopeks) || amountKopeks <= 0) {
-      res.status(200).json({ ok: true, error: "Invalid amount" });
+    const fnsId = payment.metadata?.fnsId;
+    const kind = payment.metadata?.kind;
+    if (!userId || kind !== "bind_first_charge" || !fnsId) {
+      res.json({ ok: true, ignored: "metadata mismatch" });
       return;
     }
 
-    // De-dupe: if we already credited this paymentId, don't double.
+    // De-dupe.
     const already = await prisma.billingTx.findFirst({
-      where: { externalRef: paymentId, kind: "topup" },
+      where: { externalRef: paymentId, kind: "bind_first_charge" },
       select: { id: true },
     });
     if (already) {
-      res.json({ ok: true, alreadyCredited: true });
+      res.json({ ok: true, alreadyApplied: true });
       return;
     }
 
-    // Credit balance + write the canonical 'topup' ledger row in one
-    // transaction so a partial failure can't leave the wallet out of
-    // sync with the ledger.
+    const valueRub = parseFloat(payment.amount.value);
+    const amountKopeks = Math.round(valueRub * 100);
+    const pmId = payment.payment_method?.id;
+    const pmSaved = payment.payment_method?.saved;
+    const pmTitle = paymentMethodTitle(payment.payment_method);
+
     await prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: userId },
-        data: { vipBalanceKopeks: { increment: amountKopeks } },
+      // Save the bound card (if ЮKassa returned one — every
+      // successful save_payment_method:true payment does).
+      if (pmId && pmSaved) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            yookassaPaymentMethodId: pmId,
+            yookassaPaymentMethodTitle: pmTitle,
+            lastChargeFailedAt: null,
+          },
+        });
+      }
+      // Activate VIP for the FNS that triggered the redirect.
+      await tx.specialistVipFns.upsert({
+        where: { specialistId_fnsId: { specialistId: userId, fnsId } },
+        create: { specialistId: userId, fnsId },
+        update: { activatedAt: new Date() },
       });
       await tx.billingTx.create({
         data: {
           userId,
-          amountKopeks,
-          kind: "topup",
+          amountKopeks: -amountKopeks,
+          kind: "bind_first_charge",
+          fnsId,
           externalRef: paymentId,
-          description: "Пополнение VIP-баланса (ЮKassa)",
+          description: "Привязка карты + VIP, день 1",
         },
       });
-      // Mark the pending row resolved (so the user's transaction list
-      // doesn't show two rows for the same payment).
+      // Clear the pending row this webhook resolves.
       await tx.billingTx.deleteMany({
-        where: { externalRef: paymentId, kind: "topup_pending" },
+        where: { externalRef: paymentId, kind: "bind_pending" },
       });
     });
 
-    res.json({ ok: true, credited: amountKopeks });
+    res.json({ ok: true, applied: true });
   } catch (error) {
     console.error("billing/webhook error:", error);
     res.status(500).json({ error: "Webhook processing failed" });

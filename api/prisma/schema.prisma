@@ -41,11 +41,20 @@ model User {
   // but the row is preserved so threads/messages keep a valid FK target.
   deletedAt                    DateTime? @map("deleted_at")
   lastSeenAt                   DateTime? @map("last_seen_at")
-  // Pre-paid VIP wallet (kopeks). Specialist tops up via ЮKassa, then
-  // toggles VIP on per-FNS — daily cron deducts vip_monthly_price/30
-  // for each active SpecialistVipFns row. When balance hits 0 all VIP
-  // toggles are disabled until next top-up.
-  vipBalanceKopeks             Int       @default(0) @map("vip_balance_kopeks")
+  // ЮKassa saved payment-method id ("token" of the card). Captured on
+  // the first VIP activation when ЮKassa returns the bound method via
+  // webhook. Subsequent daily charges use this id directly via the
+  // recurring-payments API (no 3DS, no user interaction). Null = no
+  // card on file → VIP toggle redirects to ЮKassa hosted checkout.
+  yookassaPaymentMethodId      String?   @map("yookassa_payment_method_id")
+  // Human-readable card label like "Visa *4242" so the FE can show
+  // which card is bound without storing PAN. Captured from the same
+  // webhook payload as the id.
+  yookassaPaymentMethodTitle   String?   @map("yookassa_payment_method_title")
+  // Set by the daily cron when an autopay charge fails (card declined,
+  // expired, blocked). When non-null, FE shows a "Платёж не прошёл,
+  // обновите карту" banner. Cleared on successful re-bind.
+  lastChargeFailedAt           DateTime? @map("last_charge_failed_at")
   createdAt                    DateTime  @default(now()) @map("created_at")
   updatedAt                    DateTime  @updatedAt @map("updated_at")
 
@@ -223,9 +232,9 @@ model FnsOffice {
 }
 
 // Per-FNS VIP toggle for a specialist. Existence of a row = VIP is
-// active for (specialistId, fnsId) RIGHT NOW. The daily charge cron
-// reads this table to compute today's burn-rate and deletes rows
-// when balance hits 0.
+// active for (specialistId, fnsId) RIGHT NOW. The daily cron reads
+// this table to compute today's autopay total and wipes ALL rows
+// for a user when the autopay charge is rejected.
 model SpecialistVipFns {
   id           String   @id @default(uuid())
   specialistId String   @map("specialist_id")
@@ -243,21 +252,26 @@ model SpecialistVipFns {
   @@map("specialist_vip_fns")
 }
 
-// Append-only ledger for the VIP wallet. Every balance mutation —
-// ЮKassa top-up, daily VIP charge, manual admin adjust — writes a
-// row here. The User.vipBalanceKopeks column is the running sum;
-// this table is the audit trail.
+// Append-only ledger of every ЮKassa interaction.
+//   - 'bind_first_charge' — first VIP-FNS activation: card was bound
+//     and the first day pre-paid in one shot.
+//   - 'daily_charge' — autopay deduction by the daily cron.
+//   - 'charge_failed' — autopay attempt rejected by ЮKassa
+//     (declined, expired, blocked). The cron also wipes the
+//     SpecialistVipFns rows for that user when this happens.
+//   - 'vip_deactivated' — explicit deactivation marker (manual
+//     unbind, all-fail rollback).
 model BillingTx {
   id            String   @id @default(uuid())
   userId        String   @map("user_id")
-  // Positive = credit (top-up, refund). Negative = debit (daily
-  // charge). Stored in kopeks to avoid float math.
+  // Negative = debit (charge). Stored in kopeks to avoid float math.
+  // 'charge_failed' rows record the attempted amount as negative too,
+  // so a quick sum can't accidentally count a failure as paid.
   amountKopeks  Int      @map("amount_kopeks")
-  // 'topup' | 'daily_charge' | 'refund' | 'admin_adjust'
   kind          String
-  // Optional FNS reference for daily_charge rows, NULL otherwise.
+  // Optional FNS reference — set on daily_charge / bind_first_charge.
   fnsId         String?  @map("fns_id")
-  // ЮKassa payment id for topup rows, NULL otherwise.
+  // ЮKassa payment id, the source of truth for de-dupe.
   externalRef   String?  @map("external_ref")
   description   String?
   createdAt     DateTime @default(now()) @map("created_at")

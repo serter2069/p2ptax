@@ -188,6 +188,7 @@ export default function UnifiedProfile() {
     focus?: string;
     tab?: string;
     topup?: string;
+    vip?: string;
   }>();
   const { ready } = useRequireAuth();
   const { width } = useWindowDimensions();
@@ -559,7 +560,7 @@ export default function UnifiedProfile() {
 
           {/* === BILLING TAB ====================================== */}
           {tabFromQuery === "billing" && isSpecialistUser && (
-            <BillingTab topupSuccess={params.topup === "ok"} />
+            <BillingTab topupSuccess={params.topup === "ok" || params.vip === "ok"} />
           )}
 
           {/* === ACCOUNT TAB ====================================== */}

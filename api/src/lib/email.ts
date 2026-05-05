@@ -93,3 +93,42 @@ export async function sendNewRequestForFnsEmail(params: {
       `<p>С уважением,<br>P2PTax</p>`,
   });
 }
+
+/**
+ * Tell a specialist their daily VIP autopay was rejected. All their
+ * VIP-FNS toggles have been deactivated and they need to update the
+ * card before they can re-subscribe.
+ */
+export async function sendVipChargeFailedEmail(params: {
+  toEmail: string;
+  toName: string;
+  amountRub: number;
+}): Promise<void> {
+  const appUrl = process.env.APP_URL || "https://p2ptax.smartlaunchhub.com";
+  const link = `${appUrl}/profile?tab=billing`;
+
+  if (!config.smtpUser) {
+    console.log(
+      `[email] Would notify ${params.toEmail}: vip charge failed (${params.amountRub} ₽)`
+    );
+    return;
+  }
+
+  await transporter.sendMail({
+    from: `"P2PTax" <${config.smtpFrom}>`,
+    to: params.toEmail,
+    subject: `Не удалось списать ${params.amountRub} ₽ за VIP — P2PTax`,
+    text:
+      `Здравствуйте, ${params.toName}!\n\n` +
+      `Сегодня не удалось списать ${params.amountRub} ₽ за подписку VIP по ИФНС.\n` +
+      `Все ваши VIP-подписки приостановлены до тех пор, пока вы не привяжете действующую карту.\n\n` +
+      `Открыть страницу оплаты: ${link}\n\n` +
+      `С уважением,\nP2PTax`,
+    html:
+      `<p>Здравствуйте, ${params.toName}!</p>` +
+      `<p>Сегодня не удалось списать <strong>${params.amountRub} ₽</strong> за подписку VIP по ИФНС.</p>` +
+      `<p>Все ваши VIP-подписки приостановлены до тех пор, пока вы не привяжете действующую карту.</p>` +
+      `<p><a href="${link}">Открыть страницу оплаты</a></p>` +
+      `<p>С уважением,<br>P2PTax</p>`,
+  });
+}

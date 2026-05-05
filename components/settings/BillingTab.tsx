@@ -1,14 +1,13 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
   Pressable,
   ActivityIndicator,
-  TextInput,
   Linking,
   Platform,
 } from "react-native";
-import { Wallet, CreditCard, Crown, Check } from "lucide-react-native";
+import { CreditCard, Crown, AlertCircle, Trash2 } from "lucide-react-native";
 import Card from "@/components/ui/Card";
 import StyledSwitch from "@/components/ui/StyledSwitch";
 import { dialog } from "@/lib/dialog";
@@ -28,19 +27,24 @@ interface FnsCatalogItem {
   activatedAt: string | null;
 }
 
-interface BalancePayload {
+interface MePayload {
   isSpecialist: boolean;
-  balanceKopeks: number;
-  balanceRub: number;
+  hasPaymentMethod: boolean;
+  paymentMethodTitle: string | null;
+  lastChargeFailedAt: string | null;
   dailyChargeKopeks: number;
   dailyChargeRub: number;
-  daysCovered: number | null;
+  monthlyEstimateKopeks: number;
+  monthlyEstimateRub: number;
   fnsCatalog: FnsCatalogItem[];
 }
 
-interface TopupResponse {
-  paymentId: string;
-  confirmationUrl: string;
+interface VipFnsResponse {
+  ok: boolean;
+  needsRedirect?: boolean;
+  confirmationUrl?: string;
+  alreadyActive?: boolean;
+  charged?: number;
 }
 
 interface TxItem {
@@ -53,8 +57,6 @@ interface TxItem {
   createdAt: string;
 }
 
-const QUICK_TOPUPS_KOPEKS = [50000, 100000, 200000, 500000];
-
 function formatRub(kopeks: number): string {
   const rub = kopeks / 100;
   return `${rub.toLocaleString("ru-RU", { maximumFractionDigits: 2 })} ₽`;
@@ -62,45 +64,50 @@ function formatRub(kopeks: number): string {
 
 function txKindLabel(kind: string): string {
   switch (kind) {
-    case "topup": return "Пополнение";
-    case "topup_pending": return "Платёж в обработке";
-    case "daily_charge": return "Ежедневное списание";
-    case "vip_deactivated": return "VIP отключён (нет средств)";
-    case "refund": return "Возврат";
-    case "admin_adjust": return "Корректировка";
-    default: return kind;
+    case "bind_first_charge":
+      return "Привязка карты + день 1";
+    case "bind_pending":
+      return "Платёж в обработке";
+    case "daily_charge":
+      return "Ежедневное списание";
+    case "charge_failed":
+      return "Списание отклонено";
+    case "card_unbound":
+      return "Карта отвязана";
+    default:
+      return kind;
   }
 }
 
 /**
- * Billing tab — VIP wallet + per-FNS subscription toggles + transaction
- * history. Shown on /profile?tab=billing for users with isSpecialist=true.
+ * Billing tab — recurring autopay model. No top-ups, no balance.
  *
- * Architecture note: top-up creates a redirect-flow ЮKassa Payment;
- * we open the confirmation_url and let the user pay over there. On
- * success ЮKassa returns them to /profile?tab=billing&topup=ok and
- * fires the webhook on the server, which credits the wallet — the FE
- * just refetches the balance when ?topup=ok is present.
+ *   - First VIP-FNS toggle: backend creates a redirect-flow ЮKassa
+ *     payment for one day's price + save_payment_method:true. We
+ *     send the user to confirmation_url; on return ?vip=ok we
+ *     refetch /me until the webhook lands the saved card.
+ *   - Subsequent toggles: server-to-server autopay using the saved
+ *     card, instant. The toggle returns ok+charged immediately.
+ *   - The cron handles daily renewals; nothing for the user to do.
  */
 export default function BillingTab({
   topupSuccess = false,
 }: {
   topupSuccess?: boolean;
 }) {
-  const [data, setData] = useState<BalancePayload | null>(null);
+  const [data, setData] = useState<MePayload | null>(null);
   const [txs, setTxs] = useState<TxItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyFnsId, setBusyFnsId] = useState<string | null>(null);
-  const [topupBusy, setTopupBusy] = useState(false);
-  const [customTopup, setCustomTopup] = useState("");
+  const [unbindBusy, setUnbindBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
-      const [bal, tx] = await Promise.all([
-        apiGet<BalancePayload>("/api/billing/balance"),
+      const [me, tx] = await Promise.all([
+        apiGet<MePayload>("/api/billing/me"),
         apiGet<{ transactions: TxItem[] }>("/api/billing/transactions"),
       ]);
-      setData(bal);
+      setData(me);
       setTxs(tx.transactions);
     } catch (e) {
       if (__DEV__) console.error("billing fetch error", e);
@@ -113,14 +120,21 @@ export default function BillingTab({
     void refresh();
   }, [refresh]);
 
-  // After ЮKassa redirects back with ?topup=ok, the webhook may take a
-  // beat to land. Refetch once on mount, then again 4s later, so the
-  // updated balance shows up without a manual refresh.
+  // After ЮKassa redirects back with ?vip=ok the webhook may still
+  // be in flight. Refetch on mount + 4s later so the UI catches up.
   useEffect(() => {
     if (!topupSuccess) return;
     const t = setTimeout(() => void refresh(), 4000);
     return () => clearTimeout(t);
   }, [topupSuccess, refresh]);
+
+  const redirect = useCallback((url: string) => {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      window.location.href = url;
+    } else {
+      void Linking.openURL(url);
+    }
+  }, []);
 
   const handleToggle = useCallback(
     async (item: FnsCatalogItem, next: boolean) => {
@@ -128,11 +142,19 @@ export default function BillingTab({
       setBusyFnsId(item.fnsId);
       try {
         if (next) {
-          await apiPost(`/api/billing/vip-fns/${item.fnsId}`, {});
+          const res = await apiPost<VipFnsResponse>(
+            `/api/billing/vip-fns/${item.fnsId}`,
+            {}
+          );
+          if (res.needsRedirect && res.confirmationUrl) {
+            redirect(res.confirmationUrl);
+            return;
+          }
+          await refresh();
         } else {
           await apiDelete(`/api/billing/vip-fns/${item.fnsId}`);
+          await refresh();
         }
-        await refresh();
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Не удалось изменить подписку";
         await dialog.alert({ title: "Ошибка", message: msg });
@@ -140,47 +162,29 @@ export default function BillingTab({
         setBusyFnsId(null);
       }
     },
-    [refresh]
+    [redirect, refresh]
   );
 
-  const handleTopup = useCallback(
-    async (kopeks: number) => {
-      if (kopeks < 10000 || kopeks > 10_000_000) {
-        await dialog.alert({
-          title: "Сумма вне диапазона",
-          message: "Минимум 100 ₽, максимум 100 000 ₽ за один платёж.",
-        });
-        return;
-      }
-      setTopupBusy(true);
-      try {
-        const res = await apiPost<TopupResponse>("/api/billing/topup", {
-          amountKopeks: kopeks,
-        });
-        // Redirect the browser straight to the ЮKassa hosted checkout.
-        // On native we'd Linking.openURL — on web window.location.href
-        // keeps the user inside the same browser tab so they come back
-        // to /profile?tab=billing&topup=ok after paying.
-        if (Platform.OS === "web" && typeof window !== "undefined") {
-          window.location.href = res.confirmationUrl;
-        } else {
-          await Linking.openURL(res.confirmationUrl);
-        }
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "Не удалось создать платёж";
-        await dialog.alert({ title: "Ошибка", message: msg });
-      } finally {
-        setTopupBusy(false);
-      }
-    },
-    []
-  );
-
-  const customTopupKopeks = useMemo(() => {
-    const n = parseFloat(customTopup.replace(",", "."));
-    if (!Number.isFinite(n) || n <= 0) return null;
-    return Math.round(n * 100);
-  }, [customTopup]);
+  const handleUnbind = useCallback(async () => {
+    const confirmed = await dialog.confirm({
+      title: "Отвязать карту?",
+      message:
+        "Это отключит все ваши VIP-подписки. Чтобы возобновить — придётся привязать карту заново.",
+      confirmLabel: "Отвязать",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setUnbindBusy(true);
+    try {
+      await apiDelete("/api/billing/payment-method");
+      await refresh();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Не удалось отвязать карту";
+      await dialog.alert({ title: "Ошибка", message: msg });
+    } finally {
+      setUnbindBusy(false);
+    }
+  }, [refresh]);
 
   if (loading || !data) {
     return (
@@ -200,24 +204,80 @@ export default function BillingTab({
     );
   }
 
+  const activeCount = data.fnsCatalog.filter((f) => f.vipActive).length;
+
   return (
     <View style={{ gap: 16 }}>
-      {/* WALLET HEADER */}
+      {/* CARD HEADER */}
       <Card>
         <View className="flex-row items-center mb-3" style={{ gap: 8 }}>
-          <Wallet size={18} color={colors.primary} />
+          <CreditCard size={18} color={colors.primary} />
           <Text className="text-base font-semibold" style={{ color: colors.text }}>
-            VIP-баланс
+            Способ оплаты
           </Text>
         </View>
-        <Text style={{ fontSize: 32, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
-          {formatRub(data.balanceKopeks)}
-        </Text>
-        <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 16 }}>
-          {data.dailyChargeKopeks > 0
-            ? `Расход ${formatRub(data.dailyChargeKopeks)}/день · хватит на ${data.daysCovered ?? "—"} дн.`
-            : "Активных VIP-подписок нет"}
-        </Text>
+
+        {data.hasPaymentMethod ? (
+          <>
+            <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text, marginBottom: 4 }}>
+              {data.paymentMethodTitle ?? "Карта"}
+            </Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 12 }}>
+              Списания происходят раз в день автоматически. Включите подписку у нужной ИФНС ниже.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Отвязать карту"
+              onPress={handleUnbind}
+              disabled={unbindBusy}
+              style={({ pressed }) => [
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  alignSelf: "flex-start",
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.white,
+                },
+                pressed && { opacity: 0.7 },
+                unbindBusy && { opacity: 0.5 },
+              ]}
+            >
+              <Trash2 size={14} color={colors.textSecondary} />
+              <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                {unbindBusy ? "..." : "Отвязать карту"}
+              </Text>
+            </Pressable>
+          </>
+        ) : (
+          <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+            Карта пока не привязана. Включите VIP у любой ИФНС ниже — сначала вы оплатите первый день и привяжете карту, дальше списания автоматические.
+          </Text>
+        )}
+
+        {data.lastChargeFailedAt && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: colors.dangerSoft,
+              padding: 10,
+              borderRadius: 10,
+              marginTop: 12,
+            }}
+          >
+            <AlertCircle size={16} color={colors.error} />
+            <Text style={{ color: colors.error, fontSize: 13, flex: 1 }}>
+              Последнее списание не прошло. Привяжите действующую карту, чтобы возобновить подписки.
+            </Text>
+          </View>
+        )}
+
         {topupSuccess && (
           <View
             style={{
@@ -227,90 +287,33 @@ export default function BillingTab({
               backgroundColor: colors.limeSoft,
               padding: 10,
               borderRadius: 10,
-              marginBottom: 12,
+              marginTop: 12,
             }}
           >
-            <Check size={16} color={colors.success} />
             <Text style={{ color: colors.success, fontSize: 13, flex: 1 }}>
-              Платёж принят. Баланс обновится в течение нескольких секунд.
+              Платёж принят. Подписка активируется в течение нескольких секунд.
             </Text>
           </View>
         )}
-        <View className="flex-row flex-wrap" style={{ gap: 8 }}>
-          {QUICK_TOPUPS_KOPEKS.map((amount) => (
-            <Pressable
-              key={amount}
-              accessibilityRole="button"
-              accessibilityLabel={`Пополнить на ${formatRub(amount)}`}
-              onPress={() => handleTopup(amount)}
-              disabled={topupBusy}
-              style={({ pressed }) => [
-                {
-                  paddingHorizontal: 14,
-                  paddingVertical: 10,
-                  borderRadius: 10,
-                  backgroundColor: colors.accentSoft,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                },
-                pressed && { opacity: 0.7 },
-                topupBusy && { opacity: 0.5 },
-              ]}
-            >
-              <Text style={{ color: colors.primary, fontWeight: "600", fontSize: 14 }}>
-                + {formatRub(amount)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <View
-          className="flex-row items-center mt-3"
-          style={{ gap: 8 }}
-        >
-          <TextInput
-            value={customTopup}
-            onChangeText={setCustomTopup}
-            placeholder="Своя сумма (₽)"
-            placeholderTextColor={colors.placeholder}
-            keyboardType="numeric"
-            style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: 10,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              fontSize: 14,
-              backgroundColor: colors.white,
-              color: colors.text,
-            }}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Пополнить произвольной суммой"
-            disabled={!customTopupKopeks || topupBusy}
-            onPress={() => customTopupKopeks && handleTopup(customTopupKopeks)}
-            style={({ pressed }) => [
-              {
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-                borderRadius: 10,
-                backgroundColor: colors.primary,
-              },
-              (!customTopupKopeks || topupBusy) && { opacity: 0.5 },
-              pressed && { opacity: 0.7 },
-            ]}
-          >
-            <CreditCard size={14} color={colors.white} />
-            <Text style={{ color: colors.white, fontWeight: "600", fontSize: 14 }}>
-              {topupBusy ? "..." : "Пополнить"}
-            </Text>
-          </Pressable>
-        </View>
       </Card>
+
+      {/* SUMMARY */}
+      {activeCount > 0 && (
+        <Card>
+          <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+            Активных подписок: <Text style={{ color: colors.text, fontWeight: "600" }}>{activeCount}</Text>
+          </Text>
+          <Text style={{ fontSize: 28, fontWeight: "700", color: colors.text, marginTop: 4 }}>
+            {formatRub(data.dailyChargeKopeks)}
+            <Text style={{ fontSize: 14, fontWeight: "400", color: colors.textSecondary }}>
+              {" "}/ день
+            </Text>
+          </Text>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
+            ≈ {formatRub(data.monthlyEstimateKopeks)} в месяц
+          </Text>
+        </Card>
+      )}
 
       {/* FNS LIST */}
       <Card>
@@ -380,7 +383,7 @@ export default function BillingTab({
           </Text>
         ) : (
           txs.map((t) => {
-            const positive = t.amountKopeks > 0;
+            const isFailed = t.kind === "charge_failed";
             return (
               <View
                 key={t.id}
@@ -399,16 +402,17 @@ export default function BillingTab({
                     {new Date(t.createdAt).toLocaleString("ru-RU")}
                   </Text>
                 </View>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "600",
-                    color: positive ? colors.success : colors.text,
-                  }}
-                >
-                  {positive ? "+" : ""}
-                  {formatRub(Math.abs(t.amountKopeks))}
-                </Text>
+                {t.amountKopeks !== 0 && (
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: isFailed ? colors.error : colors.text,
+                    }}
+                  >
+                    {formatRub(Math.abs(t.amountKopeks))}
+                  </Text>
+                )}
               </View>
             );
           })
