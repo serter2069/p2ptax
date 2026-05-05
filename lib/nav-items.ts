@@ -144,6 +144,12 @@ export const ADMIN_ITEMS: NavItem[] = [
     match: (ctx) => groupMatch(ctx, "(admin-tabs)", "complaints"),
   },
   {
+    label: "Тарифы ИФНС",
+    href: "/admin/fns-prices",
+    icon: BarChart2,
+    match: (ctx) => ctx.path.startsWith("/admin/fns-prices"),
+  },
+  {
     label: "Настройки системы",
     href: "/admin/settings",
     icon: Settings,
