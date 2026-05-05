@@ -140,12 +140,96 @@ router.get("/ifns/search", async (req: Request, res: Response) => {
         address: true,
         cityId: true,
         city: { select: { id: true, name: true, slug: true } },
+        _count: {
+          select: {
+            specialistFns: true,
+            requests: {
+              where: { status: { in: ["ACTIVE", "CLOSING_SOON"] }, isPublic: true },
+            },
+          },
+        },
       },
     });
 
-    res.json({ items: offices });
+    res.json({
+      items: offices.map((o) => ({
+        id: o.id,
+        name: o.name,
+        code: o.code,
+        address: o.address,
+        cityId: o.cityId,
+        city: o.city,
+        specialistCount: o._count.specialistFns,
+        activeRequestCount: o._count.requests,
+      })),
+    });
   } catch (error) {
     console.error("ifns/search error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/fns/list?q=&cityId=&limit=&offset= — paginated public
+// catalog used by /fns landing page. Returns one page of FNS rows
+// with counts for cards (specialist count, active+public requests).
+router.get("/fns/list", async (req: Request, res: Response) => {
+  try {
+    const q = normalizeQuery((req.query.q as string) || "");
+    const cityId = (req.query.cityId as string) || "";
+    const limit = Math.min(60, Math.max(1, parseInt(req.query.limit as string) || 30));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+
+    const where: Prisma.FnsOfficeWhereInput = {};
+    if (cityId) where.cityId = cityId;
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: "insensitive" } },
+        { code: { contains: q, mode: "insensitive" } },
+        { searchAliases: { contains: q, mode: "insensitive" } },
+        { city: { name: { contains: q, mode: "insensitive" } } },
+      ];
+    }
+
+    const [offices, total] = await Promise.all([
+      prisma.fnsOffice.findMany({
+        where,
+        orderBy: [{ city: { name: "asc" } }, { name: "asc" }],
+        take: limit,
+        skip: offset,
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          address: true,
+          city: { select: { id: true, name: true, slug: true } },
+          _count: {
+            select: {
+              specialistFns: true,
+              requests: {
+                where: { status: { in: ["ACTIVE", "CLOSING_SOON"] }, isPublic: true },
+              },
+            },
+          },
+        },
+      }),
+      prisma.fnsOffice.count({ where }),
+    ]);
+
+    res.json({
+      items: offices.map((o) => ({
+        id: o.id,
+        name: o.name,
+        code: o.code,
+        address: o.address,
+        city: o.city,
+        specialistCount: o._count.specialistFns,
+        activeRequestCount: o._count.requests,
+      })),
+      total,
+      hasMore: offset + offices.length < total,
+    });
+  } catch (error) {
+    console.error("fns/list error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

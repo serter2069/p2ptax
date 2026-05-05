@@ -12,6 +12,7 @@ import LandingHeader from "@/components/landing/LandingHeader";
 import HeroBlock, { type HeroSpecialistPreview } from "@/components/landing/HeroBlock";
 import TrustStrip from "@/components/landing/TrustStrip";
 import TrustPillarsSection from "@/components/landing/TrustPillarsSection";
+import FnsSearchSection from "@/components/landing/FnsSearchSection";
 import ServicesSection from "@/components/landing/ServicesSection";
 import HowItWorksFlow from "@/components/landing/HowItWorksFlow";
 import CasesSection from "@/components/landing/CasesSection";
@@ -234,6 +235,11 @@ export default function LandingScreen() {
         {/* Trust pillars — moat sits directly below hero so ex-FNS / NDA / no-result
             messaging is visible above the fold on a typical desktop landing. */}
         <TrustPillarsSection isDesktop={isDesktop} />
+
+        {/* Specific-FNS search lives right after pillars so users with a
+            known inspection code (the most-discovery-ready intent) see it
+            before the generic "how it works" content lower down. */}
+        <FnsSearchSection isDesktop={isDesktop} />
 
         <TrustStrip
           isDesktop={isDesktop}

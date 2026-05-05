@@ -34,11 +34,14 @@ function dailyChargeKopeks(monthlyKopeks: number): number {
   return Math.ceil(monthlyKopeks / 30);
 }
 
-// GET /api/billing/me — single shape for the entire billing tab.
+// GET /api/billing/me — header data + active VIP subscriptions.
+// Active subscriptions are independent of the specialist's working
+// area: a user can subscribe to ANY FNS, not just ones they cover.
+// Catalog discovery happens via /fns-search below.
 router.get("/me", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const [user, specialistFns, vipRows] = await Promise.all([
+    const [user, vipRows] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -48,10 +51,12 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
           lastChargeFailedAt: true,
         },
       }),
-      prisma.specialistFns.findMany({
+      prisma.specialistVipFns.findMany({
         where: { specialistId: userId },
+        orderBy: { activatedAt: "desc" },
         select: {
           fnsId: true,
+          activatedAt: true,
           fns: {
             select: {
               id: true,
@@ -62,11 +67,6 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
             },
           },
         },
-        orderBy: [{ fns: { city: { name: "asc" } } }, { fns: { name: "asc" } }],
-      }),
-      prisma.specialistVipFns.findMany({
-        where: { specialistId: userId },
-        select: { fnsId: true, activatedAt: true },
       }),
     ]);
 
@@ -75,25 +75,23 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    const vipMap = new Map(vipRows.map((v) => [v.fnsId, v.activatedAt]));
-    const fnsCatalog = specialistFns.map((sf) => {
-      const monthly = sf.fns.vipMonthlyPriceKopeks;
+    const activeSubscriptions = vipRows.map((row) => {
+      const monthly = row.fns.vipMonthlyPriceKopeks;
       return {
-        fnsId: sf.fns.id,
-        fnsName: sf.fns.name,
-        fnsCode: sf.fns.code,
-        cityId: sf.fns.city.id,
-        cityName: sf.fns.city.name,
+        fnsId: row.fns.id,
+        fnsName: row.fns.name,
+        fnsCode: row.fns.code,
+        cityId: row.fns.city.id,
+        cityName: row.fns.city.name,
         monthlyPriceKopeks: monthly,
         monthlyPriceRub: monthly == null ? null : monthly / KOPEKS_IN_RUB,
         dailyChargeKopeks: monthly == null ? null : dailyChargeKopeks(monthly),
-        vipActive: vipMap.has(sf.fns.id),
-        activatedAt: vipMap.get(sf.fns.id) ?? null,
+        activatedAt: row.activatedAt,
       };
     });
 
-    const dailyTotalKopeks = fnsCatalog.reduce(
-      (sum, f) => sum + (f.vipActive ? f.dailyChargeKopeks ?? 0 : 0),
+    const dailyTotalKopeks = activeSubscriptions.reduce(
+      (sum, s) => sum + (s.dailyChargeKopeks ?? 0),
       0
     );
 
@@ -106,10 +104,80 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
       dailyChargeRub: dailyTotalKopeks / KOPEKS_IN_RUB,
       monthlyEstimateKopeks: dailyTotalKopeks * 30,
       monthlyEstimateRub: (dailyTotalKopeks * 30) / KOPEKS_IN_RUB,
-      fnsCatalog,
+      activeSubscriptions,
     });
   } catch (error) {
     console.error("billing/me error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * GET /api/billing/fns-search?q=&cityId=&limit= — searchable list of
+ * subscribable FNS. Only includes offices with a non-null
+ * vipMonthlyPriceKopeks (admin set a price). Subscriptions the user
+ * already has are filtered out so the list shows only "available to
+ * subscribe" rows.
+ */
+router.get("/fns-search", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const q = ((req.query.q as string) || "").trim().toLowerCase();
+    const cityId = (req.query.cityId as string) || "";
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 30));
+
+    const myVip = await prisma.specialistVipFns.findMany({
+      where: { specialistId: userId },
+      select: { fnsId: true },
+    });
+    const excludeIds = myVip.map((v) => v.fnsId);
+
+    const where: {
+      vipMonthlyPriceKopeks: { not: null };
+      cityId?: string;
+      id?: { notIn: string[] };
+      OR?: Array<Record<string, unknown>>;
+    } = {
+      vipMonthlyPriceKopeks: { not: null },
+    };
+    if (cityId) where.cityId = cityId;
+    if (excludeIds.length > 0) where.id = { notIn: excludeIds };
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: "insensitive" } },
+        { code: { contains: q, mode: "insensitive" } },
+        { searchAliases: { contains: q, mode: "insensitive" } },
+        { city: { name: { contains: q, mode: "insensitive" } } },
+      ];
+    }
+
+    const offices = await prisma.fnsOffice.findMany({
+      where,
+      orderBy: [{ city: { name: "asc" } }, { name: "asc" }],
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        vipMonthlyPriceKopeks: true,
+        city: { select: { id: true, name: true } },
+      },
+    });
+
+    const items = offices.map((o) => ({
+      fnsId: o.id,
+      fnsName: o.name,
+      fnsCode: o.code,
+      cityId: o.city.id,
+      cityName: o.city.name,
+      monthlyPriceKopeks: o.vipMonthlyPriceKopeks!,
+      monthlyPriceRub: o.vipMonthlyPriceKopeks! / KOPEKS_IN_RUB,
+      dailyChargeKopeks: dailyChargeKopeks(o.vipMonthlyPriceKopeks!),
+    }));
+
+    res.json({ items });
+  } catch (error) {
+    console.error("billing/fns-search error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

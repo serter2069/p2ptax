@@ -4,8 +4,10 @@ import {
   Text,
   Pressable,
   ActivityIndicator,
+  TextInput,
   Linking,
   Platform,
+  ScrollView,
 } from "react-native";
 import {
   CreditCard,
@@ -15,14 +17,14 @@ import {
   Plus,
   X,
   CheckCircle2,
-  Clock,
+  Search,
 } from "lucide-react-native";
 import Card from "@/components/ui/Card";
 import { dialog } from "@/lib/dialog";
 import { apiGet, apiPost, apiDelete } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
-interface FnsCatalogItem {
+interface ActiveSub {
   fnsId: string;
   fnsName: string;
   fnsCode: string;
@@ -31,8 +33,7 @@ interface FnsCatalogItem {
   monthlyPriceKopeks: number | null;
   monthlyPriceRub: number | null;
   dailyChargeKopeks: number | null;
-  vipActive: boolean;
-  activatedAt: string | null;
+  activatedAt: string;
 }
 
 interface MePayload {
@@ -44,7 +45,24 @@ interface MePayload {
   dailyChargeRub: number;
   monthlyEstimateKopeks: number;
   monthlyEstimateRub: number;
-  fnsCatalog: FnsCatalogItem[];
+  activeSubscriptions: ActiveSub[];
+}
+
+interface SearchableFns {
+  fnsId: string;
+  fnsName: string;
+  fnsCode: string;
+  cityId: string;
+  cityName: string;
+  monthlyPriceKopeks: number;
+  monthlyPriceRub: number;
+  dailyChargeKopeks: number;
+}
+
+interface CityRow {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 interface VipFnsResponse {
@@ -93,20 +111,21 @@ function txKindLabel(kind: string): string {
 }
 
 /**
- * Billing tab — recurring autopay model.
+ * Billing tab — recurring autopay model with independent VIP catalog.
  *
- * Two-list layout:
- *   1. "Мои VIP-подписки" — what's active right now, with the price
- *      and "Отключить" button. Empty-state explains how it works.
- *   2. "Доступно для подключения" — FNS in the specialist's working
- *      area with a configured price and no active subscription.
- *      Each row has a single "Подключить за N ₽/мес" CTA — first
- *      click redirects to ЮKassa to bind the card; subsequent rows
- *      autopay instantly.
+ * VIP-подписки независимы от рабочей зоны: специалист может подписаться
+ * на ЛЮБУЮ ИФНС России, не обязательно из своих ИФНС в каталоге. Поэтому
+ * поиск работает по всем ИФНС с настроенным тарифом, а не только по
+ * рабочей зоне пользователя.
  *
- * Card details + monthly summary live in a top hero card so the
- * user can see at a glance what they pay and which card it'll come
- * from. History is collapsed at the bottom — most users won't open it.
+ * Sections:
+ *   1. Hero (объяснение + ₽/мес итог + алерты)
+ *   2. Saved card (если привязана) + кнопка отвязать
+ *   3. "Мои подписки" — me.activeSubscriptions (включая ИФНС вне
+ *      рабочей зоны)
+ *   4. "Подключить новую ИФНС" — поиск + city filter chip + список
+ *      результатов с кнопкой "+ N ₽/мес"
+ *   5. История операций
  */
 export default function BillingTab({
   topupSuccess = false,
@@ -118,6 +137,13 @@ export default function BillingTab({
   const [loading, setLoading] = useState(true);
   const [busyFnsId, setBusyFnsId] = useState<string | null>(null);
   const [unbindBusy, setUnbindBusy] = useState(false);
+
+  // Catalog search state
+  const [q, setQ] = useState("");
+  const [cityFilterId, setCityFilterId] = useState<string | null>(null);
+  const [cities, setCities] = useState<CityRow[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchableFns[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -146,6 +172,30 @@ export default function BillingTab({
     return () => clearTimeout(t);
   }, [topupSuccess, refresh]);
 
+  // Cities list for the filter chips. Loaded once.
+  useEffect(() => {
+    apiGet<{ items: CityRow[] }>("/api/cities?limit=100")
+      .then((res) => setCities(res.items))
+      .catch((e) => __DEV__ && console.error("cities load", e));
+  }, []);
+
+  // Catalog search — debounced 250ms.
+  useEffect(() => {
+    if (!data?.isSpecialist) return;
+    setSearchLoading(true);
+    const t = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (q.trim()) params.set("q", q.trim());
+      if (cityFilterId) params.set("cityId", cityFilterId);
+      params.set("limit", "30");
+      apiGet<{ items: SearchableFns[] }>(`/api/billing/fns-search?${params}`)
+        .then((res) => setSearchResults(res.items))
+        .catch(() => setSearchResults([]))
+        .finally(() => setSearchLoading(false));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [q, cityFilterId, data?.isSpecialist, data?.activeSubscriptions.length]);
+
   const redirect = useCallback((url: string) => {
     if (Platform.OS === "web" && typeof window !== "undefined") {
       window.location.href = url;
@@ -155,12 +205,13 @@ export default function BillingTab({
   }, []);
 
   const handleSubscribe = useCallback(
-    async (item: FnsCatalogItem) => {
-      if (item.monthlyPriceKopeks == null) return;
-      setBusyFnsId(item.fnsId);
+    async (fnsId: string, fnsName: string, monthlyKopeks: number) => {
+      void monthlyKopeks; // already shown on the button; backend re-reads canonical price
+      void fnsName;
+      setBusyFnsId(fnsId);
       try {
         const res = await apiPost<VipFnsResponse>(
-          `/api/billing/vip-fns/${item.fnsId}`,
+          `/api/billing/vip-fns/${fnsId}`,
           {}
         );
         if (res.needsRedirect && res.confirmationUrl) {
@@ -179,18 +230,18 @@ export default function BillingTab({
   );
 
   const handleUnsubscribe = useCallback(
-    async (item: FnsCatalogItem) => {
+    async (sub: ActiveSub) => {
       const confirmed = await dialog.confirm({
-        title: `Отключить VIP по «${item.fnsName}»?`,
+        title: `Отключить VIP по «${sub.fnsName}»?`,
         message:
           "Списания за эту ИФНС прекратятся со следующего дня. Карту это не отвяжет — другие подписки продолжат работать.",
         confirmLabel: "Отключить",
         destructive: true,
       });
       if (!confirmed) return;
-      setBusyFnsId(item.fnsId);
+      setBusyFnsId(sub.fnsId);
       try {
-        await apiDelete(`/api/billing/vip-fns/${item.fnsId}`);
+        await apiDelete(`/api/billing/vip-fns/${sub.fnsId}`);
         await refresh();
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Не удалось отключить VIP";
@@ -223,18 +274,11 @@ export default function BillingTab({
     }
   }, [refresh]);
 
-  const { activeSubs, available, unavailable } = useMemo(() => {
-    if (!data) return { activeSubs: [], available: [], unavailable: [] };
-    const active: FnsCatalogItem[] = [];
-    const avail: FnsCatalogItem[] = [];
-    const unav: FnsCatalogItem[] = [];
-    for (const item of data.fnsCatalog) {
-      if (item.vipActive) active.push(item);
-      else if (item.monthlyPriceKopeks == null) unav.push(item);
-      else avail.push(item);
-    }
-    return { activeSubs: active, available: avail, unavailable: unav };
-  }, [data]);
+  // City chip-list — show top 8 with the most VIP-priced FNS to reduce
+  // visual noise, plus an "Все" pseudo-chip to clear the filter.
+  const cityChips = useMemo(() => {
+    return cities.slice(0, 12);
+  }, [cities]);
 
   if (loading || !data) {
     return (
@@ -248,15 +292,17 @@ export default function BillingTab({
     return (
       <Card>
         <Text className="text-base" style={{ color: colors.text }}>
-          Биллинг доступен только специалистам. Заполните профиль специалиста, чтобы получать запросы клиентов и подключать приоритетные уведомления по вашим ИФНС.
+          Биллинг доступен только специалистам. Заполните профиль специалиста, чтобы получать запросы клиентов и подключать приоритетные уведомления по любой ИФНС России.
         </Text>
       </Card>
     );
   }
 
+  const activeSubs = data.activeSubscriptions;
+
   return (
     <View style={{ gap: 16 }}>
-      {/* HERO — что такое VIP + что я уже плачу */}
+      {/* HERO */}
       <Card>
         <View className="flex-row items-center" style={{ gap: 8, marginBottom: 8 }}>
           <Crown size={20} color={colors.primary} />
@@ -265,7 +311,7 @@ export default function BillingTab({
           </Text>
         </View>
         <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20 }}>
-          Подключаете подписку на нужные ИФНС — приходит email сразу, как только клиент создаст запрос. Без VIP уведомление приходит с задержкой 5 минут. Списания каждый день автоматически с привязанной карты.
+          Подключите подписку на любые ИФНС России — и получайте email мгновенно, как только клиент создаст запрос. Без VIP уведомление приходит с задержкой 5 минут. Списания каждый день автоматически с привязанной карты.
         </Text>
 
         {activeSubs.length > 0 && (
@@ -403,11 +449,11 @@ export default function BillingTab({
           <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
             За эти ИФНС вы получаете уведомления мгновенно
           </Text>
-          {activeSubs.map((item, idx) => {
-            const busy = busyFnsId === item.fnsId;
+          {activeSubs.map((sub, idx) => {
+            const busy = busyFnsId === sub.fnsId;
             return (
               <View
-                key={item.fnsId}
+                key={sub.fnsId}
                 className="flex-row items-center"
                 style={{
                   gap: 12,
@@ -423,11 +469,12 @@ export default function BillingTab({
                     style={{ fontSize: 14, fontWeight: "600", color: colors.text }}
                     numberOfLines={1}
                   >
-                    {item.fnsName}
+                    {sub.fnsName}
                   </Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                    {item.cityName} · {formatRub(item.monthlyPriceKopeks!)}/мес
-                    {item.activatedAt && ` · с ${formatActivatedAt(item.activatedAt)}`}
+                    {sub.cityName}
+                    {sub.monthlyPriceKopeks != null && ` · ${formatRub(sub.monthlyPriceKopeks)}/мес`}
+                    {` · с ${formatActivatedAt(sub.activatedAt)}`}
                   </Text>
                 </View>
                 {busy ? (
@@ -435,8 +482,8 @@ export default function BillingTab({
                 ) : (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Отключить VIP по ${item.fnsName}`}
-                    onPress={() => handleUnsubscribe(item)}
+                    accessibilityLabel={`Отключить VIP по ${sub.fnsName}`}
+                    onPress={() => handleUnsubscribe(sub)}
                     style={({ pressed }) => [
                       {
                         flexDirection: "row",
@@ -464,29 +511,88 @@ export default function BillingTab({
         </Card>
       )}
 
-      {/* AVAILABLE TO SUBSCRIBE */}
+      {/* SUBSCRIBE TO A NEW FNS */}
       <Card>
         <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
-          Доступно для подключения
+          Подключить новую ИФНС
         </Text>
         <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
           {data.hasPaymentMethod
-            ? "Подключение списывает первый день сразу с привязанной карты."
-            : "При первом подключении вы привяжете карту и оплатите первый день."}
+            ? "Поиск по любой ИФНС России. Подключение списывает первый день сразу с привязанной карты."
+            : "Поиск по любой ИФНС России. При первом подключении вы привяжете карту и оплатите первый день одним платежом."}
         </Text>
 
-        {available.length === 0 && unavailable.length === 0 && (
-          <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-            Сначала добавьте ИФНС в рабочую зону на вкладке «Профиль».
-          </Text>
+        {/* Search input */}
+        <View
+          className="flex-row items-center"
+          style={{
+            gap: 8,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 10,
+            backgroundColor: colors.white,
+            marginBottom: 12,
+          }}
+        >
+          <Search size={16} color={colors.textMuted} />
+          <TextInput
+            value={q}
+            onChangeText={setQ}
+            placeholder="Код, имя ИФНС или город"
+            placeholderTextColor={colors.placeholder}
+            style={{
+              flex: 1,
+              fontSize: 14,
+              color: colors.text,
+              paddingVertical: 4,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              outlineWidth: 0 as any,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              outlineStyle: "none" as any,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              borderStyle: "none" as any,
+            }}
+          />
+        </View>
+
+        {/* City filter chips */}
+        {cityChips.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 6, paddingBottom: 12 }}
+          >
+            <CityChip
+              label="Все города"
+              active={cityFilterId == null}
+              onPress={() => setCityFilterId(null)}
+            />
+            {cityChips.map((c) => (
+              <CityChip
+                key={c.id}
+                label={c.name}
+                active={cityFilterId === c.id}
+                onPress={() => setCityFilterId(cityFilterId === c.id ? null : c.id)}
+              />
+            ))}
+          </ScrollView>
         )}
 
-        {available.length === 0 && unavailable.length === 0 ? null : available.length === 0 ? (
-          <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-            Все доступные ИФНС вашей рабочей зоны уже подключены.
+        {/* Results */}
+        {searchLoading ? (
+          <View className="items-center py-6">
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        ) : searchResults.length === 0 ? (
+          <Text style={{ fontSize: 13, color: colors.textSecondary, paddingVertical: 8 }}>
+            {q || cityFilterId
+              ? "По вашему запросу ничего не найдено."
+              : "Все ИФНС с настроенным тарифом уже подключены."}
           </Text>
         ) : (
-          available.map((item, idx) => {
+          searchResults.map((item, idx) => {
             const busy = busyFnsId === item.fnsId;
             return (
               <View
@@ -517,7 +623,7 @@ export default function BillingTab({
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`Подключить VIP по ${item.fnsName}`}
-                    onPress={() => handleSubscribe(item)}
+                    onPress={() => handleSubscribe(item.fnsId, item.fnsName, item.monthlyPriceKopeks)}
                     style={({ pressed }) => [
                       {
                         flexDirection: "row",
@@ -533,42 +639,13 @@ export default function BillingTab({
                   >
                     <Plus size={14} color={colors.white} />
                     <Text style={{ color: colors.white, fontSize: 13, fontWeight: "600" }}>
-                      {formatRub(item.monthlyPriceKopeks!)}/мес
+                      {formatRub(item.monthlyPriceKopeks)}/мес
                     </Text>
                   </Pressable>
                 )}
               </View>
             );
           })
-        )}
-
-        {unavailable.length > 0 && (
-          <View
-            style={{
-              marginTop: available.length > 0 ? 16 : 0,
-              paddingTop: available.length > 0 ? 12 : 0,
-              borderTopWidth: available.length > 0 ? 1 : 0,
-              borderTopColor: colors.border,
-            }}
-          >
-            <View
-              className="flex-row items-center"
-              style={{ gap: 6, marginBottom: 6 }}
-            >
-              <Clock size={12} color={colors.textMuted} />
-              <Text style={{ fontSize: 11, color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Тариф пока не настроен
-              </Text>
-            </View>
-            {unavailable.map((item) => (
-              <Text
-                key={item.fnsId}
-                style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}
-              >
-                {item.fnsName} · {item.cityName}
-              </Text>
-            ))}
-          </View>
         )}
       </Card>
 
@@ -615,5 +692,44 @@ export default function BillingTab({
         </Card>
       )}
     </View>
+  );
+}
+
+function CityChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Фильтр: ${label}`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        {
+          paddingHorizontal: 12,
+          paddingVertical: 6,
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: active ? colors.primary : colors.border,
+          backgroundColor: active ? colors.primary : colors.white,
+        },
+        pressed && { opacity: 0.7 },
+      ]}
+    >
+      <Text
+        style={{
+          fontSize: 12,
+          fontWeight: active ? "600" : "400",
+          color: active ? colors.white : colors.textSecondary,
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
