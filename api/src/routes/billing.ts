@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
+import { createPayment, fetchPayment } from "../lib/yookassa";
 
 const router = Router();
 
@@ -164,6 +165,142 @@ router.delete("/vip-fns/:fnsId", authMiddleware, async (req: Request, res: Respo
   } catch (error) {
     console.error("billing/vip-fns DELETE error:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/billing/topup — start a ЮKassa Payment for top-up.
+// Body: { amountKopeks: number }. Returns { confirmationUrl } so the
+// FE can redirect the user to ЮKassa's hosted checkout. The actual
+// balance credit happens in /webhook once ЮKassa confirms 'succeeded'.
+router.post("/topup", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { amountKopeks } = req.body as { amountKopeks?: number };
+
+    // Sanity caps: min 100₽, max 100 000₽ per transaction. Keeps
+    // accidental fat-finger mistakes contained on staging too.
+    if (
+      typeof amountKopeks !== "number" ||
+      !Number.isFinite(amountKopeks) ||
+      !Number.isInteger(amountKopeks) ||
+      amountKopeks < 10000 ||
+      amountKopeks > 10_000_000
+    ) {
+      res.status(400).json({ error: "amountKopeks must be 10 000…10 000 000" });
+      return;
+    }
+
+    const returnBase =
+      process.env.YK_RETURN_URL_BASE ?? "https://p2ptax.smartlaunchhub.com";
+    const payment = await createPayment({
+      amountKopeks,
+      description: "Пополнение VIP-баланса P2PTax",
+      userId,
+      returnUrl: `${returnBase}/profile?tab=billing&topup=ok`,
+    });
+
+    // Pre-record a 'pending' ledger entry tagged with the ЮKassa id.
+    // The webhook will look it up by externalRef and switch it to a
+    // posted credit when 'succeeded' arrives.
+    await prisma.billingTx.create({
+      data: {
+        userId,
+        amountKopeks,
+        kind: "topup_pending",
+        externalRef: payment.paymentId,
+        description: "Создан платёж ЮKassa",
+      },
+    });
+
+    res.json({
+      paymentId: payment.paymentId,
+      confirmationUrl: payment.confirmationUrl,
+    });
+  } catch (error) {
+    console.error("billing/topup error:", error);
+    res.status(500).json({ error: "Не удалось создать платёж" });
+  }
+});
+
+// POST /api/billing/webhook — ЮKassa notification endpoint.
+// IMPORTANT: NOT auth-protected (ЮKassa calls it without bearer).
+// Security model: we DON'T trust the body — we re-fetch the payment
+// by id from ЮKassa and act on the canonical status. Webhook can
+// also fire multiple times for the same event; we de-dupe on the
+// pending ledger row (externalRef is unique-ish per payment id).
+router.post("/webhook", async (req: Request, res: Response) => {
+  try {
+    // Body shape: { event, object: { id, status, ... } }
+    const body = req.body as {
+      event?: string;
+      object?: { id?: string };
+    };
+    const paymentId = body?.object?.id;
+    if (!paymentId) {
+      res.status(400).json({ error: "Missing object.id" });
+      return;
+    }
+
+    // Re-fetch — never trust the webhook payload directly. If the
+    // status really is succeeded the canonical fetch will say so.
+    const payment = await fetchPayment(paymentId);
+    if (payment.status !== "succeeded" || !payment.paid) {
+      // Acknowledge non-success events so ЮKassa stops retrying, but
+      // don't credit anything.
+      res.json({ ok: true, ignored: payment.status });
+      return;
+    }
+
+    const userId = payment.metadata?.userId;
+    if (!userId) {
+      res.status(200).json({ ok: true, error: "No userId in metadata" });
+      return;
+    }
+    const valueRub = parseFloat(payment.amount.value);
+    const amountKopeks = Math.round(valueRub * 100);
+    if (!Number.isFinite(amountKopeks) || amountKopeks <= 0) {
+      res.status(200).json({ ok: true, error: "Invalid amount" });
+      return;
+    }
+
+    // De-dupe: if we already credited this paymentId, don't double.
+    const already = await prisma.billingTx.findFirst({
+      where: { externalRef: paymentId, kind: "topup" },
+      select: { id: true },
+    });
+    if (already) {
+      res.json({ ok: true, alreadyCredited: true });
+      return;
+    }
+
+    // Credit balance + write the canonical 'topup' ledger row in one
+    // transaction so a partial failure can't leave the wallet out of
+    // sync with the ledger.
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { vipBalanceKopeks: { increment: amountKopeks } },
+      });
+      await tx.billingTx.create({
+        data: {
+          userId,
+          amountKopeks,
+          kind: "topup",
+          externalRef: paymentId,
+          description: "Пополнение VIP-баланса (ЮKassa)",
+        },
+      });
+      // Mark the pending row resolved (so the user's transaction list
+      // doesn't show two rows for the same payment).
+      await tx.billingTx.deleteMany({
+        where: { externalRef: paymentId, kind: "topup_pending" },
+      });
+    });
+
+    res.json({ ok: true, credited: amountKopeks });
+  } catch (error) {
+    console.error("billing/webhook error:", error);
+    res.status(500).json({ error: "Webhook processing failed" });
   }
 });
 
