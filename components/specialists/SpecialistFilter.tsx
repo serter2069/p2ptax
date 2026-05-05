@@ -121,7 +121,14 @@ export default function SpecialistFilter({
 
   return (
     <View>
-      <View style={{ zIndex: Z.STICKY, paddingBottom: 16 }}>
+      {/* Card-style wrapper matches the /requests catalog filter — same
+          rounded white box with a border. Both catalogs share visual
+          language so users don't perceive 'specialists' and 'requests'
+          as differently-shaped UIs. */}
+      <View
+        className="bg-white border border-border rounded-2xl mt-2 mb-3 px-4 py-3"
+        style={{ zIndex: Z.STICKY }}
+      >
         <CityFnsServicePicker
           mode="entry"
           multiService
