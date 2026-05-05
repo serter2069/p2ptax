@@ -11,21 +11,32 @@ import {
 const router = Router();
 
 /**
- * Billing routes — recurring autopay model (no pre-paid wallet).
+ * PRO subscription routes — per-account plan + per-FNS slots.
  *
- *   - First VIP-FNS activation creates a redirect-flow ЮKassa payment
- *     for one day's price with `save_payment_method: true`. The webhook
- *     captures the returned payment_method.id on the user and creates
- *     the SpecialistVipFns row.
- *   - Subsequent activations on other FNS reuse the saved card —
- *     server-to-server charge for one day, instant activation, no
- *     redirect.
- *   - Daily cron `vipDailyCharge.ts` autopays the day's total per user
- *     using the saved payment_method_id. Failed charges deactivate ALL
- *     of that user's VIP-FNS rows + flip lastChargeFailedAt.
- *   - `DELETE /payment-method` clears the saved card and wipes all VIP
- *     rows in the same transaction (otherwise tomorrow's cron would
- *     have nothing to charge against).
+ *   - Three plans (Lite/Pro/Premium, editable on /admin/plans). Each
+ *     plan has a fixed monthlyPriceKopeks and an fnsLimit. Plans are
+ *     a per-user concept; FNS slots are free within the limit.
+ *
+ *   - Activation flow:
+ *     POST /plan {planId} when user has no plan → ЮKassa redirect-flow
+ *     payment for plan.monthlyPriceKopeks/30 with save_payment_method.
+ *     Webhook captures the saved card and sets users.subscriptionPlanId.
+ *     POST /plan {planId} when user has a card already (mid-session
+ *     plan switch) → server-to-server autopay one day at the new rate
+ *     and switch in the same transaction.
+ *
+ *   - Switching:
+ *     Upgrade: instant. Tomorrow's daily charge is at the new rate.
+ *     Downgrade where current vip_count > new.fnsLimit: backend returns
+ *     409 with `needsTrim: true` and the current FNS list. FE asks the
+ *     user to drop N rows and re-submit POST /plan {planId, removeFnsIds}.
+ *
+ *   - VIP slot toggles:
+ *     POST /vip-fns/:id and DELETE /vip-fns/:id are now free (no charge).
+ *     Adding past the limit returns 409.
+ *
+ *   - Failures: cron deactivates everything (plan + vip-fns) on a
+ *     declined autopay and emails the user.
  */
 
 const KOPEKS_IN_RUB = 100;
@@ -34,10 +45,66 @@ function dailyChargeKopeks(monthlyKopeks: number): number {
   return Math.ceil(monthlyKopeks / 30);
 }
 
-// GET /api/billing/me — header data + active VIP subscriptions.
-// Active subscriptions are independent of the specialist's working
-// area: a user can subscribe to ANY FNS, not just ones they cover.
-// Catalog discovery happens via /fns-search below.
+interface PlanBrief {
+  id: string;
+  code: string;
+  name: string;
+  monthlyPriceKopeks: number;
+  monthlyPriceRub: number;
+  dailyChargeKopeks: number;
+  fnsLimit: number;
+  sortOrder: number;
+}
+
+function planBrief(p: {
+  id: string;
+  code: string;
+  name: string;
+  monthlyPriceKopeks: number;
+  fnsLimit: number;
+  sortOrder: number;
+}): PlanBrief {
+  return {
+    id: p.id,
+    code: p.code,
+    name: p.name,
+    monthlyPriceKopeks: p.monthlyPriceKopeks,
+    monthlyPriceRub: p.monthlyPriceKopeks / KOPEKS_IN_RUB,
+    dailyChargeKopeks: dailyChargeKopeks(p.monthlyPriceKopeks),
+    fnsLimit: p.fnsLimit,
+    sortOrder: p.sortOrder,
+  };
+}
+
+// ─────────────────────────────────────────────────────────── plans
+
+// GET /api/billing/plans — public list of active plans, used by the
+// upsell screen and the plan switcher. Sorted by sortOrder ascending
+// so cheapest tier renders first.
+router.get("/plans", async (_req: Request, res: Response) => {
+  try {
+    const plans = await prisma.subscriptionPlan.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        monthlyPriceKopeks: true,
+        fnsLimit: true,
+        sortOrder: true,
+      },
+    });
+    res.json({ plans: plans.map(planBrief) });
+  } catch (error) {
+    console.error("billing/plans error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────── me
+
+// GET /api/billing/me — header data: card + plan + active VIP rows.
 router.get("/me", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -49,6 +116,17 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
           yookassaPaymentMethodId: true,
           yookassaPaymentMethodTitle: true,
           lastChargeFailedAt: true,
+          subscriptionStartedAt: true,
+          subscriptionPlan: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              monthlyPriceKopeks: true,
+              fnsLimit: true,
+              sortOrder: true,
+            },
+          },
         },
       }),
       prisma.specialistVipFns.findMany({
@@ -62,7 +140,6 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
               id: true,
               name: true,
               code: true,
-              vipMonthlyPriceKopeks: true,
               city: { select: { id: true, name: true } },
             },
           },
@@ -75,36 +152,26 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    const activeSubscriptions = vipRows.map((row) => {
-      const monthly = row.fns.vipMonthlyPriceKopeks;
-      return {
-        fnsId: row.fns.id,
-        fnsName: row.fns.name,
-        fnsCode: row.fns.code,
-        cityId: row.fns.city.id,
-        cityName: row.fns.city.name,
-        monthlyPriceKopeks: monthly,
-        monthlyPriceRub: monthly == null ? null : monthly / KOPEKS_IN_RUB,
-        dailyChargeKopeks: monthly == null ? null : dailyChargeKopeks(monthly),
-        activatedAt: row.activatedAt,
-      };
-    });
-
-    const dailyTotalKopeks = activeSubscriptions.reduce(
-      (sum, s) => sum + (s.dailyChargeKopeks ?? 0),
-      0
-    );
+    const plan = user.subscriptionPlan ? planBrief(user.subscriptionPlan) : null;
+    const activeVipFns = vipRows.map((row) => ({
+      fnsId: row.fns.id,
+      fnsName: row.fns.name,
+      fnsCode: row.fns.code,
+      cityId: row.fns.city.id,
+      cityName: row.fns.city.name,
+      activatedAt: row.activatedAt,
+    }));
 
     res.json({
       isSpecialist: user.isSpecialist,
       hasPaymentMethod: !!user.yookassaPaymentMethodId,
       paymentMethodTitle: user.yookassaPaymentMethodTitle ?? null,
       lastChargeFailedAt: user.lastChargeFailedAt ?? null,
-      dailyChargeKopeks: dailyTotalKopeks,
-      dailyChargeRub: dailyTotalKopeks / KOPEKS_IN_RUB,
-      monthlyEstimateKopeks: dailyTotalKopeks * 30,
-      monthlyEstimateRub: (dailyTotalKopeks * 30) / KOPEKS_IN_RUB,
-      activeSubscriptions,
+      plan,
+      planStartedAt: user.subscriptionStartedAt ?? null,
+      activeVipFns,
+      slotsUsed: activeVipFns.length,
+      slotsLimit: plan?.fnsLimit ?? 0,
     });
   } catch (error) {
     console.error("billing/me error:", error);
@@ -112,13 +179,13 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-/**
- * GET /api/billing/fns-search?q=&cityId=&limit= — searchable list of
- * subscribable FNS. Only includes offices with a non-null
- * vipMonthlyPriceKopeks (admin set a price). Subscriptions the user
- * already has are filtered out so the list shows only "available to
- * subscribe" rows.
- */
+// ─────────────────────────────────────────────────────────── search
+
+// GET /api/billing/fns-search?q=&cityId=&limit= — searchable list of
+// FNS available for a VIP slot. "Available" = vipMonthlyPriceKopeks
+// IS NOT NULL (admin-managed flag, repurposed: only the existence of
+// the value matters now, not the value itself). Excludes FNS the user
+// already added to VIP.
 router.get("/fns-search", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -159,7 +226,6 @@ router.get("/fns-search", authMiddleware, async (req: Request, res: Response) =>
         id: true,
         name: true,
         code: true,
-        vipMonthlyPriceKopeks: true,
         city: { select: { id: true, name: true } },
       },
     });
@@ -170,9 +236,6 @@ router.get("/fns-search", authMiddleware, async (req: Request, res: Response) =>
       fnsCode: o.code,
       cityId: o.city.id,
       cityName: o.city.name,
-      monthlyPriceKopeks: o.vipMonthlyPriceKopeks!,
-      monthlyPriceRub: o.vipMonthlyPriceKopeks! / KOPEKS_IN_RUB,
-      dailyChargeKopeks: dailyChargeKopeks(o.vipMonthlyPriceKopeks!),
     }));
 
     res.json({ items });
@@ -182,81 +245,122 @@ router.get("/fns-search", authMiddleware, async (req: Request, res: Response) =>
   }
 });
 
-/**
- * POST /api/billing/vip-fns/:fnsId — activate VIP on an FNS.
- *
- * Two paths:
- *   (a) No card on file → create a ЮKassa redirect payment for one
- *       day's price + save_payment_method:true. metadata.fnsId tells
- *       the webhook which row to create after the user pays. Returns
- *       { confirmationUrl } so the FE can redirect.
- *   (b) Card already saved → server-to-server autopay for one day,
- *       creates the row immediately on success.
- */
-router.post("/vip-fns/:fnsId", authMiddleware, async (req: Request, res: Response) => {
+// ─────────────────────────────────────────────────────── plan toggle
+
+interface PlanRequestBody {
+  planId?: string;
+  /** Optional list of FNS ids to drop in the same transaction so a
+   *  downgrade with too many active slots can succeed in one POST. */
+  removeFnsIds?: string[];
+}
+
+// POST /api/billing/plan — activate or switch plan.
+router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const fnsId = req.params.fnsId as string;
+    const { planId, removeFnsIds = [] } = (req.body ?? {}) as PlanRequestBody;
+    if (!planId || typeof planId !== "string") {
+      res.status(400).json({ error: "planId is required" });
+      return;
+    }
 
-    const [fns, user] = await Promise.all([
-      prisma.fnsOffice.findUnique({
-        where: { id: fnsId },
-        select: { id: true, name: true, vipMonthlyPriceKopeks: true },
+    const [plan, user] = await Promise.all([
+      prisma.subscriptionPlan.findUnique({
+        where: { id: planId },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          monthlyPriceKopeks: true,
+          fnsLimit: true,
+          sortOrder: true,
+          isActive: true,
+        },
       }),
       prisma.user.findUnique({
         where: { id: userId },
         select: {
           isSpecialist: true,
           yookassaPaymentMethodId: true,
+          subscriptionPlanId: true,
+          subscriptionPlan: { select: { fnsLimit: true } },
         },
       }),
     ]);
-    if (!fns) {
-      res.status(404).json({ error: "FNS not found" });
-      return;
-    }
-    if (fns.vipMonthlyPriceKopeks == null) {
-      res.status(400).json({ error: "VIP не настроен для этой ИФНС" });
+    if (!plan || !plan.isActive) {
+      res.status(404).json({ error: "Plan not found" });
       return;
     }
     if (!user || !user.isSpecialist) {
-      res.status(403).json({ error: "VIP доступен только специалистам" });
+      res.status(403).json({ error: "PRO доступен только специалистам" });
       return;
     }
-    // Already on? Idempotent success.
-    const existing = await prisma.specialistVipFns.findUnique({
-      where: { specialistId_fnsId: { specialistId: userId, fnsId } },
-      select: { id: true },
-    });
-    if (existing) {
+
+    // Same plan, idempotent.
+    if (user.subscriptionPlanId === plan.id) {
       res.json({ ok: true, alreadyActive: true });
       return;
     }
 
-    const dayPrice = dailyChargeKopeks(fns.vipMonthlyPriceKopeks);
+    // Downgrade-trim handling. Count active VIP rows; if it would
+    // exceed the new plan's limit, ask FE to specify removeFnsIds.
+    const currentVip = await prisma.specialistVipFns.findMany({
+      where: { specialistId: userId },
+      select: {
+        fnsId: true,
+        activatedAt: true,
+        fns: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            city: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: { activatedAt: "desc" },
+    });
+    const remaining = currentVip.filter((r) => !removeFnsIds.includes(r.fnsId));
+    if (remaining.length > plan.fnsLimit) {
+      res.status(409).json({
+        error: "Текущих VIP-ИФНС больше, чем разрешает выбранный тариф.",
+        needsTrim: true,
+        plan: planBrief(plan),
+        slotsLimit: plan.fnsLimit,
+        currentVipFns: currentVip.map((r) => ({
+          fnsId: r.fns.id,
+          fnsName: r.fns.name,
+          fnsCode: r.fns.code,
+          cityId: r.fns.city.id,
+          cityName: r.fns.city.name,
+          activatedAt: r.activatedAt,
+        })),
+      });
+      return;
+    }
+
+    const dayPrice = dailyChargeKopeks(plan.monthlyPriceKopeks);
     const returnBase =
       process.env.YK_RETURN_URL_BASE ?? "https://p2ptax.smartlaunchhub.com";
 
     if (!user.yookassaPaymentMethodId) {
-      // Path (a) — first time: redirect to ЮKassa, bind card,
-      // first day pre-paid as part of the same payment.
+      // First-ever activation. Bind card + pay first day in one
+      // ЮKassa redirect.
       const payment = await createPayment({
         amountKopeks: dayPrice,
-        description: `VIP по «${fns.name}» (день 1) + привязка карты`,
+        description: `PRO «${plan.name}» — день 1 + привязка карты`,
         userId,
-        returnUrl: `${returnBase}/profile?tab=billing&vip=ok`,
+        returnUrl: `${returnBase}/profile?tab=plan&plan=ok`,
         savePaymentMethod: true,
-        extraMetadata: { fnsId, kind: "bind_first_charge" },
+        extraMetadata: { planId: plan.id, kind: "bind_plan" },
       });
-      // Pending ledger row, will be replaced on webhook success.
       await prisma.billingTx.create({
         data: {
           userId,
           amountKopeks: -dayPrice,
           kind: "bind_pending",
-          fnsId,
           externalRef: payment.paymentId,
-          description: `Ожидание оплаты привязки карты (${fns.name})`,
+          description: `Ожидание оплаты тарифа ${plan.name}`,
         },
       });
       res.json({
@@ -268,19 +372,20 @@ router.post("/vip-fns/:fnsId", authMiddleware, async (req: Request, res: Respons
       return;
     }
 
-    // Path (b) — autopay one day with the saved method.
-    const idempotenceKey = `vip-bind-${userId}-${fnsId}`;
+    // User has a card. Charge the new plan's first day and switch in
+    // one transaction. Trim downsized rows in the same step.
+    const idempotenceKey = `plan-switch-${userId}-${plan.id}-${Date.now()}`;
     let charge;
     try {
       charge = await chargeWithSavedMethod({
         amountKopeks: dayPrice,
-        description: `VIP по «${fns.name}» (день 1)`,
+        description: `PRO «${plan.name}» — день 1`,
         paymentMethodId: user.yookassaPaymentMethodId,
         idempotenceKey,
-        metadata: { userId, fnsId, kind: "bind_first_charge" },
+        metadata: { userId, planId: plan.id, kind: "plan_switch" },
       });
     } catch (err) {
-      console.error("billing/vip-fns autopay error:", err);
+      console.error("billing/plan autopay error:", err);
       res.status(402).json({
         error: "Не удалось списать с карты. Попробуйте привязать карту заново.",
       });
@@ -296,37 +401,136 @@ router.post("/vip-fns/:fnsId", authMiddleware, async (req: Request, res: Respons
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.specialistVipFns.upsert({
-        where: { specialistId_fnsId: { specialistId: userId, fnsId } },
-        create: { specialistId: userId, fnsId },
-        update: { activatedAt: new Date() },
+      if (removeFnsIds.length > 0) {
+        await tx.specialistVipFns.deleteMany({
+          where: { specialistId: userId, fnsId: { in: removeFnsIds } },
+        });
+      }
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          subscriptionPlanId: plan.id,
+          subscriptionStartedAt: new Date(),
+          lastChargeFailedAt: null,
+        },
       });
       await tx.billingTx.create({
         data: {
           userId,
           amountKopeks: -dayPrice,
-          kind: "bind_first_charge",
-          fnsId,
+          kind: "plan_switch",
           externalRef: charge.paymentId,
-          description: `VIP по «${fns.name}» — день 1`,
+          description: `Тариф ${plan.name} — день 1`,
         },
-      });
-      // Successful autopay clears any prior failure flag.
-      await tx.user.update({
-        where: { id: userId },
-        data: { lastChargeFailedAt: null },
       });
     });
 
-    res.json({ ok: true, charged: dayPrice });
+    res.json({
+      ok: true,
+      charged: dayPrice,
+      plan: planBrief(plan),
+    });
+  } catch (error) {
+    console.error("billing/plan POST error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /api/billing/plan — cancel plan + remove all VIP rows.
+// Idempotent. Card stays bound (separate /payment-method endpoint
+// for explicit unbind).
+router.delete("/plan", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    await prisma.$transaction(async (tx) => {
+      await tx.specialistVipFns.deleteMany({ where: { specialistId: userId } });
+      await tx.user.update({
+        where: { id: userId },
+        data: { subscriptionPlanId: null, subscriptionStartedAt: null },
+      });
+      await tx.billingTx.create({
+        data: {
+          userId,
+          amountKopeks: 0,
+          kind: "plan_cancelled",
+          description: "Тариф отменён пользователем",
+        },
+      });
+    });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("billing/plan DELETE error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─────────────────────────────────────────────────────── vip-fns
+
+// POST /api/billing/vip-fns/:fnsId — add an FNS to the VIP list.
+// Free within plan.fnsLimit. 409 if no plan or already at limit.
+router.post("/vip-fns/:fnsId", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const fnsId = req.params.fnsId as string;
+
+    const [fns, user, vipCount] = await Promise.all([
+      prisma.fnsOffice.findUnique({
+        where: { id: fnsId },
+        select: { id: true, name: true, vipMonthlyPriceKopeks: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          isSpecialist: true,
+          subscriptionPlan: { select: { id: true, fnsLimit: true, name: true } },
+        },
+      }),
+      prisma.specialistVipFns.count({ where: { specialistId: userId } }),
+    ]);
+    if (!fns || fns.vipMonthlyPriceKopeks == null) {
+      res.status(400).json({ error: "VIP не доступен для этой ИФНС" });
+      return;
+    }
+    if (!user || !user.isSpecialist) {
+      res.status(403).json({ error: "VIP доступен только специалистам" });
+      return;
+    }
+    if (!user.subscriptionPlan) {
+      res.status(409).json({
+        error: "Сначала подключите тариф PRO",
+        needsPlan: true,
+      });
+      return;
+    }
+    // Already added? Idempotent ok.
+    const existing = await prisma.specialistVipFns.findUnique({
+      where: { specialistId_fnsId: { specialistId: userId, fnsId } },
+      select: { id: true },
+    });
+    if (existing) {
+      res.json({ ok: true, alreadyActive: true });
+      return;
+    }
+    if (vipCount >= user.subscriptionPlan.fnsLimit) {
+      res.status(409).json({
+        error: `На тарифе ${user.subscriptionPlan.name} лимит ${user.subscriptionPlan.fnsLimit} ИФНС. Уберите одну или повысьте тариф.`,
+        slotsLimit: user.subscriptionPlan.fnsLimit,
+        slotsUsed: vipCount,
+      });
+      return;
+    }
+
+    await prisma.specialistVipFns.create({
+      data: { specialistId: userId, fnsId },
+    });
+    res.json({ ok: true });
   } catch (error) {
     console.error("billing/vip-fns POST error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// DELETE /api/billing/vip-fns/:fnsId — deactivate VIP on a single FNS.
-// Idempotent. The card stays bound for other active FNS rows.
+// DELETE /api/billing/vip-fns/:fnsId — remove from VIP list. Idempotent.
 router.delete("/vip-fns/:fnsId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -341,10 +545,12 @@ router.delete("/vip-fns/:fnsId", authMiddleware, async (req: Request, res: Respo
   }
 });
 
+// ─────────────────────────────────────────────────────── card
+
 // DELETE /api/billing/payment-method — unbind the saved card.
-// Wipes all VIP-FNS rows in the same transaction (autopay can't run
-// without a card, so leaving rows would just trip charge_failed at
-// the next cron tick).
+// Wipes the plan + all VIP rows in one transaction (autopay can't
+// run without a card so leaving the plan in place would just trip
+// charge_failed at the next cron tick).
 router.delete("/payment-method", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
@@ -356,6 +562,8 @@ router.delete("/payment-method", authMiddleware, async (req: Request, res: Respo
           yookassaPaymentMethodId: null,
           yookassaPaymentMethodTitle: null,
           lastChargeFailedAt: null,
+          subscriptionPlanId: null,
+          subscriptionStartedAt: null,
         },
       });
       await tx.billingTx.create({
@@ -374,19 +582,11 @@ router.delete("/payment-method", authMiddleware, async (req: Request, res: Respo
   }
 });
 
-/**
- * POST /api/billing/webhook — ЮKassa notification endpoint.
- *
- * NOT auth-protected (ЮKassa calls without bearer). Trust model:
- * re-fetch the payment by id and act on the canonical record. We
- * de-dupe on (externalRef, kind=bind_first_charge) so retried
- * webhooks can't double-create rows.
- *
- * Two events we actually care about:
- *   - payment.succeeded with metadata.kind=bind_first_charge → save
- *     payment_method on user, create SpecialistVipFns row.
- *   - everything else → 200 OK so ЮKassa stops retrying.
- */
+// ─────────────────────────────────────────────────────── webhook
+
+// POST /api/billing/webhook — ЮKassa notification. Re-fetch payment
+// by id from the API instead of trusting the body, then on
+// metadata.kind=bind_plan: save the card token, set the plan.
 router.post("/webhook", async (req: Request, res: Response) => {
   try {
     const body = req.body as {
@@ -406,16 +606,15 @@ router.post("/webhook", async (req: Request, res: Response) => {
     }
 
     const userId = payment.metadata?.userId;
-    const fnsId = payment.metadata?.fnsId;
+    const planId = payment.metadata?.planId;
     const kind = payment.metadata?.kind;
-    if (!userId || kind !== "bind_first_charge" || !fnsId) {
+    if (!userId || kind !== "bind_plan" || !planId) {
       res.json({ ok: true, ignored: "metadata mismatch" });
       return;
     }
 
-    // De-dupe.
     const already = await prisma.billingTx.findFirst({
-      where: { externalRef: paymentId, kind: "bind_first_charge" },
+      where: { externalRef: paymentId, kind: "bind_plan" },
       select: { id: true },
     });
     if (already) {
@@ -429,9 +628,17 @@ router.post("/webhook", async (req: Request, res: Response) => {
     const pmSaved = payment.payment_method?.saved;
     const pmTitle = paymentMethodTitle(payment.payment_method);
 
+    // Sanity-check the plan still exists/active.
+    const plan = await prisma.subscriptionPlan.findUnique({
+      where: { id: planId },
+      select: { id: true, name: true, isActive: true },
+    });
+    if (!plan || !plan.isActive) {
+      res.json({ ok: true, ignored: "plan no longer active" });
+      return;
+    }
+
     await prisma.$transaction(async (tx) => {
-      // Save the bound card (if ЮKassa returned one — every
-      // successful save_payment_method:true payment does).
       if (pmId && pmSaved) {
         await tx.user.update({
           where: { id: userId },
@@ -439,26 +646,31 @@ router.post("/webhook", async (req: Request, res: Response) => {
             yookassaPaymentMethodId: pmId,
             yookassaPaymentMethodTitle: pmTitle,
             lastChargeFailedAt: null,
+            subscriptionPlanId: planId,
+            subscriptionStartedAt: new Date(),
+          },
+        });
+      } else {
+        // No new card was bound (rare — e.g. user paid with an
+        // existing tokenized method). Still set the plan.
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            subscriptionPlanId: planId,
+            subscriptionStartedAt: new Date(),
+            lastChargeFailedAt: null,
           },
         });
       }
-      // Activate VIP for the FNS that triggered the redirect.
-      await tx.specialistVipFns.upsert({
-        where: { specialistId_fnsId: { specialistId: userId, fnsId } },
-        create: { specialistId: userId, fnsId },
-        update: { activatedAt: new Date() },
-      });
       await tx.billingTx.create({
         data: {
           userId,
           amountKopeks: -amountKopeks,
-          kind: "bind_first_charge",
-          fnsId,
+          kind: "bind_plan",
           externalRef: paymentId,
-          description: "Привязка карты + VIP, день 1",
+          description: `Привязка карты + тариф ${plan.name}, день 1`,
         },
       });
-      // Clear the pending row this webhook resolves.
       await tx.billingTx.deleteMany({
         where: { externalRef: paymentId, kind: "bind_pending" },
       });
@@ -471,7 +683,8 @@ router.post("/webhook", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/billing/transactions — last 50 ledger entries for the user.
+// ─────────────────────────────────────────────────────── tx history
+
 router.get("/transactions", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;

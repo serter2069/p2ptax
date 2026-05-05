@@ -147,7 +147,7 @@ function TabStrip({ active, profileLabel, showBilling, onChange }: TabStripProps
   const items: { key: Tab; label: string }[] = [
     { key: "account", label: "Аккаунт" },
     { key: "profile", label: profileLabel },
-    ...(showBilling ? [{ key: "billing" as const, label: "Биллинг" }] : []),
+    ...(showBilling ? [{ key: "billing" as const, label: "PRO" }] : []),
   ];
   return (
     <View
@@ -210,7 +210,8 @@ export default function UnifiedProfile() {
     const t = params.tab;
     const v = typeof t === "string" ? t : Array.isArray(t) ? t[0] : undefined;
     if (v === "profile") return "profile";
-    if (v === "billing") return "billing";
+    // Accept both ?tab=billing (legacy) and ?tab=plan (new label).
+    if (v === "billing" || v === "plan") return "billing";
     return "account";
   }, [params.tab]);
 

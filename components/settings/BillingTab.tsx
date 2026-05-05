@@ -18,21 +18,31 @@ import {
   X,
   CheckCircle2,
   Search,
+  Sparkles,
+  Check,
 } from "lucide-react-native";
 import Card from "@/components/ui/Card";
 import { dialog } from "@/lib/dialog";
 import { apiGet, apiPost, apiDelete } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
-interface ActiveSub {
+interface PlanRow {
+  id: string;
+  code: string;
+  name: string;
+  monthlyPriceKopeks: number;
+  monthlyPriceRub: number;
+  dailyChargeKopeks: number;
+  fnsLimit: number;
+  sortOrder: number;
+}
+
+interface ActiveVipFns {
   fnsId: string;
   fnsName: string;
   fnsCode: string;
   cityId: string;
   cityName: string;
-  monthlyPriceKopeks: number | null;
-  monthlyPriceRub: number | null;
-  dailyChargeKopeks: number | null;
   activatedAt: string;
 }
 
@@ -41,11 +51,11 @@ interface MePayload {
   hasPaymentMethod: boolean;
   paymentMethodTitle: string | null;
   lastChargeFailedAt: string | null;
-  dailyChargeKopeks: number;
-  dailyChargeRub: number;
-  monthlyEstimateKopeks: number;
-  monthlyEstimateRub: number;
-  activeSubscriptions: ActiveSub[];
+  plan: PlanRow | null;
+  planStartedAt: string | null;
+  activeVipFns: ActiveVipFns[];
+  slotsUsed: number;
+  slotsLimit: number;
 }
 
 interface SearchableFns {
@@ -54,9 +64,6 @@ interface SearchableFns {
   fnsCode: string;
   cityId: string;
   cityName: string;
-  monthlyPriceKopeks: number;
-  monthlyPriceRub: number;
-  dailyChargeKopeks: number;
 }
 
 interface CityRow {
@@ -65,20 +72,35 @@ interface CityRow {
   slug: string;
 }
 
-interface VipFnsResponse {
+interface PlanResponse {
   ok: boolean;
   needsRedirect?: boolean;
   confirmationUrl?: string;
   alreadyActive?: boolean;
   charged?: number;
+  plan?: PlanRow;
+}
+
+interface PlanTrimResponse {
+  error: string;
+  needsTrim: true;
+  plan: PlanRow;
+  slotsLimit: number;
+  currentVipFns: ActiveVipFns[];
+}
+
+interface VipFnsResponse {
+  ok: boolean;
+  alreadyActive?: boolean;
+  needsPlan?: boolean;
+  slotsLimit?: number;
+  slotsUsed?: number;
 }
 
 interface TxItem {
   id: string;
   amountKopeks: number;
   kind: string;
-  fnsId: string | null;
-  externalRef: string | null;
   description: string | null;
   createdAt: string;
 }
@@ -95,10 +117,14 @@ function formatActivatedAt(iso: string): string {
 
 function txKindLabel(kind: string): string {
   switch (kind) {
-    case "bind_first_charge":
+    case "bind_plan":
       return "Привязка карты + день 1";
     case "bind_pending":
       return "Платёж в обработке";
+    case "plan_switch":
+      return "Смена тарифа — день 1";
+    case "plan_cancelled":
+      return "Тариф отменён";
     case "daily_charge":
       return "Ежедневное списание";
     case "charge_failed":
@@ -111,21 +137,12 @@ function txKindLabel(kind: string): string {
 }
 
 /**
- * Billing tab — recurring autopay model with independent VIP catalog.
+ * PRO tab — per-account plan + per-FNS slots.
  *
- * VIP-подписки независимы от рабочей зоны: специалист может подписаться
- * на ЛЮБУЮ ИФНС России, не обязательно из своих ИФНС в каталоге. Поэтому
- * поиск работает по всем ИФНС с настроенным тарифом, а не только по
- * рабочей зоне пользователя.
- *
- * Sections:
- *   1. Hero (объяснение + ₽/мес итог + алерты)
- *   2. Saved card (если привязана) + кнопка отвязать
- *   3. "Мои подписки" — me.activeSubscriptions (включая ИФНС вне
- *      рабочей зоны)
- *   4. "Подключить новую ИФНС" — поиск + city filter chip + список
- *      результатов с кнопкой "+ N ₽/мес"
- *   5. История операций
+ * Three plans (Lite/Pro/Premium, editable by admin) with a fixed
+ * monthly price and an FNS limit. Selecting a plan binds a card
+ * (first time) or autopays one day at the new rate (mid-session
+ * switch). Adding ИФНС inside the limit is free.
  */
 export default function BillingTab({
   topupSuccess = false,
@@ -133,12 +150,20 @@ export default function BillingTab({
   topupSuccess?: boolean;
 }) {
   const [data, setData] = useState<MePayload | null>(null);
+  const [plans, setPlans] = useState<PlanRow[]>([]);
   const [txs, setTxs] = useState<TxItem[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
   const [busyFnsId, setBusyFnsId] = useState<string | null>(null);
   const [unbindBusy, setUnbindBusy] = useState(false);
+  const [showPlanSwitcher, setShowPlanSwitcher] = useState(false);
+  const [trimDialog, setTrimDialog] = useState<{
+    plan: PlanRow;
+    keep: ActiveVipFns[];
+    drop: ActiveVipFns[];
+  } | null>(null);
 
-  // Catalog search state
+  // Catalog search
   const [q, setQ] = useState("");
   const [cityFilterId, setCityFilterId] = useState<string | null>(null);
   const [cities, setCities] = useState<CityRow[]>([]);
@@ -147,11 +172,13 @@ export default function BillingTab({
 
   const refresh = useCallback(async () => {
     try {
-      const [me, tx] = await Promise.all([
+      const [me, plansRes, tx] = await Promise.all([
         apiGet<MePayload>("/api/billing/me"),
+        apiGet<{ plans: PlanRow[] }>("/api/billing/plans"),
         apiGet<{ transactions: TxItem[] }>("/api/billing/transactions"),
       ]);
       setData(me);
+      setPlans(plansRes.plans);
       setTxs(tx.transactions);
     } catch (e) {
       if (__DEV__) console.error("billing fetch error", e);
@@ -164,24 +191,24 @@ export default function BillingTab({
     void refresh();
   }, [refresh]);
 
-  // ЮKassa webhook may take a beat after redirect-back. Refetch on
-  // mount + 4s later so the FE catches up without a manual reload.
   useEffect(() => {
     if (!topupSuccess) return;
     const t = setTimeout(() => void refresh(), 4000);
     return () => clearTimeout(t);
   }, [topupSuccess, refresh]);
 
-  // Cities list for the filter chips. Loaded once.
   useEffect(() => {
     apiGet<{ items: CityRow[] }>("/api/cities?limit=100")
       .then((res) => setCities(res.items))
-      .catch((e) => __DEV__ && console.error("cities load", e));
+      .catch(() => undefined);
   }, []);
 
-  // Catalog search — debounced 250ms.
+  // Catalog search debounced 250ms.
   useEffect(() => {
-    if (!data?.isSpecialist) return;
+    if (!data?.isSpecialist || !data.plan) {
+      setSearchResults([]);
+      return;
+    }
     setSearchLoading(true);
     const t = setTimeout(() => {
       const params = new URLSearchParams();
@@ -194,7 +221,7 @@ export default function BillingTab({
         .finally(() => setSearchLoading(false));
     }, 250);
     return () => clearTimeout(t);
-  }, [q, cityFilterId, data?.isSpecialist, data?.activeSubscriptions.length]);
+  }, [q, cityFilterId, data?.isSpecialist, data?.plan, data?.activeVipFns.length]);
 
   const redirect = useCallback((url: string) => {
     if (Platform.OS === "web" && typeof window !== "undefined") {
@@ -204,47 +231,59 @@ export default function BillingTab({
     }
   }, []);
 
-  const handleSubscribe = useCallback(
-    async (fnsId: string, fnsName: string, monthlyKopeks: number) => {
-      void monthlyKopeks; // already shown on the button; backend re-reads canonical price
-      void fnsName;
+  const submitPlan = useCallback(
+    async (planId: string, removeFnsIds?: string[]) => {
+      setBusyPlanId(planId);
+      try {
+        const res = await apiPost<PlanResponse | PlanTrimResponse>(
+          "/api/billing/plan",
+          { planId, removeFnsIds }
+        );
+        if ((res as PlanTrimResponse).needsTrim) {
+          const tr = res as PlanTrimResponse;
+          // Auto-pre-select newest rows to drop.
+          const overflow = tr.currentVipFns.length - tr.slotsLimit;
+          const drop = tr.currentVipFns.slice(0, overflow);
+          const keep = tr.currentVipFns.slice(overflow);
+          setTrimDialog({ plan: tr.plan, keep, drop });
+          return;
+        }
+        const ok = res as PlanResponse;
+        if (ok.needsRedirect && ok.confirmationUrl) {
+          redirect(ok.confirmationUrl);
+          return;
+        }
+        setShowPlanSwitcher(false);
+        setTrimDialog(null);
+        await refresh();
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Не удалось сменить тариф";
+        await dialog.alert({ title: "Ошибка", message: msg });
+      } finally {
+        setBusyPlanId(null);
+      }
+    },
+    [redirect, refresh]
+  );
+
+  const handleSubscribeFns = useCallback(
+    async (fnsId: string) => {
       setBusyFnsId(fnsId);
       try {
         const res = await apiPost<VipFnsResponse>(
           `/api/billing/vip-fns/${fnsId}`,
           {}
         );
-        if (res.needsRedirect && res.confirmationUrl) {
-          redirect(res.confirmationUrl);
+        if (res.needsPlan) {
+          await dialog.alert({
+            title: "Сначала выберите тариф",
+            message: "Чтобы добавлять ИФНС в VIP, нужен активный тариф PRO.",
+          });
           return;
         }
         await refresh();
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "Не удалось подключить VIP";
-        await dialog.alert({ title: "Ошибка", message: msg });
-      } finally {
-        setBusyFnsId(null);
-      }
-    },
-    [redirect, refresh]
-  );
-
-  const handleUnsubscribe = useCallback(
-    async (sub: ActiveSub) => {
-      const confirmed = await dialog.confirm({
-        title: `Отключить VIP по «${sub.fnsName}»?`,
-        message:
-          "Списания за эту ИФНС прекратятся со следующего дня. Карту это не отвяжет — другие подписки продолжат работать.",
-        confirmLabel: "Отключить",
-        destructive: true,
-      });
-      if (!confirmed) return;
-      setBusyFnsId(sub.fnsId);
-      try {
-        await apiDelete(`/api/billing/vip-fns/${sub.fnsId}`);
-        await refresh();
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "Не удалось отключить VIP";
+        const msg = e instanceof Error ? e.message : "Не удалось добавить ИФНС";
         await dialog.alert({ title: "Ошибка", message: msg });
       } finally {
         setBusyFnsId(null);
@@ -253,11 +292,56 @@ export default function BillingTab({
     [refresh]
   );
 
+  const handleRemoveFns = useCallback(
+    async (sub: ActiveVipFns) => {
+      const confirmed = await dialog.confirm({
+        title: `Убрать «${sub.fnsName}» из VIP?`,
+        message:
+          "Уведомления по этой ИФНС снова будут приходить с задержкой 5 минут. Вернуть в VIP можно в любой момент.",
+        confirmLabel: "Убрать",
+        destructive: true,
+      });
+      if (!confirmed) return;
+      setBusyFnsId(sub.fnsId);
+      try {
+        await apiDelete(`/api/billing/vip-fns/${sub.fnsId}`);
+        await refresh();
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Не удалось убрать ИФНС";
+        await dialog.alert({ title: "Ошибка", message: msg });
+      } finally {
+        setBusyFnsId(null);
+      }
+    },
+    [refresh]
+  );
+
+  const handleCancelPlan = useCallback(async () => {
+    const confirmed = await dialog.confirm({
+      title: "Отменить тариф?",
+      message:
+        "Все VIP-ИФНС будут сняты, ежедневные списания прекратятся. Карта останется привязанной — её можно отвязать отдельно.",
+      confirmLabel: "Отменить тариф",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setBusyPlanId("__cancel__");
+    try {
+      await apiDelete("/api/billing/plan");
+      await refresh();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Не удалось отменить тариф";
+      await dialog.alert({ title: "Ошибка", message: msg });
+    } finally {
+      setBusyPlanId(null);
+    }
+  }, [refresh]);
+
   const handleUnbind = useCallback(async () => {
     const confirmed = await dialog.confirm({
       title: "Отвязать карту?",
       message:
-        "Это отключит ВСЕ ваши VIP-подписки. Чтобы возобновить — придётся привязать карту заново через любую подписку.",
+        "Это отменит тариф и снимет все VIP-ИФНС. Чтобы возобновить — придётся выбрать тариф заново и привязать карту.",
       confirmLabel: "Отвязать",
       destructive: true,
     });
@@ -274,11 +358,7 @@ export default function BillingTab({
     }
   }, [refresh]);
 
-  // City chip-list — show top 8 with the most VIP-priced FNS to reduce
-  // visual noise, plus an "Все" pseudo-chip to clear the filter.
-  const cityChips = useMemo(() => {
-    return cities.slice(0, 12);
-  }, [cities]);
+  const cityChips = useMemo(() => cities.slice(0, 12), [cities]);
 
   if (loading || !data) {
     return (
@@ -292,58 +372,331 @@ export default function BillingTab({
     return (
       <Card>
         <Text className="text-base" style={{ color: colors.text }}>
-          Биллинг доступен только специалистам. Заполните профиль специалиста, чтобы получать запросы клиентов и подключать приоритетные уведомления по любой ИФНС России.
+          PRO доступен только специалистам. Заполните профиль специалиста, чтобы подключить тариф и получать приоритетные уведомления по выбранным ИФНС.
         </Text>
       </Card>
     );
   }
 
-  const activeSubs = data.activeSubscriptions;
+  const hasPlan = !!data.plan;
+
+  // ─── trim dialog (downgrade) ─────────────────────────────────────
+  if (trimDialog) {
+    const overflow = trimDialog.drop.length;
+    const allFns = [...trimDialog.keep, ...trimDialog.drop];
+    const dropIds = new Set(trimDialog.drop.map((f) => f.fnsId));
+    const toggleDrop = (sub: ActiveVipFns) => {
+      const newDrop = new Set(dropIds);
+      if (newDrop.has(sub.fnsId)) newDrop.delete(sub.fnsId);
+      else newDrop.add(sub.fnsId);
+      const drop = allFns.filter((f) => newDrop.has(f.fnsId));
+      const keep = allFns.filter((f) => !newDrop.has(f.fnsId));
+      setTrimDialog({ ...trimDialog, drop, keep });
+    };
+    const canSwitch = trimDialog.drop.length === overflow;
+    return (
+      <Card>
+        <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
+          Перейти на тариф {trimDialog.plan.name}
+        </Text>
+        <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 6, lineHeight: 18 }}>
+          Лимит тарифа — {trimDialog.plan.fnsLimit} ИФНС. У вас сейчас{" "}
+          {allFns.length}, нужно убрать {overflow}. Отметьте, какие исключить:
+        </Text>
+        <View style={{ marginTop: 12 }}>
+          {allFns.map((sub, idx) => {
+            const drop = dropIds.has(sub.fnsId);
+            return (
+              <Pressable
+                key={sub.fnsId}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: drop }}
+                onPress={() => toggleDrop(sub)}
+                style={({ pressed }) => [
+                  {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    paddingVertical: 10,
+                    borderTopWidth: idx === 0 ? 0 : 1,
+                    borderTopColor: colors.border,
+                  },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 4,
+                    borderWidth: 1.5,
+                    borderColor: drop ? colors.error : colors.border,
+                    backgroundColor: drop ? colors.error : colors.white,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {drop && <Check size={12} color={colors.white} strokeWidth={3} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, color: colors.text }} numberOfLines={1}>
+                    {sub.fnsName}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                    {sub.cityName} · код {sub.fnsCode}
+                  </Text>
+                </View>
+                {drop && (
+                  <Text style={{ fontSize: 11, color: colors.error, fontWeight: "600" }}>
+                    Убрать
+                  </Text>
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+        <View className="flex-row" style={{ gap: 8, marginTop: 16 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Отменить смену тарифа"
+            onPress={() => setTrimDialog(null)}
+            style={({ pressed }) => [
+              {
+                flex: 1,
+                paddingVertical: 11,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.white,
+                alignItems: "center",
+              },
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Text style={{ color: colors.textSecondary, fontWeight: "600" }}>
+              Отмена
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Перейти на тариф ${trimDialog.plan.name}`}
+            disabled={!canSwitch || busyPlanId === trimDialog.plan.id}
+            onPress={() =>
+              submitPlan(
+                trimDialog.plan.id,
+                trimDialog.drop.map((d) => d.fnsId)
+              )
+            }
+            style={({ pressed }) => [
+              {
+                flex: 2,
+                paddingVertical: 11,
+                borderRadius: 10,
+                backgroundColor: colors.primary,
+                alignItems: "center",
+                flexDirection: "row",
+                justifyContent: "center",
+                gap: 6,
+              },
+              (!canSwitch || busyPlanId === trimDialog.plan.id) && { opacity: 0.5 },
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <Text style={{ color: colors.white, fontWeight: "600" }}>
+              {busyPlanId === trimDialog.plan.id
+                ? "..."
+                : `Перейти на ${trimDialog.plan.name}`}
+            </Text>
+          </Pressable>
+        </View>
+      </Card>
+    );
+  }
+
+  // ─── no plan: upsell screen ─────────────────────────────────────
+  if (!hasPlan) {
+    return (
+      <View style={{ gap: 16 }}>
+        <Card>
+          <View className="flex-row items-center" style={{ gap: 8, marginBottom: 8 }}>
+            <Crown size={20} color={colors.primary} />
+            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
+              Подключите PRO
+            </Text>
+          </View>
+          <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20 }}>
+            Получайте email о новых запросах мгновенно по выбранным ИФНС. Без PRO — с задержкой 5 минут (вы пропускаете запрос — другие специалисты успевают первыми).
+          </Text>
+
+          {data.lastChargeFailedAt && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                backgroundColor: colors.dangerSoft,
+                padding: 10,
+                borderRadius: 10,
+                marginTop: 16,
+              }}
+            >
+              <AlertCircle size={16} color={colors.error} />
+              <Text style={{ color: colors.error, fontSize: 13, flex: 1 }}>
+                Прошлое списание не прошло. Подключитесь снова — попросим обновить карту.
+              </Text>
+            </View>
+          )}
+
+          {topupSuccess && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                backgroundColor: colors.limeSoft,
+                padding: 10,
+                borderRadius: 10,
+                marginTop: 16,
+              }}
+            >
+              <CheckCircle2 size={16} color={colors.success} />
+              <Text style={{ color: colors.success, fontSize: 13, flex: 1 }}>
+                Платёж принят. Тариф активируется в течение нескольких секунд.
+              </Text>
+            </View>
+          )}
+        </Card>
+
+        <PlanCardsRow
+          plans={plans}
+          activePlanId={null}
+          busyPlanId={busyPlanId}
+          onSelect={(p) => submitPlan(p.id)}
+        />
+      </View>
+    );
+  }
+
+  // ─── has plan: management screen ────────────────────────────────
+  const plan = data.plan!;
+  const slotsLeft = data.slotsLimit - data.slotsUsed;
 
   return (
     <View style={{ gap: 16 }}>
-      {/* HERO */}
+      {/* Plan header */}
       <Card>
-        <View className="flex-row items-center" style={{ gap: 8, marginBottom: 8 }}>
-          <Crown size={20} color={colors.primary} />
-          <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
-            VIP-уведомления по ИФНС
-          </Text>
-        </View>
-        <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20 }}>
-          Подключите подписку на любые ИФНС России — и получайте email мгновенно, как только клиент создаст запрос. Без VIP уведомление приходит с задержкой 5 минут. Списания каждый день автоматически с привязанной карты.
-        </Text>
-
-        {activeSubs.length > 0 && (
-          <View
-            style={{
-              marginTop: 16,
-              paddingTop: 16,
-              borderTopWidth: 1,
-              borderTopColor: colors.border,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-              Сейчас вы платите
-            </Text>
-            <Text
+        <View className="flex-row items-center justify-between" style={{ gap: 12 }}>
+          <View className="flex-row items-center" style={{ gap: 10, flex: 1 }}>
+            <View
               style={{
-                fontSize: 28,
-                fontWeight: "700",
-                color: colors.text,
-                marginTop: 2,
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                backgroundColor: colors.accentSoft,
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {formatRub(data.monthlyEstimateKopeks)}
-              <Text style={{ fontSize: 14, fontWeight: "400", color: colors.textSecondary }}>
-                {" "}/ месяц
+              <Sparkles size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                Ваш тариф
               </Text>
-            </Text>
-            <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
-              ≈ {formatRub(data.dailyChargeKopeks)} в день · {activeSubs.length} {activeSubs.length === 1 ? "подписка" : "подписки"}
-            </Text>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>
+                {plan.name}
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+                {formatRub(plan.monthlyPriceKopeks)}/мес · ≈ {formatRub(plan.dailyChargeKopeks)}/день
+                {data.planStartedAt && ` · с ${formatActivatedAt(data.planStartedAt)}`}
+              </Text>
+            </View>
           </View>
-        )}
+        </View>
+
+        {/* Slot counter */}
+        <View
+          style={{
+            marginTop: 16,
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+          }}
+        >
+          <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+            Слотов ИФНС: <Text style={{ color: colors.text, fontWeight: "700" }}>
+              {data.slotsUsed}/{data.slotsLimit}
+            </Text>
+            {slotsLeft > 0 && ` · свободно ${slotsLeft}`}
+          </Text>
+          <View
+            style={{
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: colors.surface,
+              marginTop: 8,
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                height: "100%",
+                width: `${Math.min(100, (data.slotsUsed / Math.max(1, data.slotsLimit)) * 100)}%`,
+                backgroundColor: colors.primary,
+              }}
+            />
+          </View>
+        </View>
+
+        <View className="flex-row" style={{ gap: 8, marginTop: 16 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Сменить тариф"
+            onPress={() => setShowPlanSwitcher((v) => !v)}
+            style={({ pressed }) => [
+              {
+                flex: 1,
+                paddingVertical: 10,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: colors.primary,
+                backgroundColor: colors.white,
+                alignItems: "center",
+              },
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Text style={{ color: colors.primary, fontWeight: "600", fontSize: 13 }}>
+              {showPlanSwitcher ? "Скрыть тарифы" : "Сменить тариф"}
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Отменить тариф"
+            onPress={handleCancelPlan}
+            disabled={busyPlanId === "__cancel__"}
+            style={({ pressed }) => [
+              {
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.white,
+                alignItems: "center",
+                flexDirection: "row",
+                gap: 6,
+              },
+              pressed && { opacity: 0.7 },
+              busyPlanId === "__cancel__" && { opacity: 0.5 },
+            ]}
+          >
+            <X size={14} color={colors.textSecondary} />
+            <Text style={{ color: colors.textSecondary, fontWeight: "600", fontSize: 13 }}>
+              Отменить
+            </Text>
+          </Pressable>
+        </View>
 
         {data.lastChargeFailedAt && (
           <View
@@ -354,37 +707,28 @@ export default function BillingTab({
               backgroundColor: colors.dangerSoft,
               padding: 10,
               borderRadius: 10,
-              marginTop: 16,
+              marginTop: 12,
             }}
           >
             <AlertCircle size={16} color={colors.error} />
             <Text style={{ color: colors.error, fontSize: 13, flex: 1 }}>
-              Последнее списание не прошло. Все подписки отключены — обновите карту, чтобы возобновить.
-            </Text>
-          </View>
-        )}
-
-        {topupSuccess && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              backgroundColor: colors.limeSoft,
-              padding: 10,
-              borderRadius: 10,
-              marginTop: 16,
-            }}
-          >
-            <CheckCircle2 size={16} color={colors.success} />
-            <Text style={{ color: colors.success, fontSize: 13, flex: 1 }}>
-              Платёж принят. Подписка активируется в течение нескольких секунд.
+              Последнее списание не прошло. Обновите карту.
             </Text>
           </View>
         )}
       </Card>
 
-      {/* CARD ON FILE */}
+      {/* Plan switcher (when toggled) */}
+      {showPlanSwitcher && (
+        <PlanCardsRow
+          plans={plans}
+          activePlanId={plan.id}
+          busyPlanId={busyPlanId}
+          onSelect={(p) => submitPlan(p.id)}
+        />
+      )}
+
+      {/* Saved card */}
       {data.hasPaymentMethod && (
         <Card>
           <View className="flex-row items-center justify-between" style={{ gap: 12 }}>
@@ -440,16 +784,16 @@ export default function BillingTab({
         </Card>
       )}
 
-      {/* MY SUBSCRIPTIONS */}
-      {activeSubs.length > 0 && (
+      {/* Active VIP FNS */}
+      {data.activeVipFns.length > 0 && (
         <Card>
           <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
-            Мои подписки
+            Мои VIP-ИФНС
           </Text>
           <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
-            За эти ИФНС вы получаете уведомления мгновенно
+            По этим ИФНС email приходит мгновенно
           </Text>
-          {activeSubs.map((sub, idx) => {
+          {data.activeVipFns.map((sub, idx) => {
             const busy = busyFnsId === sub.fnsId;
             return (
               <View
@@ -472,9 +816,7 @@ export default function BillingTab({
                     {sub.fnsName}
                   </Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                    {sub.cityName}
-                    {sub.monthlyPriceKopeks != null && ` · ${formatRub(sub.monthlyPriceKopeks)}/мес`}
-                    {` · с ${formatActivatedAt(sub.activatedAt)}`}
+                    {sub.cityName} · код {sub.fnsCode} · с {formatActivatedAt(sub.activatedAt)}
                   </Text>
                 </View>
                 {busy ? (
@@ -482,8 +824,8 @@ export default function BillingTab({
                 ) : (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Отключить VIP по ${sub.fnsName}`}
-                    onPress={() => handleUnsubscribe(sub)}
+                    accessibilityLabel={`Убрать ${sub.fnsName} из VIP`}
+                    onPress={() => handleRemoveFns(sub)}
                     style={({ pressed }) => [
                       {
                         flexDirection: "row",
@@ -501,7 +843,7 @@ export default function BillingTab({
                   >
                     <X size={12} color={colors.textSecondary} />
                     <Text style={{ fontSize: 12, color: colors.textSecondary }}>
-                      Отключить
+                      Убрать
                     </Text>
                   </Pressable>
                 )}
@@ -511,15 +853,15 @@ export default function BillingTab({
         </Card>
       )}
 
-      {/* SUBSCRIBE TO A NEW FNS */}
+      {/* Add ИФНС */}
       <Card>
         <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
-          Подключить новую ИФНС
+          Добавить ИФНС в VIP
         </Text>
         <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
-          {data.hasPaymentMethod
-            ? "Поиск по любой ИФНС России. Подключение списывает первый день сразу с привязанной карты."
-            : "Поиск по любой ИФНС России. При первом подключении вы привяжете карту и оплатите первый день одним платежом."}
+          {slotsLeft > 0
+            ? `Свободно ${slotsLeft} из ${data.slotsLimit}. Поиск по любой ИФНС России.`
+            : `Лимит тарифа исчерпан (${data.slotsUsed}/${data.slotsLimit}). Чтобы добавить ещё — повысьте тариф или уберите одну из текущих.`}
         </Text>
 
         {/* Search input */}
@@ -534,6 +876,7 @@ export default function BillingTab({
             borderRadius: 10,
             backgroundColor: colors.white,
             marginBottom: 12,
+            opacity: slotsLeft <= 0 ? 0.5 : 1,
           }}
         >
           <Search size={16} color={colors.textMuted} />
@@ -542,6 +885,7 @@ export default function BillingTab({
             onChangeText={setQ}
             placeholder="Код, имя ИФНС или город"
             placeholderTextColor={colors.placeholder}
+            editable={slotsLeft > 0}
             style={{
               flex: 1,
               fontSize: 14,
@@ -558,7 +902,7 @@ export default function BillingTab({
         </View>
 
         {/* City filter chips */}
-        {cityChips.length > 0 && (
+        {slotsLeft > 0 && cityChips.length > 0 && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -581,7 +925,7 @@ export default function BillingTab({
         )}
 
         {/* Results */}
-        {searchLoading ? (
+        {slotsLeft <= 0 ? null : searchLoading ? (
           <View className="items-center py-6">
             <ActivityIndicator size="small" color={colors.primary} />
           </View>
@@ -589,7 +933,7 @@ export default function BillingTab({
           <Text style={{ fontSize: 13, color: colors.textSecondary, paddingVertical: 8 }}>
             {q || cityFilterId
               ? "По вашему запросу ничего не найдено."
-              : "Все ИФНС с настроенным тарифом уже подключены."}
+              : "Все доступные ИФНС уже добавлены в VIP."}
           </Text>
         ) : (
           searchResults.map((item, idx) => {
@@ -622,8 +966,8 @@ export default function BillingTab({
                 ) : (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Подключить VIP по ${item.fnsName}`}
-                    onPress={() => handleSubscribe(item.fnsId, item.fnsName, item.monthlyPriceKopeks)}
+                    accessibilityLabel={`Добавить ${item.fnsName} в VIP`}
+                    onPress={() => handleSubscribeFns(item.fnsId)}
                     style={({ pressed }) => [
                       {
                         flexDirection: "row",
@@ -639,7 +983,7 @@ export default function BillingTab({
                   >
                     <Plus size={14} color={colors.white} />
                     <Text style={{ color: colors.white, fontSize: 13, fontWeight: "600" }}>
-                      {formatRub(item.monthlyPriceKopeks)}/мес
+                      Добавить
                     </Text>
                   </Pressable>
                 )}
@@ -649,7 +993,7 @@ export default function BillingTab({
         )}
       </Card>
 
-      {/* HISTORY */}
+      {/* History */}
       {txs && txs.length > 0 && (
         <Card>
           <Text className="text-base font-semibold mb-3" style={{ color: colors.text }}>
@@ -691,6 +1035,135 @@ export default function BillingTab({
           })}
         </Card>
       )}
+    </View>
+  );
+}
+
+// ─── plan cards row (used both for upsell and switcher) ──────────────
+
+function PlanCardsRow({
+  plans,
+  activePlanId,
+  busyPlanId,
+  onSelect,
+}: {
+  plans: PlanRow[];
+  activePlanId: string | null;
+  busyPlanId: string | null;
+  onSelect: (p: PlanRow) => void;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 12,
+      }}
+    >
+      {plans.map((p) => {
+        const active = p.id === activePlanId;
+        const busy = busyPlanId === p.id;
+        return (
+          <View
+            key={p.id}
+            style={{
+              flexBasis: 240,
+              flexGrow: 1,
+              borderWidth: active ? 2 : 1,
+              borderColor: active ? colors.primary : colors.border,
+              borderRadius: 14,
+              padding: 16,
+              backgroundColor: colors.white,
+              gap: 8,
+            }}
+          >
+            <View className="flex-row items-center justify-between" style={{ gap: 8 }}>
+              <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
+                {p.name}
+              </Text>
+              {active && (
+                <View
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: 999,
+                    backgroundColor: colors.accentSoft,
+                  }}
+                >
+                  <Text style={{ fontSize: 10, color: colors.primary, fontWeight: "600" }}>
+                    ВАШ ТАРИФ
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={{ fontSize: 28, fontWeight: "700", color: colors.text, marginTop: 4 }}>
+              {formatRub(p.monthlyPriceKopeks)}
+              <Text style={{ fontSize: 13, fontWeight: "400", color: colors.textSecondary }}>
+                {" "}/ мес
+              </Text>
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>
+              ≈ {formatRub(p.dailyChargeKopeks)} в день
+            </Text>
+            <View
+              style={{
+                marginTop: 10,
+                paddingTop: 10,
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
+              }}
+            >
+              <View className="flex-row items-center" style={{ gap: 6 }}>
+                <Check size={14} color={colors.success} />
+                <Text style={{ fontSize: 13, color: colors.text }}>
+                  До <Text style={{ fontWeight: "700" }}>{p.fnsLimit}</Text> ИФНС в VIP
+                </Text>
+              </View>
+              <View className="flex-row items-center" style={{ gap: 6, marginTop: 6 }}>
+                <Check size={14} color={colors.success} />
+                <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+                  Email о новом запросе мгновенно
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Подключить тариф ${p.name}`}
+              disabled={active || busy}
+              onPress={() => onSelect(p)}
+              style={({ pressed }) => [
+                {
+                  marginTop: 12,
+                  paddingVertical: 11,
+                  borderRadius: 10,
+                  alignItems: "center",
+                  backgroundColor: active ? colors.surface : colors.primary,
+                  borderWidth: active ? 1 : 0,
+                  borderColor: colors.border,
+                },
+                pressed && !active && { opacity: 0.85 },
+                busy && { opacity: 0.6 },
+              ]}
+            >
+              <Text
+                style={{
+                  color: active ? colors.textSecondary : colors.white,
+                  fontWeight: "600",
+                  fontSize: 14,
+                }}
+              >
+                {busy
+                  ? "..."
+                  : active
+                  ? "Уже активен"
+                  : activePlanId
+                  ? `Перейти на ${p.name}`
+                  : `Подключить за ${formatRub(p.monthlyPriceKopeks)}/мес`}
+              </Text>
+            </Pressable>
+          </View>
+        );
+      })}
     </View>
   );
 }

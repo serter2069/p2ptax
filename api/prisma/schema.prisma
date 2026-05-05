@@ -55,6 +55,16 @@ model User {
   // expired, blocked). When non-null, FE shows a "Платёж не прошёл,
   // обновите карту" banner. Cleared on successful re-bind.
   lastChargeFailedAt           DateTime? @map("last_charge_failed_at")
+  // Active PRO plan. Pricing model: per-account, fixed monthly fee,
+  // limited number of VIP FNS slots. Null = no plan (specialist
+  // gets only the regular 5-min-delayed notifications). Daily cron
+  // charges plan.monthlyPriceKopeks / 30 once per user.
+  subscriptionPlanId           String?   @map("subscription_plan_id")
+  subscriptionPlan             SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id], onDelete: SetNull)
+  // When the current plan was activated. Used for the "тариф с ..."
+  // line on the PRO tab. Cleared along with subscriptionPlanId on
+  // failed-charge or explicit cancel.
+  subscriptionStartedAt        DateTime? @map("subscription_started_at")
   createdAt                    DateTime  @default(now()) @map("created_at")
   updatedAt                    DateTime  @updatedAt @map("updated_at")
 
@@ -229,6 +239,36 @@ model FnsOffice {
   vipSubscribers     SpecialistVipFns[]
 
   @@map("fns_offices")
+}
+
+// PRO plan tier — three of these are seeded (Lite/Pro/Premium) and
+// editable by admins on /admin/plans. Each plan has a fixed monthly
+// price and a max number of FNS slots a specialist can flip into
+// VIP at once. Daily cron charges plan.monthlyPriceKopeks / 30.
+//
+// Adding ИФНС to the VIP list is free within the limit; switching
+// plans only changes the daily charge rate (and may require trim
+// when downgrading to a smaller limit).
+model SubscriptionPlan {
+  id                 String   @id @default(uuid())
+  // Stable slug for code paths that key off plan kind (e.g. analytics
+  // tags). UI uses `name`. Codes seeded as 'lite' | 'pro' | 'premium'
+  // but admins can introduce new ones.
+  code               String   @unique
+  name               String
+  monthlyPriceKopeks Int      @map("monthly_price_kopeks")
+  // Max number of SpecialistVipFns rows a user on this plan may have.
+  fnsLimit           Int      @map("fns_limit")
+  // Display order on the upsell screen (ascending). Inactive plans
+  // are hidden from new sign-ups but kept for users already on them.
+  sortOrder          Int      @default(0) @map("sort_order")
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  users              User[]
+
+  @@map("subscription_plans")
 }
 
 // Per-FNS VIP toggle for a specialist. Existence of a row = VIP is

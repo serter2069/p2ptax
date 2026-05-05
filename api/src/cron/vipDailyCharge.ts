@@ -3,24 +3,19 @@ import { chargeWithSavedMethod } from "../lib/yookassa";
 import { sendVipChargeFailedEmail } from "../lib/email";
 
 /**
- * VIP daily autopay — runs once a day from setInterval in index.ts.
+ * PRO daily autopay — runs once a day from setInterval in index.ts.
  *
- * For every specialist with at least one SpecialistVipFns row we
- * sum Math.ceil(monthly/30) across active rows and charge that
- * amount in ONE ЮKassa autopay using the saved payment_method_id.
+ * Pricing model: per-user. Each user with subscriptionPlanId is
+ * charged `plan.monthlyPriceKopeks / 30` once per calendar day,
+ * regardless of how many SpecialistVipFns rows they have under it.
  *
  * Outcomes per user:
- *   - card succeeds → write per-FNS billing_tx 'daily_charge' rows.
- *   - card fails    → wipe ALL SpecialistVipFns rows, set
- *                     lastChargeFailedAt, send "обновите карту"
- *                     email. Predictable rather than partial-active.
- *   - no saved card → defensive cleanup: wipe rows + set failed
- *                     timestamp. Shouldn't happen via the UI flow
- *                     but guards against orphan state.
+ *   - card succeeds → write a single 'daily_charge' BillingTx row.
+ *   - card fails    → unset the plan, wipe ALL VIP rows, set
+ *                     lastChargeFailedAt, send "обновите карту" email.
+ *   - no saved card → defensive cleanup: same as fail.
  *
- * Idempotency: per-day key prefix `vip-day:YYYY-MM-DD:` on every
- * billing_tx row. A re-run on the same calendar day skips users
- * who already have a charge with today's key.
+ * Idempotency: per-user, per-day key prefix `pro-day:YYYY-MM-DD:`.
  */
 
 const KOPEKS_PER_DAY_DIVISOR = 30;
@@ -39,41 +34,33 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
   skipped: number;
 }> {
   const dayKey = todayKey(now);
+  const todayPrefix = `pro-day:${dayKey}:`;
 
-  const allActive = await prisma.specialistVipFns.findMany({
+  const subscribers = await prisma.user.findMany({
+    where: { subscriptionPlanId: { not: null } },
     select: {
-      specialistId: true,
-      fnsId: true,
-      fns: { select: { name: true, vipMonthlyPriceKopeks: true } },
+      id: true,
+      email: true,
+      firstName: true,
+      yookassaPaymentMethodId: true,
+      subscriptionPlan: {
+        select: { id: true, name: true, monthlyPriceKopeks: true },
+      },
     },
   });
-
-  // Collapse into per-user buckets. We charge each user in one
-  // autopay even if they have several active FNS rows — saves
-  // ЮKassa fees and keeps a single source of truth per day.
-  type Row = { fnsId: string; fnsName: string; dailyKopeks: number };
-  const byUser = new Map<string, Row[]>();
-  for (const row of allActive) {
-    const monthly = row.fns.vipMonthlyPriceKopeks ?? 0;
-    if (monthly <= 0) continue;
-    const arr = byUser.get(row.specialistId) ?? [];
-    arr.push({
-      fnsId: row.fnsId,
-      fnsName: row.fns.name,
-      dailyKopeks: dailyChargeKopeks(monthly),
-    });
-    byUser.set(row.specialistId, arr);
-  }
 
   let charged = 0;
   let failed = 0;
   let skipped = 0;
-  const todayPrefix = `vip-day:${dayKey}:`;
 
-  for (const [userId, rows] of byUser) {
+  for (const user of subscribers) {
+    const plan = user.subscriptionPlan;
+    if (!plan) continue;
+
+    // Idempotency check.
     const already = await prisma.billingTx.findFirst({
       where: {
-        userId,
+        userId: user.id,
         kind: { in: ["daily_charge", "charge_failed"] },
         description: { startsWith: todayPrefix },
       },
@@ -84,31 +71,25 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
       continue;
     }
 
-    const totalKopeks = rows.reduce((s, r) => s + r.dailyKopeks, 0);
-    if (totalKopeks <= 0) continue;
+    const dayPrice = dailyChargeKopeks(plan.monthlyPriceKopeks);
+    if (dayPrice <= 0) continue;
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        email: true,
-        firstName: true,
-        yookassaPaymentMethodId: true,
-      },
-    });
-    if (!user) continue;
-
-    // Defensive: orphan VIP rows without a card. Wipe and continue.
+    // Defensive: plan but no card. Wipe everything.
     if (!user.yookassaPaymentMethodId) {
       await prisma.$transaction(async (tx) => {
-        await tx.specialistVipFns.deleteMany({ where: { specialistId: userId } });
+        await tx.specialistVipFns.deleteMany({ where: { specialistId: user.id } });
         await tx.user.update({
-          where: { id: userId },
-          data: { lastChargeFailedAt: new Date() },
+          where: { id: user.id },
+          data: {
+            subscriptionPlanId: null,
+            subscriptionStartedAt: null,
+            lastChargeFailedAt: new Date(),
+          },
         });
         await tx.billingTx.create({
           data: {
-            userId,
-            amountKopeks: -totalKopeks,
+            userId: user.id,
+            amountKopeks: -dayPrice,
             kind: "charge_failed",
             description: `${todayPrefix}no_payment_method`,
           },
@@ -118,55 +99,56 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
       continue;
     }
 
-    const idempotenceKey = `vip-day-${dayKey}-${userId}`;
+    const idempotenceKey = `pro-day-${dayKey}-${user.id}`;
     let chargeOk = false;
     let paymentId: string | null = null;
     try {
       const charge = await chargeWithSavedMethod({
-        amountKopeks: totalKopeks,
-        description: `VIP-подписки P2PTax — ${dayKey}`,
+        amountKopeks: dayPrice,
+        description: `Тариф ${plan.name} — ${dayKey}`,
         paymentMethodId: user.yookassaPaymentMethodId,
         idempotenceKey,
-        metadata: { userId, kind: "daily_charge", day: dayKey },
+        metadata: { userId: user.id, planId: plan.id, kind: "daily_charge", day: dayKey },
       });
       chargeOk = charge.status === "succeeded" && charge.paid;
       paymentId = charge.paymentId;
     } catch (err) {
-      console.error(`[vip-daily] autopay error for ${userId}:`, err);
+      console.error(`[pro-daily] autopay error for ${user.id}:`, err);
       chargeOk = false;
     }
 
     if (chargeOk) {
       await prisma.$transaction(async (tx) => {
-        for (const r of rows) {
-          await tx.billingTx.create({
-            data: {
-              userId,
-              amountKopeks: -r.dailyKopeks,
-              kind: "daily_charge",
-              fnsId: r.fnsId,
-              externalRef: paymentId ?? undefined,
-              description: `${todayPrefix}${r.fnsId}`,
-            },
-          });
-        }
+        await tx.billingTx.create({
+          data: {
+            userId: user.id,
+            amountKopeks: -dayPrice,
+            kind: "daily_charge",
+            externalRef: paymentId ?? undefined,
+            description: `${todayPrefix}${plan.name}`,
+          },
+        });
         await tx.user.update({
-          where: { id: userId },
+          where: { id: user.id },
           data: { lastChargeFailedAt: null },
         });
       });
       charged++;
     } else {
       await prisma.$transaction(async (tx) => {
-        await tx.specialistVipFns.deleteMany({ where: { specialistId: userId } });
+        await tx.specialistVipFns.deleteMany({ where: { specialistId: user.id } });
         await tx.user.update({
-          where: { id: userId },
-          data: { lastChargeFailedAt: new Date() },
+          where: { id: user.id },
+          data: {
+            subscriptionPlanId: null,
+            subscriptionStartedAt: null,
+            lastChargeFailedAt: new Date(),
+          },
         });
         await tx.billingTx.create({
           data: {
-            userId,
-            amountKopeks: -totalKopeks,
+            userId: user.id,
+            amountKopeks: -dayPrice,
             kind: "charge_failed",
             externalRef: paymentId ?? undefined,
             description: `${todayPrefix}autopay_rejected`,
@@ -174,16 +156,15 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
         });
       });
       failed++;
-      // Best-effort: tell the user. Don't block cron on email errors.
       if (user.email) {
         try {
           await sendVipChargeFailedEmail({
             toEmail: user.email,
             toName: user.firstName ?? "коллега",
-            amountRub: Math.round(totalKopeks / 100),
+            amountRub: Math.round(dayPrice / 100),
           });
         } catch (err) {
-          console.error(`[vip-daily] email error for ${userId}:`, err);
+          console.error(`[pro-daily] email error for ${user.id}:`, err);
         }
       }
     }

@@ -601,4 +601,96 @@ router.patch("/settings", async (req: Request, res: Response) => {
   }
 });
 
+// ─── Subscription plans CRUD ────────────────────────────────────────────────
+
+// GET /api/admin/plans — list all plans (active + inactive).
+router.get("/plans", async (_req: Request, res: Response) => {
+  try {
+    const plans = await prisma.subscriptionPlan.findMany({
+      orderBy: { sortOrder: "asc" },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        monthlyPriceKopeks: true,
+        fnsLimit: true,
+        sortOrder: true,
+        isActive: true,
+        _count: { select: { users: true } },
+      },
+    });
+    res.json({
+      plans: plans.map((p) => ({
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        monthlyPriceKopeks: p.monthlyPriceKopeks,
+        fnsLimit: p.fnsLimit,
+        sortOrder: p.sortOrder,
+        isActive: p.isActive,
+        subscribersCount: p._count.users,
+      })),
+    });
+  } catch (error) {
+    console.error("admin/plans GET error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PATCH /api/admin/plans/:id — edit plan fields. The `code` is fixed
+// (analytics may key off it); admins edit display + price + limit.
+router.patch("/plans/:id", adminWriteRateLimiter, async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const body = req.body as {
+      name?: string;
+      monthlyPriceKopeks?: number;
+      fnsLimit?: number;
+      sortOrder?: number;
+      isActive?: boolean;
+    };
+
+    const data: Prisma.SubscriptionPlanUpdateInput = {};
+    if (typeof body.name === "string" && body.name.trim()) {
+      data.name = body.name.trim().slice(0, 80);
+    }
+    if (typeof body.monthlyPriceKopeks === "number") {
+      const price = Math.round(body.monthlyPriceKopeks);
+      if (!Number.isFinite(price) || price < 0 || price > 100_000_000) {
+        res.status(400).json({ error: "monthlyPriceKopeks вне диапазона" });
+        return;
+      }
+      data.monthlyPriceKopeks = price;
+    }
+    if (typeof body.fnsLimit === "number") {
+      const limit = Math.round(body.fnsLimit);
+      if (!Number.isFinite(limit) || limit < 0 || limit > 10000) {
+        res.status(400).json({ error: "fnsLimit вне диапазона" });
+        return;
+      }
+      data.fnsLimit = limit;
+    }
+    if (typeof body.sortOrder === "number") {
+      data.sortOrder = Math.round(body.sortOrder);
+    }
+    if (typeof body.isActive === "boolean") {
+      data.isActive = body.isActive;
+    }
+
+    const plan = await prisma.subscriptionPlan.update({ where: { id }, data });
+    res.json({
+      id: plan.id,
+      code: plan.code,
+      name: plan.name,
+      monthlyPriceKopeks: plan.monthlyPriceKopeks,
+      fnsLimit: plan.fnsLimit,
+      sortOrder: plan.sortOrder,
+      isActive: plan.isActive,
+    });
+  } catch (error) {
+    console.error("admin/plans PATCH error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
