@@ -129,7 +129,12 @@ function DesktopSpecialistRow({
   return (
     <View style={{ position: "relative" }}>
       <Pressable
-        accessibilityRole="button"
+        // role="link" so RN-Web renders an <a> element instead of a
+        // <button>; otherwise the card has nested <Pressable>s
+        // ('Написать', bookmark) which become buttons inside a button —
+        // invalid HTML + React hydration warning. The card-as-link
+        // semantics is also more accurate (clicks navigate to /profile).
+        accessibilityRole="link"
         accessibilityLabel={name}
         onPress={() => onPress(item.id)}
         style={({ pressed }) => [

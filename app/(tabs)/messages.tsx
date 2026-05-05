@@ -85,6 +85,17 @@ export default function UnifiedInbox() {
     }
   }, [params.thread, threads]);
 
+  // Stable callback so InlineChatView's useThreadMessages doesn't see a
+  // new prop reference on every render — without useCallback, every
+  // re-render of this screen would rebuild markAsRead → fetchMessages →
+  // the polling useEffect, blowing up the network as the 5-second
+  // interval got recreated dozens of times per second.
+  const handleThreadRead = useCallback((tid: string) => {
+    setThreads((prev) =>
+      prev.map((t) => (t.id === tid ? { ...t, unreadCount: 0 } : t))
+    );
+  }, []);
+
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     fetchThreads();
@@ -215,13 +226,7 @@ export default function UnifiedInbox() {
               {selectedThreadId ? (
                 <InlineChatView
                   threadId={selectedThreadId}
-                  onThreadRead={(tid) => {
-                    setThreads((prev) =>
-                      prev.map((t) =>
-                        t.id === tid ? { ...t, unreadCount: 0 } : t
-                      )
-                    );
-                  }}
+                  onThreadRead={handleThreadRead}
                 />
               ) : (
                 <MessengerEmptyPane

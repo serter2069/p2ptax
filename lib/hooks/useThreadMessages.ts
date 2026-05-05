@@ -74,15 +74,26 @@ export function useThreadMessages(
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Keep `onMarkRead` in a ref so changes to the parent's inline arrow
+  // (e.g. `<InlineChatView onThreadRead={(tid) => …}` recreated on
+  // every render) DON'T thrash markAsRead → fetchMessages → poll
+  // useEffect identity, which would otherwise rebuild the 5-second
+  // polling interval on every parent render and produce dozens of
+  // network calls per second when /messages re-renders frequently.
+  const onMarkReadRef = useRef(onMarkRead);
+  useEffect(() => {
+    onMarkReadRef.current = onMarkRead;
+  }, [onMarkRead]);
+
   const markAsRead = useCallback(async () => {
     if (!threadId) return;
     try {
       await apiPatch(`/api/messages/${threadId}/read`, {});
-      onMarkRead?.(threadId);
+      onMarkReadRef.current?.(threadId);
     } catch {
       // ignore
     }
-  }, [threadId, onMarkRead]);
+  }, [threadId]);
 
   const fetchMessages = useCallback(async () => {
     if (!threadId) return;
