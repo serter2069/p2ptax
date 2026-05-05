@@ -58,8 +58,14 @@ export default function CreateRequest() {
   const nav = useTypedRouter();
   const { isAuthenticated, isLoading: authLoading, token } = useAuth();
   const { width } = useWindowDimensions();
-  const params = useLocalSearchParams<{ restore?: string; specialistId?: string }>();
+  const params = useLocalSearchParams<{ restore?: string; specialistId?: string; fnsId?: string }>();
   const restoreMode = params.restore === "1";
+  const prefillFnsId =
+    typeof params.fnsId === "string"
+      ? params.fnsId
+      : Array.isArray(params.fnsId)
+        ? params.fnsId[0]
+        : null;
 
   // Specialist targeting — optional, set via specialistId query param
   const [targetSpecialistId, setTargetSpecialistId] = useState<string | null>(
@@ -169,6 +175,18 @@ export default function CreateRequest() {
     })();
     return () => { cancelled = true; };
   }, [cities]);
+
+  // ?fnsId=… deep-link from /fns/[id] "Оставить запрос" button. We
+  // wait for fnsAll to load (so cityId can be derived), then pre-pick
+  // both selects. Doesn't override an existing selection — if the
+  // user navigated back to a draft, the draft wins.
+  useEffect(() => {
+    if (!prefillFnsId || fnsAll.length === 0) return;
+    const fns = fnsAll.find((f) => f.id === prefillFnsId);
+    if (!fns) return;
+    setSelectedCityId((prev) => prev ?? fns.cityId);
+    setSelectedFnsId((prev) => prev ?? prefillFnsId);
+  }, [prefillFnsId, fnsAll]);
 
   // Restore draft on mount (anyone — anon or returning post-login).
   // Reads new key first, falls back to legacy key for in-flight users.

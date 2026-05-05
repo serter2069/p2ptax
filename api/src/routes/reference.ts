@@ -150,6 +150,49 @@ router.get("/ifns/search", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/fns/:id — single FNS detail (public). Powers the /fns/[id]
+// landing page. Returns name + address + description + city + counts
+// of specialists and active requests so the page can render at a glance.
+router.get("/fns/:id", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const fns = await prisma.fnsOffice.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        address: true,
+        description: true,
+        city: { select: { id: true, name: true, slug: true } },
+        _count: {
+          select: {
+            specialistFns: true,
+            requests: { where: { status: { in: ["ACTIVE", "CLOSING_SOON"] }, isPublic: true } },
+          },
+        },
+      },
+    });
+    if (!fns) {
+      res.status(404).json({ error: "FNS not found" });
+      return;
+    }
+    res.json({
+      id: fns.id,
+      name: fns.name,
+      code: fns.code,
+      address: fns.address,
+      description: fns.description,
+      city: fns.city,
+      specialistCount: fns._count.specialistFns,
+      activeRequestCount: fns._count.requests,
+    });
+  } catch (error) {
+    console.error("fns/:id error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/fns?city_id=X or ?city_ids=X,Y — offices for one or many cities
 router.get("/fns", async (req: Request, res: Response) => {
   try {
