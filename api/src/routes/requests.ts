@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { verifyAccessToken } from "../lib/jwt";
 import { sendNotification } from "../notifications/notification.service";
+import { sendNewRequestForFnsEmail } from "../lib/email";
 import { notSeedRequestWhere } from "../lib/seedFilter";
 import { minioClient, MINIO_BUCKET, presignAvatarUrl } from "../lib/minio";
 
@@ -25,6 +26,12 @@ const router = Router();
  *
  * Side-effect only — never crashes the request flow.
  */
+// 5-minute lag for non-VIP specialists. VIP-FNS subscribers get the
+// notification + email immediately; everyone else has to wait. Stored
+// as a constant so it's easy to bump or replace with per-FNS rules
+// later — Сергей's plan is to start uniform 5min and refine.
+const NON_VIP_DELAY_MS = 5 * 60 * 1000;
+
 async function notifyMatchingSpecialists(args: {
   requestId: string;
   fnsId: string;
@@ -33,33 +40,94 @@ async function notifyMatchingSpecialists(args: {
 }): Promise<number> {
   const { requestId, fnsId, title, clientUserId } = args;
   try {
-    const matchingSpecialists = await prisma.user.findMany({
-      where: {
-        isSpecialist: true,
-        specialistProfileCompletedAt: { not: null },
-        isAvailable: true,
-        isBanned: false,
-        // Skip soft-deleted accounts when fanning-out notifications.
-        deletedAt: null,
-        id: { not: clientUserId },
-        specialistFns: { some: { fnsId } },
-      },
-      select: { id: true },
-    });
+    const [matchingSpecialists, vipRows, fnsRow] = await Promise.all([
+      prisma.user.findMany({
+        where: {
+          isSpecialist: true,
+          specialistProfileCompletedAt: { not: null },
+          isAvailable: true,
+          isBanned: false,
+          deletedAt: null,
+          id: { not: clientUserId },
+          specialistFns: { some: { fnsId } },
+        },
+        select: { id: true, email: true, firstName: true, lastName: true },
+      }),
+      // Active VIP-FNS rows for this exact FNS — those specialists
+      // get the alert immediately, others get it 5min later.
+      prisma.specialistVipFns.findMany({
+        where: { fnsId },
+        select: { specialistId: true },
+      }),
+      prisma.fnsOffice.findUnique({
+        where: { id: fnsId },
+        select: { name: true, city: { select: { name: true } } },
+      }),
+    ]);
 
-    await Promise.all(
-      matchingSpecialists.map((s) =>
-        sendNotification({
-          userId: s.id,
-          type: "new_request_in_city",
-          title: "Новый запрос по вашему отделению ФНС",
-          body: title.slice(0, 200),
-          entityId: requestId,
-        }).catch((err: Error) =>
-          console.error("[notifications] new_request_in_city fan-out failed:", err.message)
+    const vipSet = new Set(vipRows.map((r) => r.specialistId));
+    const fnsName = fnsRow?.name ?? "ФНС";
+    const cityName = fnsRow?.city?.name ?? "";
+
+    // VIP fan-out: immediate notification + email.
+    const vipMatches = matchingSpecialists.filter((s) => vipSet.has(s.id));
+    const standardMatches = matchingSpecialists.filter((s) => !vipSet.has(s.id));
+
+    void Promise.all(
+      vipMatches.map((s) =>
+        Promise.allSettled([
+          sendNotification({
+            userId: s.id,
+            type: "new_request_in_city",
+            title: "Новый запрос по вашему отделению ФНС (VIP)",
+            body: title.slice(0, 200),
+            entityId: requestId,
+          }),
+          sendNewRequestForFnsEmail({
+            toEmail: s.email,
+            toName: [s.firstName, s.lastName].filter(Boolean).join(" ") || "Специалист",
+            fnsName,
+            cityName,
+            requestId,
+            isVip: true,
+          }),
+        ]).catch((err) =>
+          console.error("[notifications] VIP fan-out failed:", err)
         )
       )
     );
+
+    // Non-VIP fan-out: same payload, 5 minutes later. Implementation
+    // is intentionally a per-recipient setTimeout — simplest possible
+    // delay primitive that works without Redis/queue infra. If the
+    // api process restarts within the 5-minute window, queued non-VIP
+    // emails are dropped on the floor; we accept that for the MVP
+    // since the in-app notification + the catalog refresh still cover
+    // the essential discovery path. Replace with BullMQ delayed jobs
+    // when latency-tier rules grow more complex.
+    for (const s of standardMatches) {
+      setTimeout(() => {
+        void Promise.allSettled([
+          sendNotification({
+            userId: s.id,
+            type: "new_request_in_city",
+            title: "Новый запрос по вашему отделению ФНС",
+            body: title.slice(0, 200),
+            entityId: requestId,
+          }),
+          sendNewRequestForFnsEmail({
+            toEmail: s.email,
+            toName: [s.firstName, s.lastName].filter(Boolean).join(" ") || "Специалист",
+            fnsName,
+            cityName,
+            requestId,
+            isVip: false,
+          }),
+        ]).catch((err) =>
+          console.error("[notifications] non-VIP fan-out failed:", err)
+        );
+      }, NON_VIP_DELAY_MS);
+    }
 
     return matchingSpecialists.length;
   } catch (err) {

@@ -54,6 +54,7 @@ import accountRoutes from "./routes/account";
 import billingRoutes from "./routes/billing";
 import { startNotificationWorker } from "./notifications/notification.processor";
 import { runRequestLifecycleCron } from "./cron/requestLifecycle";
+import { runVipDailyChargeCron } from "./cron/vipDailyCharge";
 import { apiLimiter } from "./middleware/rateLimit";
 
 const app = express();
@@ -148,4 +149,17 @@ app.listen(config.port, () => {
   setInterval(() => {
     runRequestLifecycleCron().catch((err) => console.error("[lifecycle] Cron run failed:", err));
   }, config.lifecycleCronIntervalMs);
+
+  // VIP daily charge: re-runs every hour. The cron itself is
+  // day-keyed-idempotent (same calendar day = no double charge), so
+  // running it hourly is harmless — it just guarantees the day's
+  // charge is collected even if the api was down at midnight.
+  runVipDailyChargeCron()
+    .then((r) => console.log("[vip-daily] startup:", r))
+    .catch((err) => console.error("[vip-daily] Initial run failed:", err));
+  setInterval(() => {
+    runVipDailyChargeCron().catch((err) =>
+      console.error("[vip-daily] Cron run failed:", err)
+    );
+  }, 60 * 60 * 1000);
 });
