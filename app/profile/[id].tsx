@@ -14,6 +14,7 @@ import { AlertCircle, Pencil, ChevronLeft } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
 import ContactsView from "@/components/specialist/ContactsView";
+import { getContactConfig } from "@/components/specialist/contactConfig";
 import WorkAreaSection from "@/components/specialist/WorkAreaSection";
 import SpecialistHero from "@/components/specialist/SpecialistHero";
 import SpecialistAbout from "@/components/specialist/SpecialistAbout";
@@ -392,28 +393,26 @@ export default function SpecialistPublicProfile() {
                   style={{ gap: 8 }}
                 >
                   {/* Dedupe types: a specialist can have e.g. two
-                      Telegrams; we still want to show 'Telegram' once. */}
+                      Telegrams; we still want to show 'Telegram' once.
+                      Each chip uses the same icon + label as the
+                      revealed contact list (shared CONTACT_TYPE_CONFIG)
+                      so the preview reads as a teaser of the same
+                      visual vocabulary, not a different control. */}
                   {Array.from(new Set(contactTypesPreview)).map((t) => {
-                    const labels: Record<string, string> = {
-                      phone: "Телефон",
-                      email: "Email",
-                      telegram: "Telegram",
-                      whatsapp: "WhatsApp",
-                      max: "Max",
-                      vk: "ВКонтакте",
-                      website: "Сайт",
-                    };
+                    const cfg = getContactConfig(t);
+                    const Icon = cfg.Icon;
                     return (
                       <View
                         key={t}
-                        className="px-3 py-1 rounded-full"
-                        style={{ backgroundColor: colors.accentSoft }}
+                        className="flex-row items-center px-3 py-1 rounded-full"
+                        style={{ backgroundColor: cfg.bg, gap: 6 }}
                       >
+                        <Icon size={12} color={cfg.color} />
                         <Text
                           className="text-xs font-medium"
-                          style={{ color: colors.primary }}
+                          style={{ color: cfg.color }}
                         >
-                          {labels[t] ?? t}
+                          {cfg.label}
                         </Text>
                       </View>
                     );

@@ -1,10 +1,8 @@
 import { View, Text, Pressable, Linking } from "react-native";
-import {
-  Phone, Mail, Send, MessageCircle, MessageSquare,
-  ExternalLink, Globe, ChevronRight, MapPin, Clock, type LucideIcon,
-} from "lucide-react-native";
+import { ChevronRight, MapPin, Clock } from "lucide-react-native";
 import { colors } from "@/lib/theme";
 import type { ContactMethodItem } from "./types";
+import { getContactConfig } from "./contactConfig";
 
 interface ContactsSectionProps {
   contacts: ContactMethodItem[];
@@ -35,16 +33,6 @@ function getContactUrl(type: string, value: string): string | null {
   }
 }
 
-const CONTACT_TYPE_CONFIG: Record<string, { label: string; Icon: LucideIcon; bg: string; color: string }> = {
-  phone: { label: "Телефон", Icon: Phone, bg: colors.accentSoft, color: colors.primary },
-  email: { label: "Email", Icon: Mail, bg: colors.limeSoft, color: colors.success },
-  telegram: { label: "Telegram", Icon: Send, bg: colors.accentSoft, color: colors.blue500 },
-  whatsapp: { label: "WhatsApp", Icon: MessageCircle, bg: colors.limeSoft, color: colors.success },
-  max: { label: "Max", Icon: MessageSquare, bg: colors.accentSoft, color: colors.primary },
-  vk: { label: "ВКонтакте", Icon: ExternalLink, bg: colors.accentSoft, color: colors.blue500 },
-  website: { label: "Сайт", Icon: Globe, bg: colors.surface2, color: colors.textSecondary },
-};
-
 export default function ContactsView({ contacts, officeAddress, workingHours, cardShadow }: ContactsSectionProps) {
   const hasContacts = contacts.length > 0 || officeAddress || workingHours;
 
@@ -60,12 +48,7 @@ export default function ContactsView({ contacts, officeAddress, workingHours, ca
       </Text>
 
       {contacts.map((contact, index) => {
-        const cfg = CONTACT_TYPE_CONFIG[contact.type] || {
-          label: contact.type,
-          Icon: ExternalLink,
-          bg: colors.background,
-          color: colors.textSecondary,
-        };
+        const cfg = getContactConfig(contact.type);
         const url = getContactUrl(contact.type, contact.value);
         const isLast =
           index === contacts.length - 1 &&
