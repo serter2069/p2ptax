@@ -80,13 +80,24 @@ export default function FnsSearchSection({ isDesktop }: { isDesktop: boolean }) 
   return (
     <View
       style={{
-        paddingVertical: isDesktop ? 56 : 32,
+        paddingVertical: isDesktop ? 56 : 36,
         paddingHorizontal: 16,
-        backgroundColor: colors.surface,
+        backgroundColor: colors.white,
         alignItems: "center",
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
       }}
     >
       <View style={{ width: "100%", maxWidth: 960, gap: 16 }}>
+        <View
+          className="flex-row items-center"
+          style={{ gap: 8, justifyContent: isDesktop ? "flex-start" : "center" }}
+        >
+          <Building2 size={22} color={colors.primary} />
+          <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1 }}>
+            Справочник ИФНС России
+          </Text>
+        </View>
         <View>
           <Text
             style={{

@@ -169,6 +169,10 @@ export default function LandingScreen() {
     nav.routes.specialists();
   }, [router]);
 
+  const goFnsCatalog = useCallback(() => {
+    nav.any("/fns");
+  }, [router]);
+
   const goHome = useCallback(() => {
     nav.routes.home();
   }, [router]);
@@ -214,6 +218,7 @@ export default function LandingScreen() {
         contentContainerStyle={{ backgroundColor: colors.white }}
       >
         <LandingHeader
+          onFnsCatalog={goFnsCatalog}
           isDesktop={isDesktop}
           onHome={goHome}
           onCatalog={goCatalog}
@@ -232,14 +237,14 @@ export default function LandingScreen() {
           onSecondaryCta={goCatalog}
         />
 
-        {/* Trust pillars — moat sits directly below hero so ex-FNS / NDA / no-result
-            messaging is visible above the fold on a typical desktop landing. */}
-        <TrustPillarsSection isDesktop={isDesktop} />
-
-        {/* Specific-FNS search lives right after pillars so users with a
-            known inspection code (the most-discovery-ready intent) see it
-            before the generic "how it works" content lower down. */}
+        {/* Specific-FNS search sits directly under the hero — users with
+            a known inspection code (highest discovery intent) see it
+            without scrolling. */}
         <FnsSearchSection isDesktop={isDesktop} />
+
+        {/* Trust pillars — moat below the search; ex-FNS / NDA / no-result
+            messaging stays prominent for users still convincing themselves. */}
+        <TrustPillarsSection isDesktop={isDesktop} />
 
         <TrustStrip
           isDesktop={isDesktop}
@@ -272,6 +277,7 @@ export default function LandingScreen() {
           isDesktop={isDesktop}
           onHome={goHome}
           onViewCatalog={goCatalog}
+          onFnsCatalog={goFnsCatalog}
           onCreateRequest={goCreateRequest}
           onBecomeSpecialist={goBecomeSpecialist}
           onLegal={goLegal}

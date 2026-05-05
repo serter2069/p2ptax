@@ -6,6 +6,7 @@ interface LandingHeaderProps {
   isDesktop: boolean;
   onHome: () => void;
   onCatalog: () => void;
+  onFnsCatalog?: () => void;
   onLogin: () => void;
   onCreateRequest: () => void;
   transparent?: boolean;
@@ -23,6 +24,7 @@ export default function LandingHeader({
   isDesktop,
   onHome,
   onCatalog,
+  onFnsCatalog,
   onLogin,
   onCreateRequest,
   transparent = true,
@@ -61,14 +63,40 @@ export default function LandingHeader({
 
         <View className="flex-row items-center" style={{ gap: isDesktop ? 8 : 4 }}>
           {isDesktop && (
+            <>
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Каталог специалистов"
+                onPress={onCatalog}
+                className="min-h-[44px] items-center justify-center px-3"
+              >
+                <Text className="font-medium" style={{ color: colors.textSecondary, fontSize: 14 }}>
+                  Специалисты
+                </Text>
+              </Pressable>
+              {onFnsCatalog && (
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel="Справочник ИФНС"
+                  onPress={onFnsCatalog}
+                  className="min-h-[44px] items-center justify-center px-3"
+                >
+                  <Text className="font-medium" style={{ color: colors.textSecondary, fontSize: 14 }}>
+                    ИФНС
+                  </Text>
+                </Pressable>
+              )}
+            </>
+          )}
+          {!isDesktop && onFnsCatalog && (
             <Pressable
               accessibilityRole="link"
-              accessibilityLabel="Каталог специалистов"
-              onPress={onCatalog}
-              className="min-h-[44px] items-center justify-center px-3"
+              accessibilityLabel="Справочник ИФНС"
+              onPress={onFnsCatalog}
+              className="min-h-[44px] items-center justify-center px-2"
             >
-              <Text className="font-medium" style={{ color: colors.textSecondary, fontSize: 14 }}>
-                Специалисты
+              <Text className="font-medium" style={{ color: colors.textSecondary, fontSize: 13 }}>
+                ИФНС
               </Text>
             </Pressable>
           )}

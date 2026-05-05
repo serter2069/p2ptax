@@ -20,6 +20,8 @@ import {
   Search,
   Sparkles,
   Check,
+  Clock,
+  Zap,
 } from "lucide-react-native";
 import Card from "@/components/ui/Card";
 import { dialog } from "@/lib/dialog";
@@ -517,55 +519,184 @@ export default function BillingTab({
   if (!hasPlan) {
     return (
       <View style={{ gap: 16 }}>
-        <Card>
-          <View className="flex-row items-center" style={{ gap: 8, marginBottom: 8 }}>
-            <Crown size={20} color={colors.primary} />
-            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
-              Подключите PRO
+        {/* Hero — value prop */}
+        <View
+          style={{
+            backgroundColor: colors.primary,
+            borderRadius: 16,
+            padding: 24,
+            gap: 8,
+          }}
+        >
+          <View
+            className="flex-row items-center"
+            style={{ gap: 6, marginBottom: 4 }}
+          >
+            <Crown size={16} color={colors.white} />
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "700",
+                color: colors.white,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                opacity: 0.9,
+              }}
+            >
+              PRO для специалистов
             </Text>
           </View>
-          <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20 }}>
-            Получайте email о новых запросах мгновенно по выбранным ИФНС. Без PRO — с задержкой 5 минут (вы пропускаете запрос — другие специалисты успевают первыми).
+          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.white, lineHeight: 30 }}>
+            Получайте новые запросы первым
           </Text>
+          <Text style={{ fontSize: 14, color: colors.white, opacity: 0.92, lineHeight: 20, marginTop: 4 }}>
+            Email о свежем запросе клиента приходит мгновенно. Без PRO — с задержкой 5 минут, и пока вы получаете уведомление, на запрос уже отвечают другие специалисты.
+          </Text>
+        </View>
 
-          {data.lastChargeFailedAt && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                backgroundColor: colors.dangerSoft,
-                padding: 10,
-                borderRadius: 10,
-                marginTop: 16,
-              }}
-            >
-              <AlertCircle size={16} color={colors.error} />
-              <Text style={{ color: colors.error, fontSize: 13, flex: 1 }}>
-                Прошлое списание не прошло. Подключитесь снова — попросим обновить карту.
-              </Text>
-            </View>
-          )}
-
-          {topupSuccess && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                backgroundColor: colors.limeSoft,
-                padding: 10,
-                borderRadius: 10,
-                marginTop: 16,
-              }}
-            >
-              <CheckCircle2 size={16} color={colors.success} />
-              <Text style={{ color: colors.success, fontSize: 13, flex: 1 }}>
-                Платёж принят. Тариф активируется в течение нескольких секунд.
-              </Text>
-            </View>
-          )}
+        {/* "How it works" card */}
+        <Card>
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: "700",
+              color: colors.textMuted,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+              marginBottom: 12,
+            }}
+          >
+            Как работает PRO
+          </Text>
+          <View style={{ gap: 14 }}>
+            <BulletRow
+              n={1}
+              title="Выбираете тариф"
+              text="Lite, Pro или Premium — отличаются только лимитом ИФНС, по которым вы получаете VIP-уведомления."
+            />
+            <BulletRow
+              n={2}
+              title="Отмечаете нужные ИФНС"
+              text="В пределах лимита тарифа можно подписаться на любые ИФНС России и менять список в любой момент бесплатно."
+            />
+            <BulletRow
+              n={3}
+              title="Получаете запросы мгновенно"
+              text="Как только клиент создаст запрос по вашей ИФНС, email уходит к вам сразу — без 5-минутной задержки."
+            />
+          </View>
         </Card>
+
+        {/* Comparison: free vs PRO */}
+        <Card>
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: "700",
+              color: colors.textMuted,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+              marginBottom: 12,
+            }}
+          >
+            Без PRO и с PRO
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 12,
+            }}
+          >
+            <View
+              style={{
+                flex: 1,
+                padding: 14,
+                borderRadius: 10,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                gap: 8,
+              }}
+            >
+              <View className="flex-row items-center" style={{ gap: 6 }}>
+                <Clock size={14} color={colors.textMuted} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.textSecondary }}>
+                  Без PRO
+                </Text>
+              </View>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
+                Email о запросе приходит через 5 минут. К этому моменту первые отклики уже улетели от других.
+              </Text>
+            </View>
+            <View
+              style={{
+                flex: 1,
+                padding: 14,
+                borderRadius: 10,
+                backgroundColor: colors.accentSoft,
+                borderWidth: 1,
+                borderColor: colors.primary,
+                gap: 8,
+              }}
+            >
+              <View className="flex-row items-center" style={{ gap: 6 }}>
+                <Zap size={14} color={colors.primary} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>
+                  С PRO
+                </Text>
+              </View>
+              <Text style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>
+                Email приходит мгновенно. Вы первый видите запрос — больше шансов получить клиента.
+              </Text>
+            </View>
+          </View>
+        </Card>
+
+        {/* Plans header */}
+        <View style={{ marginTop: 8 }}>
+          <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
+            Выберите тариф
+          </Text>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>
+            Тариф = лимит ИФНС в VIP. Цена списывается каждый день автоматически (1/30 от месячной). Можно сменить тариф или отменить в любой момент.
+          </Text>
+        </View>
+
+        {data.lastChargeFailedAt && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: colors.dangerSoft,
+              padding: 10,
+              borderRadius: 10,
+            }}
+          >
+            <AlertCircle size={16} color={colors.error} />
+            <Text style={{ color: colors.error, fontSize: 13, flex: 1 }}>
+              Прошлое списание не прошло. Подключитесь снова — попросим обновить карту.
+            </Text>
+          </View>
+        )}
+
+        {topupSuccess && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: colors.limeSoft,
+              padding: 10,
+              borderRadius: 10,
+            }}
+          >
+            <CheckCircle2 size={16} color={colors.success} />
+            <Text style={{ color: colors.success, fontSize: 13, flex: 1 }}>
+              Платёж принят. Тариф активируется в течение нескольких секунд.
+            </Text>
+          </View>
+        )}
 
         <PlanCardsRow
           plans={plans}
@@ -573,6 +704,39 @@ export default function BillingTab({
           busyPlanId={busyPlanId}
           onSelect={(p) => submitPlan(p.id)}
         />
+
+        {/* FAQ */}
+        <Card>
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: "700",
+              color: colors.textMuted,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+              marginBottom: 12,
+            }}
+          >
+            Частые вопросы
+          </Text>
+          <FaqItem
+            q="Как происходит списание?"
+            a="Раз в день автоматически с привязанной карты — 1/30 от месячной цены тарифа. Один платёж покрывает все ИФНС, которые вы добавили в VIP."
+          />
+          <FaqItem
+            q="Можно ли менять список ИФНС?"
+            a="Да, в любой момент. Добавлять и убирать ИФНС в пределах лимита тарифа — бесплатно. Денег за конкретные ИФНС не берём."
+          />
+          <FaqItem
+            q="А если я хочу больше ИФНС?"
+            a="Нажмите «Сменить тариф» и выберите более ёмкий. Со следующего дня списание будет по новой цене."
+          />
+          <FaqItem
+            q="Можно ли отменить?"
+            a="Да, кнопкой «Отменить тариф». Списания прекратятся со следующего дня, все VIP-ИФНС снимутся, карта останется привязанной."
+            last
+          />
+        </Card>
       </View>
     );
   }
@@ -1164,6 +1328,55 @@ function PlanCardsRow({
           </View>
         );
       })}
+    </View>
+  );
+}
+
+function BulletRow({ n, title, text }: { n: number; title: string; text: string }) {
+  return (
+    <View className="flex-row" style={{ gap: 12 }}>
+      <View
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: 12,
+          backgroundColor: colors.accentSoft,
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "700" }}>
+          {n}
+        </Text>
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ fontSize: 14, fontWeight: "700", color: colors.text }}>
+          {title}
+        </Text>
+        <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2, lineHeight: 18 }}>
+          {text}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function FaqItem({ q, a, last }: { q: string; a: string; last?: boolean }) {
+  return (
+    <View
+      style={{
+        paddingVertical: 10,
+        borderBottomWidth: last ? 0 : 1,
+        borderBottomColor: colors.border,
+      }}
+    >
+      <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text }}>
+        {q}
+      </Text>
+      <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4, lineHeight: 18 }}>
+        {a}
+      </Text>
     </View>
   );
 }

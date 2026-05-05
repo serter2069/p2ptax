@@ -6,6 +6,7 @@ interface FooterSectionProps {
   isDesktop: boolean;
   onHome: () => void;
   onViewCatalog: () => void;
+  onFnsCatalog?: () => void;
   onCreateRequest: () => void;
   onBecomeSpecialist: () => void;
   onLegal: (target: "terms" | "privacy") => void;
@@ -19,6 +20,7 @@ export default function FooterSection({
   isDesktop,
   onHome,
   onViewCatalog,
+  onFnsCatalog,
   onCreateRequest,
   onBecomeSpecialist,
   onLegal,
@@ -64,6 +66,9 @@ export default function FooterSection({
           <FooterColumn title="О сервисе">
             <FooterLink label="Главная" onPress={onHome} />
             <FooterLink label="Специалисты" onPress={onViewCatalog} />
+            {onFnsCatalog && (
+              <FooterLink label="Справочник ИФНС" onPress={onFnsCatalog} />
+            )}
             <FooterLink label="Создать запрос" onPress={onCreateRequest} />
           </FooterColumn>
 
