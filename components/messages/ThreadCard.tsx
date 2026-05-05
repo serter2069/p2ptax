@@ -72,20 +72,19 @@ export default function ThreadCard({
       className="flex-row items-center px-4 border-b border-border active:bg-surface2"
       style={({ pressed }) => [
         {
+          // Selected gets a SOLID brand-tint (#c8d8f7) — a partial-alpha
+          // overlay (20%) wasn't enough on the eye when laid against
+          // the white split-pane background; Сергей reported "не вижу
+          // совсем какой выбран". Solid color + 6px primary left bar
+          // make the open row read at a glance against unread (10%
+          // alpha tint) and idle (white).
           backgroundColor: selected
-            ? overlay.accent20
+            ? "#c8d8f7"
             : hasUnread
               ? overlay.accent10
               : colors.surface,
           minHeight: 72,
-          // Selected affordance: 20% primary tint + 5px left bar.
-          // The previous accentTintShape (#dce6fa) was barely darker
-          // than the 10% unread tint, so selected/unread/idle were
-          // nearly indistinguishable. 20% alpha doubles the visual
-          // weight of the open row while staying inside the brand
-          // palette — Сергей confirmed font/typography should NOT
-          // change between states (only the bg).
-          borderLeftWidth: selected ? 5 : hasUnread ? 3 : 0,
+          borderLeftWidth: selected ? 6 : hasUnread ? 3 : 0,
           borderLeftColor: selected
             ? colors.primary
             : hasUnread
