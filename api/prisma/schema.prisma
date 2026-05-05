@@ -41,6 +41,11 @@ model User {
   // but the row is preserved so threads/messages keep a valid FK target.
   deletedAt                    DateTime? @map("deleted_at")
   lastSeenAt                   DateTime? @map("last_seen_at")
+  // Pre-paid VIP wallet (kopeks). Specialist tops up via ЮKassa, then
+  // toggles VIP on per-FNS — daily cron deducts vip_monthly_price/30
+  // for each active SpecialistVipFns row. When balance hits 0 all VIP
+  // toggles are disabled until next top-up.
+  vipBalanceKopeks             Int       @default(0) @map("vip_balance_kopeks")
   createdAt                    DateTime  @default(now()) @map("created_at")
   updatedAt                    DateTime  @updatedAt @map("updated_at")
 
@@ -63,6 +68,8 @@ model User {
   complaintsReceived      Complaint[]              @relation("ComplaintTarget")
   savedSpecialists        SavedSpecialist[]        @relation("SavedByUser_user")
   savedByUsers            SavedSpecialist[]        @relation("SavedByUser_specialist")
+  vipFns                  SpecialistVipFns[]
+  billingTxs              BillingTx[]
 
   @@map("users")
 }
@@ -198,13 +205,67 @@ model FnsOffice {
   code          String  @unique
   address       String?
   searchAliases String? @map("search_aliases")
+  // Free-text description shown on the public /fns/[id] page.
+  // Currently unmanaged — admins will populate via a future admin UI.
+  description   String?
+  // Monthly VIP price in kopeks for instant-notification access on
+  // this FNS. NULL = VIP not offered for this office (specialists
+  // can't subscribe). Daily charge = vipMonthlyPriceKopeks / 30.
+  vipMonthlyPriceKopeks Int? @map("vip_monthly_price_kopeks")
 
   city               City                @relation(fields: [cityId], references: [id], onDelete: Cascade)
   specialistFns      SpecialistFns[]
   specialistServices SpecialistService[]
   requests           Request[]
+  vipSubscribers     SpecialistVipFns[]
 
   @@map("fns_offices")
+}
+
+// Per-FNS VIP toggle for a specialist. Existence of a row = VIP is
+// active for (specialistId, fnsId) RIGHT NOW. The daily charge cron
+// reads this table to compute today's burn-rate and deletes rows
+// when balance hits 0.
+model SpecialistVipFns {
+  id           String   @id @default(uuid())
+  specialistId String   @map("specialist_id")
+  fnsId        String   @map("fns_id")
+  // Most recent moment this row was created or re-activated. Used by
+  // the daily charge cron as the "since when" reference and shown in
+  // the billing UI ("Активна с …").
+  activatedAt  DateTime @default(now()) @map("activated_at")
+
+  specialist User      @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  fns        FnsOffice @relation(fields: [fnsId], references: [id], onDelete: Cascade)
+
+  @@unique([specialistId, fnsId])
+  @@index([fnsId])
+  @@map("specialist_vip_fns")
+}
+
+// Append-only ledger for the VIP wallet. Every balance mutation —
+// ЮKassa top-up, daily VIP charge, manual admin adjust — writes a
+// row here. The User.vipBalanceKopeks column is the running sum;
+// this table is the audit trail.
+model BillingTx {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  // Positive = credit (top-up, refund). Negative = debit (daily
+  // charge). Stored in kopeks to avoid float math.
+  amountKopeks  Int      @map("amount_kopeks")
+  // 'topup' | 'daily_charge' | 'refund' | 'admin_adjust'
+  kind          String
+  // Optional FNS reference for daily_charge rows, NULL otherwise.
+  fnsId         String?  @map("fns_id")
+  // ЮKassa payment id for topup rows, NULL otherwise.
+  externalRef   String?  @map("external_ref")
+  description   String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("billing_tx")
 }
 
 model Service {
