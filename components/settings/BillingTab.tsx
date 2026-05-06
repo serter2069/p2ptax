@@ -7,7 +7,6 @@ import {
   TextInput,
   Linking,
   Platform,
-  ScrollView,
 } from "react-native";
 import {
   CreditCard,
@@ -1003,10 +1002,12 @@ export default function BillingTab({
               </View>
 
               {cityChips.length > 0 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 6, paddingBottom: 10 }}
+                // flex-wrap вместо ScrollView horizontal: мышью на десктопе
+                // горизонтальный скролл не работает, чипы переносим на
+                // следующую строку.
+                <View
+                  className="flex-row flex-wrap"
+                  style={{ gap: 6, paddingBottom: 10 }}
                 >
                   <CityChip
                     label="Все города"
@@ -1021,7 +1022,7 @@ export default function BillingTab({
                       onPress={() => setCityFilterId(cityFilterId === c.id ? null : c.id)}
                     />
                   ))}
-                </ScrollView>
+                </View>
               )}
 
               {searchLoading ? (

@@ -477,13 +477,17 @@ export default function CityFnsCascade({
           </View>
         )}
 
-        {/* Step 2: city picked, no FNS yet → FNS chip row */}
+        {/* Step 2: city picked, no FNS yet → FNS chip row.
+            Раньше был горизонтальный ScrollView — мышью на десктопе он
+            не скроллится (нет нативного wheel→scrollX), часть инспекций
+            оставалась за правым краем. flex-wrap решает: всё видно
+            сразу, переносится на следующую строку. */}
         {selCity && !selFns && fnsForSelectedCity.length > 0 && (
           <View className="mt-2">
             <Text className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: colors.textMuted }}>
               Выберите инспекцию
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 16 }}>
+            <View className="flex-row flex-wrap" style={{ gap: 8 }}>
               {fnsForSelectedCity.map((f) => (
                 <Pressable
                   key={f.id}
@@ -497,17 +501,20 @@ export default function CityFnsCascade({
                   </Text>
                 </Pressable>
               ))}
-            </ScrollView>
+            </View>
           </View>
         )}
 
-        {/* Step 3: FNS selected → per-FNS service toggles (#1658) */}
+        {/* Step 3: FNS selected → per-FNS service toggles (#1658).
+            flex-wrap вместо горизонтального ScrollView — мышью всё
+            видно, услуг обычно 3-5 штук, в одну строку чаще всего
+            влезает, иначе переносится. */}
         {selFns && services && services.length > 0 && (
           <View className="mt-2">
             <Text className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: colors.textMuted }}>
               Услуги
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 16 }}>
+            <View className="flex-row flex-wrap" style={{ gap: 8 }}>
               {(() => {
                 const fnsId = selFns.id;
                 const selected = (value.fnsServices ?? {})[fnsId] ?? [];
@@ -543,7 +550,7 @@ export default function CityFnsCascade({
                   </Pressable>
                 );
               })}
-            </ScrollView>
+            </View>
           </View>
         )}
 
