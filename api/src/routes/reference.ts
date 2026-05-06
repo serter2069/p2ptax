@@ -202,6 +202,8 @@ router.get("/fns/list", async (req: Request, res: Response) => {
           name: true,
           code: true,
           address: true,
+          yandexRating: true,
+          yandexReviewsCount: true,
           city: { select: { id: true, name: true, slug: true } },
           _count: {
             select: {
@@ -226,6 +228,8 @@ router.get("/fns/list", async (req: Request, res: Response) => {
           address: addr?.primary ?? o.address,
           addressSecondary: addr?.secondary ?? null,
           city: o.city,
+          yandexRating: o.yandexRating,
+          yandexReviewsCount: o.yandexReviewsCount,
           specialistCount: o._count.specialistFns,
           activeRequestCount: o._count.requests,
         };
@@ -235,6 +239,33 @@ router.get("/fns/list", async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("fns/list error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/fns/:id/reviews — отзывы по ИФНС. Сейчас отдаёт сид
+// «как с Я.Карт», когда подключим реальный источник — он же
+// продолжит работать, фильтр по source убран.
+router.get("/fns/:id/reviews", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
+    const reviews = await prisma.fnsReview.findMany({
+      where: { fnsId: id },
+      orderBy: { reviewDate: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        authorName: true,
+        rating: true,
+        text: true,
+        source: true,
+        reviewDate: true,
+      },
+    });
+    res.json({ items: reviews });
+  } catch (error) {
+    console.error("fns/:id/reviews error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

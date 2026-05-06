@@ -253,8 +253,30 @@ model FnsOffice {
   specialistServices SpecialistService[]
   requests           Request[]
   vipSubscribers     SpecialistVipFns[]
+  reviews            FnsReview[]
 
   @@map("fns_offices")
+}
+
+// Отзывы про ИФНС. Пока что наполняются сидом из заготовленных
+// «как будто из Я.Карт» отзывов — для верстки и SEO. После
+// подключения Геопоиска (или своего флоу отзывов от пользователей
+// платформы) сюда будут писаться реальные данные. source говорит,
+// откуда отзыв пришёл.
+model FnsReview {
+  id         String   @id @default(uuid())
+  fnsId      String   @map("fns_id")
+  authorName String   @map("author_name")
+  rating     Int      // 1..5
+  text       String
+  source     String   @default("yandex_maps") // yandex_maps | platform | imported
+  reviewDate DateTime @map("review_date")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  fns FnsOffice @relation(fields: [fnsId], references: [id], onDelete: Cascade)
+
+  @@index([fnsId])
+  @@map("fns_reviews")
 }
 
 // PRO plan tier — three of these are seeded (Lite/Pro/Premium) and

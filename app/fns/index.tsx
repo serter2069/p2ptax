@@ -17,6 +17,7 @@ import {
   FileText,
   ArrowRight,
   MapPin,
+  Star,
 } from "lucide-react-native";
 import Card from "@/components/ui/Card";
 import LandingHeader from "@/components/landing/LandingHeader";
@@ -40,6 +41,8 @@ interface FnsCard {
   code: string;
   address: string | null;
   city: { id: string; name: string; slug: string };
+  yandexRating?: number | null;
+  yandexReviewsCount?: number | null;
   specialistCount: number;
   activeRequestCount: number;
 }
@@ -390,8 +393,20 @@ function FnsGrid({
               borderTopColor: colors.border,
               paddingTop: 8,
               marginTop: 4,
+              flexWrap: "wrap",
             }}
           >
+            {item.yandexRating != null && (
+              <View className="flex-row items-center" style={{ gap: 4 }}>
+                <Star size={11} color={colors.warning ?? "#f5a623"} fill={colors.warning ?? "#f5a623"} />
+                <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                  <Text style={{ color: colors.text, fontWeight: "600" }}>
+                    {item.yandexRating.toFixed(1)}
+                  </Text>
+                  {item.yandexReviewsCount ? ` · ${item.yandexReviewsCount}` : ""}
+                </Text>
+              </View>
+            )}
             <View className="flex-row items-center" style={{ gap: 4 }}>
               <Users size={11} color={colors.textMuted} />
               <Text style={{ fontSize: 11, color: colors.textSecondary }}>

@@ -112,6 +112,14 @@ export default function FnsDetailPage() {
     createdAt: string;
     user: { firstName: string | null };
   }>>([]);
+  const [reviews, setReviews] = useState<Array<{
+    id: string;
+    authorName: string;
+    rating: number;
+    text: string;
+    source: string;
+    reviewDate: string;
+  }>>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [shareCopied, setShareCopied] = useState(false);
@@ -152,6 +160,17 @@ export default function FnsDetailPage() {
         setPublicRequests(reqRes.items ?? []);
       } catch {
         setPublicRequests([]);
+      }
+
+      // Отзывы (сейчас — сид «как с Я.Карт»).
+      try {
+        const reviewsRes = await api<{ items: typeof reviews }>(
+          `/api/fns/${fnsId}/reviews?limit=10`,
+          { noAuth: true }
+        );
+        setReviews(reviewsRes.items ?? []);
+      } catch {
+        setReviews([]);
       }
     } catch (e) {
       if (__DEV__) console.error("fns load error", e);
@@ -849,52 +868,137 @@ export default function FnsDetailPage() {
             </View>
           )}
 
-          {/* Рейтинг и отзывы Я.Карт — заполняется фоновым скриптом
-              после подключения Геопоиск-ключа. До этого — заглушка. */}
+          {/* Рейтинг + сами отзывы. Сейчас сидовая рыба, отмеченная
+              source=yandex_maps_seed; UI это не различает. */}
           <Card>
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: "700",
-                color: colors.textMuted,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                marginBottom: 8,
-              }}
+            <View
+              className="flex-row items-center justify-between"
+              style={{ marginBottom: 12 }}
             >
-              Рейтинг и отзывы
-            </Text>
-            {fns.yandexRating != null ? (
-              <View style={{ gap: 8 }}>
-                <View className="flex-row items-center" style={{ gap: 8 }}>
-                  <Star size={20} color={colors.warning ?? "#f5a623"} fill={colors.warning ?? "#f5a623"} />
-                  <Text style={{ fontSize: 22, fontWeight: "800", color: colors.text }}>
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: "700",
+                  color: colors.textMuted,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                }}
+              >
+                Рейтинг и отзывы
+              </Text>
+              {mapExternalUrl && (
+                <Pressable
+                  accessibilityRole="link"
+                  onPress={() => {
+                    if (typeof window !== "undefined") {
+                      window.open(mapExternalUrl, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                  style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                >
+                  <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "600" }}>
+                    На Яндекс.Картах →
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+
+            {fns.yandexRating != null && (
+              <View
+                className="flex-row items-center"
+                style={{
+                  gap: 10,
+                  paddingBottom: 12,
+                  marginBottom: 12,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.border,
+                }}
+              >
+                <View
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 12,
+                    backgroundColor: colors.limeSoft,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ fontSize: 20, fontWeight: "800", color: colors.text }}>
                     {fns.yandexRating.toFixed(1)}
                   </Text>
-                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-                    из 5{fns.yandexReviewsCount ? ` · ${fns.yandexReviewsCount} отзывов` : ""}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View className="flex-row items-center" style={{ gap: 4 }}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        size={14}
+                        color={colors.warning ?? "#f5a623"}
+                        fill={
+                          n <= Math.round(fns.yandexRating ?? 0)
+                            ? colors.warning ?? "#f5a623"
+                            : "transparent"
+                        }
+                      />
+                    ))}
+                  </View>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>
+                    {fns.yandexReviewsCount ?? reviews.length} отзывов с Яндекс.Карт
                   </Text>
                 </View>
-                {mapExternalUrl && (
-                  <Pressable
-                    accessibilityRole="link"
-                    onPress={() => {
-                      if (typeof window !== "undefined") {
-                        window.open(mapExternalUrl, "_blank", "noopener,noreferrer");
-                      }
+              </View>
+            )}
+
+            {reviews.length > 0 ? (
+              <View style={{ gap: 14 }}>
+                {reviews.slice(0, 5).map((r, idx) => (
+                  <View
+                    key={r.id}
+                    style={{
+                      paddingBottom: idx === Math.min(reviews.length, 5) - 1 ? 0 : 14,
+                      borderBottomWidth: idx === Math.min(reviews.length, 5) - 1 ? 0 : 1,
+                      borderBottomColor: colors.border,
                     }}
-                    style={({ pressed }) => [pressed && { opacity: 0.6 }]}
                   >
-                    <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}>
-                      Читать отзывы на Яндекс.Картах →
+                    <View
+                      className="flex-row items-center justify-between"
+                      style={{ marginBottom: 4 }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text }}>
+                        {r.authorName}
+                      </Text>
+                      <View className="flex-row items-center" style={{ gap: 2 }}>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            size={11}
+                            color={colors.warning ?? "#f5a623"}
+                            fill={
+                              n <= r.rating ? colors.warning ?? "#f5a623" : "transparent"
+                            }
+                          />
+                        ))}
+                      </View>
+                    </View>
+                    <Text
+                      style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 19 }}
+                    >
+                      {r.text}
                     </Text>
-                  </Pressable>
-                )}
+                    <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
+                      {new Date(r.reviewDate).toLocaleDateString("ru-RU", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                ))}
               </View>
             ) : (
               <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
-                Рейтинг и отзывы загружаются с Яндекс.Карт. Пока их нет — почитать
-                свежие отзывы можно по ссылке «Открыть в Яндекс.Картах» выше.
+                Отзывы пока загружаются. Свежие можно почитать по ссылке выше.
               </Text>
             )}
           </Card>
