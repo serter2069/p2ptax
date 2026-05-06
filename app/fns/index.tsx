@@ -56,13 +56,19 @@ interface FnsCard {
 export default function FnsCatalogPage() {
   const router = useRouter();
   const nav = useTypedRouter();
-  const params = useLocalSearchParams<{ cityId?: string }>();
+  const params = useLocalSearchParams<{ cityId?: string; q?: string }>();
   const initialCityId =
     typeof params.cityId === "string"
       ? params.cityId
       : Array.isArray(params.cityId)
       ? params.cityId[0]
       : null;
+  const initialQ =
+    typeof params.q === "string"
+      ? params.q
+      : Array.isArray(params.q)
+      ? params.q[0]
+      : "";
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
   const { user } = useAuth();
@@ -72,7 +78,7 @@ export default function FnsCatalogPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(initialQ);
   const [cityFilterId, setCityFilterId] = useState<string | null>(initialCityId);
   const [cities, setCities] = useState<CityRow[]>([]);
 
@@ -80,6 +86,10 @@ export default function FnsCatalogPage() {
   useEffect(() => {
     setCityFilterId(initialCityId);
   }, [initialCityId]);
+
+  useEffect(() => {
+    if (initialQ) setQ(initialQ);
+  }, [initialQ]);
 
   useEffect(() => {
     api<{ items: CityRow[] }>("/api/cities?limit=200", { noAuth: true })

@@ -8,15 +8,18 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Search, Building2, ArrowRight } from "lucide-react-native";
+import { Search, Building2, ArrowRight, Star } from "lucide-react-native";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/theme";
+import FnsLogo from "@/components/fns/FnsLogo";
 
 interface FnsCard {
   id: string;
   name: string;
   code: string;
   city: { id: string; name: string; slug: string };
+  yandexRating?: number | null;
+  yandexReviewsCount?: number | null;
   specialistCount: number;
   activeRequestCount: number;
 }
@@ -139,6 +142,15 @@ export default function FnsSearchSection({ isDesktop }: { isDesktop: boolean }) 
           <TextInput
             value={q}
             onChangeText={setQ}
+            onSubmitEditing={() => {
+              const trimmed = q.trim();
+              if (trimmed) {
+                router.push(`/fns?q=${encodeURIComponent(trimmed)}` as never);
+              } else {
+                router.push("/fns" as never);
+              }
+            }}
+            returnKeyType="search"
             placeholder="Например, 7703 или «Москва»"
             placeholderTextColor={colors.placeholder}
             style={{
@@ -156,6 +168,35 @@ export default function FnsSearchSection({ isDesktop }: { isDesktop: boolean }) 
           />
           {loading && <ActivityIndicator size="small" color={colors.primary} />}
         </View>
+
+        {/* Если что-то введено — кнопка перехода в полный каталог
+            с этим запросом (Enter делает то же самое). */}
+        {q.trim().length > 0 && (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={`Все результаты для «${q.trim()}»`}
+            onPress={() =>
+              router.push(`/fns?q=${encodeURIComponent(q.trim())}` as never)
+            }
+            style={({ pressed }) => [
+              {
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                paddingVertical: 10,
+                paddingHorizontal: 14,
+                borderRadius: 10,
+                backgroundColor: colors.primary,
+              },
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <Text style={{ color: colors.white, fontWeight: "700", fontSize: 14 }}>
+              Все результаты для «{q.trim()}» →
+            </Text>
+          </Pressable>
+        )}
 
         {/* Results / preview */}
         {items.length > 0 ? (
@@ -187,19 +228,7 @@ export default function FnsSearchSection({ isDesktop }: { isDesktop: boolean }) 
                 ]}
               >
                 <View className="flex-row items-start" style={{ gap: 10 }}>
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
-                      backgroundColor: colors.accentSoft,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Building2 size={18} color={colors.primary} />
-                  </View>
+                  <FnsLogo name={item.name} cityName={item.city.name} size="sm" />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text
                       style={{
@@ -222,15 +251,22 @@ export default function FnsSearchSection({ isDesktop }: { isDesktop: boolean }) 
                     </Text>
                   </View>
                 </View>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: colors.textMuted,
-                    marginTop: 10,
-                  }}
+                <View
+                  className="flex-row items-center"
+                  style={{ marginTop: 10, gap: 10, flexWrap: "wrap" }}
                 >
-                  Специалистов: {item.specialistCount} · Запросов: {item.activeRequestCount}
-                </Text>
+                  {item.yandexRating != null && (
+                    <View className="flex-row items-center" style={{ gap: 3 }}>
+                      <Star size={11} color={colors.warning ?? "#f5a623"} fill={colors.warning ?? "#f5a623"} />
+                      <Text style={{ fontSize: 12, color: colors.text, fontWeight: "600" }}>
+                        {item.yandexRating.toFixed(1)}
+                      </Text>
+                    </View>
+                  )}
+                  <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                    {item.specialistCount} спец. · {item.activeRequestCount} запр.
+                  </Text>
+                </View>
               </Pressable>
             ))}
           </ScrollView>
