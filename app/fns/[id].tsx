@@ -52,8 +52,27 @@ interface FnsDetail {
   yandexRating?: number | null;
   yandexReviewsCount?: number | null;
   yandexOrgUrl?: string | null;
+  inn?: string | null;
+  kpp?: string | null;
+  oktmo?: string | null;
+  officialPhone?: string | null;
+  officialEmail?: string | null;
+  officialWebsite?: string | null;
+  workingHours?: string | null;
   specialistCount: number;
   activeRequestCount: number;
+}
+
+interface StaffMember {
+  id: string;
+  firstName: string;
+  lastName: string;
+  middleName: string | null;
+  position: string;
+  department: string | null;
+  phone: string | null;
+  email: string | null;
+  photoUrl: string | null;
 }
 
 interface SpecialistRow {
@@ -120,6 +139,7 @@ export default function FnsDetailPage() {
     source: string;
     reviewDate: string;
   }>>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [shareCopied, setShareCopied] = useState(false);
@@ -172,6 +192,17 @@ export default function FnsDetailPage() {
       } catch {
         setReviews([]);
       }
+
+      // Сотрудники.
+      try {
+        const staffRes = await api<{ items: StaffMember[] }>(
+          `/api/fns/${fnsId}/staff?limit=20`,
+          { noAuth: true }
+        );
+        setStaff(staffRes.items ?? []);
+      } catch {
+        setStaff([]);
+      }
     } catch (e) {
       if (__DEV__) console.error("fns load error", e);
       setError("Не удалось загрузить ИФНС");
@@ -220,32 +251,26 @@ export default function FnsDetailPage() {
 
   const mapEmbedUrl = useMemo(() => {
     if (!fns) return null;
-    // Если у нас есть координаты от геокодера — ставим пин по ним
-    // (точка ровно в координатах + центр карты на ней). Иначе fallback
-    // на текстовый поиск по «имя + город + адрес».
+    // Полный поисковой запрос — адрес + город. Я.Карты ищут адрес,
+    // ставят пин на конкретное здание, в карточке показывают адрес.
+    // Если есть координаты — добавляем как ll= (центр карты), но
+    // пин ставится по результату поиска адреса.
+    const addressQuery = `${fns.city.name}, ${fns.address ?? ""}`.trim();
+    const q = encodeURIComponent(addressQuery);
     if (fns.latitude != null && fns.longitude != null) {
       const ll = `${fns.longitude},${fns.latitude}`;
-      const pt = `${fns.longitude},${fns.latitude},pm2blm`;
-      return `https://yandex.ru/map-widget/v1/?ll=${ll}&z=16&pt=${pt}&l=map`;
+      return `https://yandex.ru/map-widget/v1/?text=${q}&ll=${ll}&z=17`;
     }
-    const q = encodeURIComponent(
-      `${fns.name} ${fns.city.name} ${fns.address ?? ""}`.trim(),
-    );
-    return `https://yandex.ru/map-widget/v1/?text=${q}&z=16`;
+    return `https://yandex.ru/map-widget/v1/?text=${q}&z=17`;
   }, [fns]);
 
   const mapExternalUrl = useMemo(() => {
     if (!fns) return null;
     if (fns.yandexOrgUrl) return fns.yandexOrgUrl;
-    if (fns.latitude != null && fns.longitude != null) {
-      const ll = `${fns.longitude},${fns.latitude}`;
-      const pt = `${fns.longitude},${fns.latitude}`;
-      return `https://yandex.ru/maps/?ll=${ll}&z=16&pt=${pt}`;
-    }
-    const q = encodeURIComponent(
-      `${fns.name} ${fns.city.name} ${fns.address ?? ""}`.trim(),
-    );
-    return `https://yandex.ru/maps/?text=${q}`;
+    // Открываем по адресу, чтобы Я.Карты показали карточку здания
+    // («ул. Крылова, 76, Абакан») — а не безымянную точку.
+    const addressQuery = `${fns.city.name}, ${fns.address ?? ""}`.trim();
+    return `https://yandex.ru/maps/?text=${encodeURIComponent(addressQuery)}`;
   }, [fns]);
 
   if (loading) {
@@ -292,17 +317,16 @@ export default function FnsDetailPage() {
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.surface }}>
-      {!isAuthenticated && (
-        <LandingHeader
-          isDesktop={isDesktop}
-          onHome={() => nav.routes.home()}
-          onCatalog={() => nav.routes.specialists()}
-          onFnsCatalog={() => nav.any("/fns")}
-          onLogin={() => nav.routes.login()}
-          onCreateRequest={() => nav.routes.requestsNew()}
-          isAuthenticated={false}
-        />
-      )}
+      <LandingHeader
+        isDesktop={isDesktop}
+        onHome={() => nav.routes.home()}
+        onCatalog={() => nav.routes.specialists()}
+        onFnsCatalog={() => nav.any("/fns")}
+        onLogin={() => nav.routes.login()}
+        onCreateRequest={() => nav.routes.requestsNew()}
+        isAuthenticated={isAuthenticated}
+        onOpenDashboard={() => nav.routes.dashboard()}
+      />
       <ScrollView
         contentContainerStyle={{
           paddingTop: 16,
@@ -526,32 +550,6 @@ export default function FnsDetailPage() {
             </Pressable>
           </Card>
 
-          {/* Что это вообще такое — для пользователя, попавшего с поиска */}
-          <View
-            style={{
-              backgroundColor: colors.white,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: colors.border,
-              paddingVertical: isDesktop ? 24 : 18,
-              paddingHorizontal: isDesktop ? 20 : 14,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: "700",
-                color: colors.textMuted,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                marginBottom: 12,
-              }}
-            >
-              Как это работает
-            </Text>
-            <HowItWorksFlow isDesktop={isDesktop} />
-          </View>
-
           {/* Yandex Maps embed */}
           {mapEmbedUrl && Platform.OS === "web" && (
             <Card>
@@ -647,7 +645,7 @@ export default function FnsDetailPage() {
             </Text>
           </Card>
 
-          {/* Контакты — email заглушка пока нет реальных данных */}
+          {/* Контакты + реквизиты */}
           <Card>
             <Text
               style={{
@@ -656,44 +654,127 @@ export default function FnsDetailPage() {
                 color: colors.textMuted,
                 textTransform: "uppercase",
                 letterSpacing: 1,
-                marginBottom: 8,
+                marginBottom: 12,
               }}
             >
-              Контакты
+              Контакты и реквизиты
             </Text>
-            <View className="flex-row items-center" style={{ gap: 8 }}>
-              <Mail size={14} color={colors.textMuted} />
-              <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-                Электронная почта инспекции уточняется. До обновления используйте
-                форму обращения через сайт ФНС России (nalog.gov.ru).
-              </Text>
+            <View style={{ gap: 10 }}>
+              {fns.workingHours && (
+                <ContactRow
+                  label="Время работы"
+                  value={fns.workingHours}
+                  multiline
+                />
+              )}
+              {fns.officialPhone && (
+                <ContactRow label="Телефон" value={fns.officialPhone} />
+              )}
+              {fns.officialEmail && (
+                <ContactRow label="Email" value={fns.officialEmail} />
+              )}
+              {fns.officialWebsite && (
+                <ContactRow
+                  label="Сайт"
+                  value={fns.officialWebsite}
+                  href={fns.officialWebsite}
+                />
+              )}
+              {fns.inn && <ContactRow label="ИНН" value={fns.inn} />}
+              {fns.kpp && <ContactRow label="КПП" value={fns.kpp} />}
+              {fns.oktmo && <ContactRow label="ОКТМО" value={fns.oktmo} />}
             </View>
           </Card>
 
-          {/* Руководители отделов — заглушка под будущие реальные данные */}
-          <Card>
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: "700",
-                color: colors.textMuted,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                marginBottom: 8,
-              }}
-            >
-              Руководители отделов
-            </Text>
-            <View className="flex-row items-start" style={{ gap: 10 }}>
-              <UserCircle2 size={20} color={colors.textMuted} />
-              <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 19 }}>
-                Информация о руководителях отделов камеральных и выездных
-                проверок, регистрации, налогообложения юр. лиц и физ. лиц
-                появится здесь после первой синхронизации с открытыми данными
-                ФНС.
+          {/* Сотрудники — рыба, но с фотками и должностями */}
+          {staff.length > 0 && (
+            <View>
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: "700",
+                  color: colors.textMuted,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  marginBottom: 8,
+                  paddingHorizontal: 4,
+                }}
+              >
+                Сотрудники инспекции · {staff.length}
               </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 12,
+                }}
+              >
+                {staff.map((s) => {
+                  const fullName = `${s.lastName} ${s.firstName} ${s.middleName ?? ""}`.trim();
+                  return (
+                    <View
+                      key={s.id}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      style={{
+                        flexBasis: (isDesktop ? "calc(50% - 6px)" : "100%") as any,
+                        flexGrow: 1,
+                        backgroundColor: colors.white,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        padding: 14,
+                        gap: 8,
+                      }}
+                    >
+                      <View
+                        className="flex-row items-start"
+                        style={{ gap: 12 }}
+                      >
+                        <Avatar name={fullName} imageUrl={s.photoUrl ?? undefined} size="md" />
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text
+                            style={{ fontSize: 14, fontWeight: "700", color: colors.text }}
+                            numberOfLines={2}
+                          >
+                            {fullName}
+                          </Text>
+                          <Text
+                            style={{ fontSize: 12, color: colors.primary, marginTop: 2, fontWeight: "600" }}
+                            numberOfLines={2}
+                          >
+                            {s.position}
+                          </Text>
+                          {s.department && (
+                            <Text
+                              style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}
+                              numberOfLines={1}
+                            >
+                              {s.department}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                      <View style={{ gap: 4, paddingLeft: 4 }}>
+                        {s.phone && (
+                          <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                            📞 {s.phone}
+                          </Text>
+                        )}
+                        {s.email && (
+                          <Text
+                            style={{ fontSize: 12, color: colors.textSecondary }}
+                            numberOfLines={1}
+                          >
+                            ✉ {s.email}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
-          </Card>
+          )}
 
           {/* Specialist roster */}
           <View>
@@ -715,10 +796,65 @@ export default function FnsDetailPage() {
                 <EmptyState
                   icon={Users}
                   title="Пока нет специалистов"
-                  subtitle="По этой ИФНС никто ещё не подключился. Оставьте запрос — мы оповестим всех специалистов как только они появятся."
-                  actionLabel="Оставить запрос"
-                  onAction={goCreateRequest}
+                  subtitle={`По ${fns.name} ещё никто не подключился. Можно оставить запрос — мы оповестим всех специалистов как только они появятся. А если вы налоговый специалист и работаете с этой ИФНС — добавьте профиль на платформу.`}
                 />
+                <View
+                  style={{
+                    flexDirection: isDesktop ? "row" : "column",
+                    gap: 8,
+                    marginTop: 12,
+                  }}
+                >
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Оставить запрос"
+                    onPress={goCreateRequest}
+                    style={({ pressed }) => [
+                      {
+                        flex: 1,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderRadius: 10,
+                        backgroundColor: colors.primary,
+                      },
+                      pressed && { opacity: 0.85 },
+                    ]}
+                  >
+                    <Plus size={16} color={colors.white} />
+                    <Text style={{ color: colors.white, fontWeight: "700", fontSize: 14 }}>
+                      Оставить запрос
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Стать специалистом по этой ИФНС"
+                    onPress={() => nav.any(`/login?intent=specialist&fnsId=${fns.id}`)}
+                    style={({ pressed }) => [
+                      {
+                        flex: 1,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: colors.primary,
+                        backgroundColor: colors.white,
+                      },
+                      pressed && { opacity: 0.85 },
+                    ]}
+                  >
+                    <Text style={{ color: colors.primary, fontWeight: "700", fontSize: 14 }}>
+                      Стать специалистом по этой ИФНС
+                    </Text>
+                  </Pressable>
+                </View>
               </Card>
             ) : (
               <Card>
@@ -1003,6 +1139,120 @@ export default function FnsDetailPage() {
             )}
           </Card>
 
+          {/* Персонализированный «Как это работает» — стоит ниже, ближе
+              к финальному CTA и шагам подставлено название этой ИФНС. */}
+          <View
+            style={{
+              backgroundColor: colors.white,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: colors.border,
+              paddingVertical: isDesktop ? 24 : 18,
+              paddingHorizontal: isDesktop ? 20 : 14,
+              gap: 16,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "700",
+                color: colors.textMuted,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              Как решить вопрос по этой ИФНС
+            </Text>
+            <View
+              style={{
+                flexDirection: isDesktop ? "row" : "column",
+                gap: isDesktop ? 16 : 12,
+              }}
+            >
+              {[
+                {
+                  num: "1",
+                  title: "Опишите вопрос",
+                  body: `Расскажите, что нужно решить с ${fns.name}: возврат, проверка, регистрация — что угодно по налоговой.`,
+                  metric: "2–3 минуты · бесплатно",
+                },
+                {
+                  num: "2",
+                  title: `Ответят спецы по ${fns.city.name}`,
+                  body: `${fns.specialistCount > 0
+                    ? `${fns.specialistCount} ${fns.specialistCount === 1 ? "специалист" : "специалистов"}`
+                    : "Налоговые специалисты"} напишут вам прямо в платформе и предложат план.`,
+                  metric: "обычно в течение суток",
+                },
+                {
+                  num: "3",
+                  title: "Решите задачу",
+                  body: "Общение и сделка — напрямую со специалистом по этой ИФНС, без подписок и комиссий.",
+                  metric: "напрямую, без посредников",
+                },
+              ].map((step) => (
+                <View
+                  key={step.num}
+                  style={{
+                    flex: 1,
+                    backgroundColor: colors.surface,
+                    borderRadius: 10,
+                    padding: 14,
+                    gap: 6,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: colors.primary,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ color: colors.white, fontWeight: "800", fontSize: 14 }}>
+                      {step.num}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginTop: 4 }}>
+                    {step.title}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
+                    {step.body}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "600", marginTop: 4 }}>
+                    {step.metric}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Оставить запрос по ${fns.name}`}
+              onPress={goCreateRequest}
+              style={({ pressed }) => [
+                {
+                  marginTop: 4,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  backgroundColor: colors.primary,
+                  paddingHorizontal: 18,
+                  paddingVertical: 13,
+                  borderRadius: 12,
+                },
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Plus size={18} color={colors.white} />
+              <Text style={{ color: colors.white, fontSize: 15, fontWeight: "700" }}>
+                Оставить запрос по этой ИФНС
+              </Text>
+            </Pressable>
+          </View>
+
           {/* Other FNS in the same city */}
           {neighbors.length > 0 && (
             <View>
@@ -1083,5 +1333,53 @@ export default function FnsDetailPage() {
         fnsName={fns.name}
       />
     </SafeAreaView>
+  );
+}
+
+function ContactRow({
+  label,
+  value,
+  href,
+  multiline,
+}: {
+  label: string;
+  value: string;
+  href?: string;
+  multiline?: boolean;
+}) {
+  const onPress = href
+    ? () => {
+        if (typeof window !== "undefined") {
+          window.open(href, "_blank", "noopener,noreferrer");
+        }
+      }
+    : undefined;
+  return (
+    <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+      <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: "600", minWidth: 100 }}>
+        {label}
+      </Text>
+      {onPress ? (
+        <Pressable
+          accessibilityRole="link"
+          onPress={onPress}
+          style={({ pressed }) => [{ flex: 1, minWidth: 0 }, pressed && { opacity: 0.6 }]}
+        >
+          <Text
+            style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}
+            numberOfLines={multiline ? 0 : 1}
+          >
+            {value}
+          </Text>
+        </Pressable>
+      ) : (
+        <Text
+          style={{ fontSize: 13, color: colors.text, flex: 1, lineHeight: 18 }}
+          numberOfLines={multiline ? 0 : 1}
+        >
+          {value}
+        </Text>
+      )}
+    </View>
   );
 }

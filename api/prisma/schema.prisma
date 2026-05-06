@@ -248,14 +248,50 @@ model FnsOffice {
   yandexReviewsCount Int?     @map("yandex_reviews_count")
   yandexUpdatedAt    DateTime? @map("yandex_updated_at")
 
+  // Контакты и метаданные ИФНС (Dadata где есть + рыба-fallback).
+  inn               String? // ИНН инспекции (как ЮЛ)
+  kpp               String? // КПП
+  oktmo             String? // ОКТМО
+  officialPhone     String? @map("official_phone")
+  officialEmail     String? @map("official_email")
+  officialWebsite   String? @map("official_website")
+  workingHours      String? @map("working_hours") // человекочитаемое расписание
+
   city               City                @relation(fields: [cityId], references: [id], onDelete: Cascade)
   specialistFns      SpecialistFns[]
   specialistServices SpecialistService[]
   requests           Request[]
   vipSubscribers     SpecialistVipFns[]
   reviews            FnsReview[]
+  staff              FnsStaff[]
 
   @@map("fns_offices")
+}
+
+// Сотрудники ИФНС — заглушка-каталог для верстки и согласования с
+// заказчиком. Реальные данные подъедут позже (либо ручной ввод
+// админом, либо парсинг public-страниц nalog.gov.ru). source
+// различает мок от реального для последующей чистки.
+model FnsStaff {
+  id         String  @id @default(uuid())
+  fnsId      String  @map("fns_id")
+  firstName  String  @map("first_name")
+  lastName   String  @map("last_name")
+  middleName String? @map("middle_name")
+  position   String  // "Начальник инспекции", "Зам. начальника" и т.п.
+  department String? // "Отдел камеральных проверок"
+  phone      String? // "+7 (3902) 24-66-56" или null
+  email      String?
+  photoUrl   String? @map("photo_url")
+  sortOrder  Int     @default(0) @map("sort_order")
+  source     String  @default("seed") // seed | manual | imported
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  fns FnsOffice @relation(fields: [fnsId], references: [id], onDelete: Cascade)
+
+  @@index([fnsId])
+  @@map("fns_staff")
 }
 
 // Отзывы про ИФНС. Пока что наполняются сидом из заготовленных

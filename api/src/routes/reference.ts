@@ -243,6 +243,34 @@ router.get("/fns/list", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/fns/:id/staff — сотрудники ИФНС.
+router.get("/fns/:id/staff", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const staff = await prisma.fnsStaff.findMany({
+      where: { fnsId: id },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      take: limit,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        middleName: true,
+        position: true,
+        department: true,
+        phone: true,
+        email: true,
+        photoUrl: true,
+      },
+    });
+    res.json({ items: staff });
+  } catch (error) {
+    console.error("fns/:id/staff error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/fns/:id/reviews — отзывы по ИФНС. Сейчас отдаёт сид
 // «как с Я.Карт», когда подключим реальный источник — он же
 // продолжит работать, фильтр по source убран.
@@ -289,6 +317,13 @@ router.get("/fns/:id", async (req: Request, res: Response) => {
         yandexRating: true,
         yandexReviewsCount: true,
         yandexOrgUrl: true,
+        inn: true,
+        kpp: true,
+        oktmo: true,
+        officialPhone: true,
+        officialEmail: true,
+        officialWebsite: true,
+        workingHours: true,
         city: { select: { id: true, name: true, slug: true } },
         _count: {
           select: {
@@ -316,6 +351,13 @@ router.get("/fns/:id", async (req: Request, res: Response) => {
       yandexRating: fns.yandexRating,
       yandexReviewsCount: fns.yandexReviewsCount,
       yandexOrgUrl: fns.yandexOrgUrl,
+      inn: fns.inn,
+      kpp: fns.kpp,
+      oktmo: fns.oktmo,
+      officialPhone: fns.officialPhone,
+      officialEmail: fns.officialEmail,
+      officialWebsite: fns.officialWebsite,
+      workingHours: fns.workingHours,
       specialistCount: fns._count.specialistFns,
       activeRequestCount: fns._count.requests,
     });
