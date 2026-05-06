@@ -257,6 +257,10 @@ model FnsOffice {
   officialWebsite   String? @map("official_website")
   workingHours      String? @map("working_hours") // человекочитаемое расписание
 
+  // Фото ИФНС с nalog.gov.ru (фасад, оперзал и т.п.) и URL первоисточника.
+  photoUrls    String[] @default([]) @map("photo_urls")
+  nalogGovUrl  String?  @map("nalog_gov_url")
+
   city               City                @relation(fields: [cityId], references: [id], onDelete: Cascade)
   specialistFns      SpecialistFns[]
   specialistServices SpecialistService[]

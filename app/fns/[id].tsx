@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   useWindowDimensions,
   Platform,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -60,6 +61,8 @@ interface FnsDetail {
   officialEmail?: string | null;
   officialWebsite?: string | null;
   workingHours?: string | null;
+  photoUrls?: string[] | null;
+  nalogGovUrl?: string | null;
   specialistCount: number;
   activeRequestCount: number;
 }
@@ -610,6 +613,77 @@ export default function FnsDetailPage() {
                   );
                 })()}
               </View>
+            </Card>
+          )}
+
+          {/* Фото инспекции — забранные с nalog.gov.ru */}
+          {fns.photoUrls && fns.photoUrls.length > 0 && (
+            <Card>
+              <View
+                className="flex-row items-center justify-between"
+                style={{ marginBottom: 10 }}
+              >
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "700",
+                    color: colors.textMuted,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                  }}
+                >
+                  Фото инспекции · {fns.photoUrls.length}
+                </Text>
+                {fns.nalogGovUrl && (
+                  <Pressable
+                    accessibilityRole="link"
+                    onPress={() => {
+                      if (typeof window !== "undefined" && fns.nalogGovUrl) {
+                        window.open(fns.nalogGovUrl, "_blank", "noopener,noreferrer");
+                      }
+                    }}
+                    style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                  >
+                    <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "600" }}>
+                      Источник: nalog.gov.ru →
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {fns.photoUrls.map((url) => (
+                  <Pressable
+                    key={url}
+                    accessibilityRole="link"
+                    onPress={() => {
+                      if (typeof window !== "undefined") {
+                        window.open(url, "_blank", "noopener,noreferrer");
+                      }
+                    }}
+                    style={({ pressed }) => [
+                      {
+                        width: isDesktop ? 240 : 200,
+                        height: isDesktop ? 160 : 140,
+                        borderRadius: 10,
+                        overflow: "hidden",
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                      },
+                      pressed && { opacity: 0.85 },
+                    ]}
+                  >
+                    <Image
+                      source={{ uri: url }}
+                      style={{ width: "100%", height: "100%" }}
+                      resizeMode="cover"
+                    />
+                  </Pressable>
+                ))}
+              </ScrollView>
             </Card>
           )}
 

@@ -382,6 +382,8 @@ router.get("/fns/:id", async (req: Request, res: Response) => {
         officialEmail: true,
         officialWebsite: true,
         workingHours: true,
+        photoUrls: true,
+        nalogGovUrl: true,
         city: { select: { id: true, name: true, slug: true } },
         _count: {
           select: {
@@ -416,6 +418,8 @@ router.get("/fns/:id", async (req: Request, res: Response) => {
       officialEmail: fns.officialEmail,
       officialWebsite: fns.officialWebsite,
       workingHours: fns.workingHours,
+      photoUrls: fns.photoUrls,
+      nalogGovUrl: fns.nalogGovUrl,
       specialistCount: fns._count.specialistFns,
       activeRequestCount: fns._count.requests,
     });
