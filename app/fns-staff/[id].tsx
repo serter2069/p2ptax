@@ -248,12 +248,13 @@ export default function FnsStaffPage() {
             </Text>
           </Pressable>
 
-          {/* Hero */}
+          {/* Hero — про сотрудника. Информация о ИФНС вынесена в
+              отдельный блок «Место работы» ниже. */}
           <Card>
             <View
               style={{
                 flexDirection: isDesktop ? "row" : "column",
-                gap: 18,
+                gap: 20,
                 alignItems: isDesktop ? "flex-start" : "center",
               }}
             >
@@ -266,20 +267,20 @@ export default function FnsStaffPage() {
                 <Text
                   style={{
                     fontSize: 11,
-                    color: colors.primary,
+                    color: colors.textMuted,
                     fontWeight: "700",
                     textTransform: "uppercase",
                     letterSpacing: 1,
                   }}
                 >
-                  Налоговая инспекция · код {staff.fns.code}
+                  Сотрудник налоговой инспекции
                 </Text>
                 <Text
                   style={{
-                    fontSize: isDesktop ? 26 : 22,
+                    fontSize: isDesktop ? 28 : 22,
                     fontWeight: "800",
                     color: colors.text,
-                    marginTop: 4,
+                    marginTop: 6,
                     textAlign: isDesktop ? "left" : "center",
                   }}
                 >
@@ -287,15 +288,12 @@ export default function FnsStaffPage() {
                 </Text>
                 <View
                   className="flex-row items-center"
-                  style={{ gap: 6, marginTop: 6, flexWrap: "wrap", justifyContent: isDesktop ? "flex-start" : "center" }}
+                  style={{ gap: 6, marginTop: 8, flexWrap: "wrap", justifyContent: isDesktop ? "flex-start" : "center" }}
                 >
-                  <Briefcase size={14} color={colors.primary} />
-                  <Text style={{ fontSize: 14, color: colors.primary, fontWeight: "700" }}>
+                  <Briefcase size={15} color={colors.primary} />
+                  <Text style={{ fontSize: 15, color: colors.primary, fontWeight: "700" }}>
                     {staff.position}
                   </Text>
-                  {/^начальник/i.test(staff.position) && (
-                    <Crown size={14} color={colors.warning ?? "#f5a623"} fill={colors.warning ?? "#f5a623"} />
-                  )}
                 </View>
                 {staff.department && (
                   <Text
@@ -314,20 +312,20 @@ export default function FnsStaffPage() {
                     className="flex-row items-center"
                     style={{
                       gap: 4,
-                      marginTop: 6,
+                      marginTop: 10,
                       justifyContent: isDesktop ? "flex-start" : "center",
                     }}
                   >
                     {[1, 2, 3, 4, 5].map((n) => (
                       <Star
                         key={n}
-                        size={14}
+                        size={16}
                         color={colors.warning ?? "#f5a623"}
                         fill={n <= Math.round(staff.cachedAvgRating ?? 0) ? colors.warning ?? "#f5a623" : "transparent"}
                       />
                     ))}
-                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginLeft: 4 }}>
-                      <Text style={{ color: colors.text, fontWeight: "700" }}>
+                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 6 }}>
+                      <Text style={{ color: colors.text, fontWeight: "800", fontSize: 15 }}>
                         {staff.cachedAvgRating.toFixed(1)}
                       </Text>
                       {" · "}
@@ -336,47 +334,61 @@ export default function FnsStaffPage() {
                     </Text>
                   </View>
                 )}
-                <Pressable
-                  accessibilityRole="link"
-                  accessibilityLabel={`Перейти на страницу ${staff.fns.name}`}
-                  onPress={() => router.push(`/fns/${staff.fns.id}` as never)}
-                  style={({ pressed }) => [
-                    {
-                      marginTop: 12,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 10,
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
-                      borderRadius: 10,
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                      backgroundColor: colors.surface,
-                      alignSelf: isDesktop ? "flex-start" : "center",
-                    },
-                    pressed && { opacity: 0.7, borderColor: colors.primary },
-                  ]}
-                >
-                  <FnsLogo name={staff.fns.name} cityName={staff.fns.city.name} size="sm" />
-                  <View style={{ flexShrink: 1 }}>
-                    <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1 }}>
-                      Место работы
-                    </Text>
-                    <Text
-                      style={{ fontSize: 13, color: colors.text, fontWeight: "600", marginTop: 2 }}
-                      numberOfLines={2}
-                    >
-                      {staff.fns.name}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                      {staff.fns.city.name}
-                    </Text>
-                  </View>
-                  <ArrowRight size={14} color={colors.textMuted} />
-                </Pressable>
               </View>
             </View>
           </Card>
+
+          {/* Место работы — отдельным блоком, крупно с гербом ФНС. */}
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={`Перейти на страницу ${staff.fns.name}`}
+            onPress={() => router.push(`/fns/${staff.fns.id}` as never)}
+            style={({ pressed }) => [
+              {
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 16,
+                paddingVertical: isDesktop ? 18 : 14,
+                paddingHorizontal: isDesktop ? 20 : 14,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.white,
+              },
+              pressed && { opacity: 0.85, borderColor: colors.primary },
+            ]}
+          >
+            <FnsLogo name={staff.fns.name} cityName={staff.fns.city.name} size={isDesktop ? "lg" : "md"} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: colors.textMuted,
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                }}
+              >
+                Место работы · код {staff.fns.code}
+              </Text>
+              <Text
+                style={{
+                  fontSize: isDesktop ? 18 : 16,
+                  color: colors.text,
+                  fontWeight: "700",
+                  marginTop: 4,
+                  lineHeight: isDesktop ? 24 : 22,
+                }}
+                numberOfLines={3}
+              >
+                {staff.fns.name}
+              </Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>
+                {staff.fns.city.name}
+              </Text>
+            </View>
+            <ArrowRight size={18} color={colors.textMuted} />
+          </Pressable>
 
           {/* Контакты */}
           <Card>

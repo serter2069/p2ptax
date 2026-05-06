@@ -59,24 +59,26 @@ function shortenCity(name: string, maxLen: number): string {
  * правилам, чтобы влезть в ленту без переноса.
  */
 export default function FnsLogo({ name, cityName, size = "md" }: FnsLogoProps) {
-  const dim = size === "sm" ? 56 : size === "lg" ? 104 : 72;
-  const ribbonHeight = size === "sm" ? 14 : size === "lg" ? 22 : 18;
-  const cityFontSize = size === "sm" ? 9 : size === "lg" ? 13 : 11;
-  const numFontSize = size === "sm" ? 9 : size === "lg" ? 13 : 11;
-  const numMin = size === "sm" ? 22 : size === "lg" ? 32 : 26;
-  // Под ленту режем по примерной плотности: ~1.6 чар на px при текущем шрифте.
-  const cityMaxLen = size === "sm" ? 8 : size === "lg" ? 14 : 11;
+  const dim = size === "sm" ? 56 : size === "lg" ? 128 : 72;
+  const ribbonHeight = size === "sm" ? 14 : size === "lg" ? 26 : 18;
+  const cityFontSize = size === "sm" ? 9 : size === "lg" ? 14 : 11;
+  const numFontSize = size === "sm" ? 9 : size === "lg" ? 14 : 11;
+  const numMin = size === "sm" ? 22 : size === "lg" ? 36 : 26;
+  // Под ленту режем по плотности шрифта; lg даёт ~16 символов.
+  const cityMaxLen = size === "sm" ? 8 : size === "lg" ? 16 : 11;
 
   // Достаём «№ N» из названия. Регэксп: «№ 7», «№7», «N 7» и т.п.
   const numMatch = name.match(/№\s*(\d+[А-Яа-я]?)/);
   const num = numMatch?.[1];
 
-  // Короткий ярлык если номера нет.
+  // Короткий ярлык если номера нет — покрываем все типы ФНС-структур.
   let shortLabel: string | null = null;
   if (!num) {
     if (/Управление\s+ФНС/i.test(name)) shortLabel = "УФНС";
     else if (/Межрегиональная/i.test(name)) shortLabel = "МРИ";
     else if (/Межрайонная/i.test(name)) shortLabel = "МРИ";
+    else if (/Инспекция\s+ФНС/i.test(name)) shortLabel = "ИФНС";
+    else shortLabel = "ФНС";
   }
 
   const cityLabel = cityName ? shortenCity(cityName, cityMaxLen) : null;

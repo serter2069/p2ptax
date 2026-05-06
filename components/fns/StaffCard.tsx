@@ -6,6 +6,30 @@ import Avatar from "@/components/ui/Avatar";
 import CopyableValue from "@/components/ui/CopyableValue";
 import { colors } from "@/lib/theme";
 
+interface ChiefBadgeProps {
+  size: number;
+  title: string;
+}
+
+/** Иконка-корона с tooltip (через title-аттрибут на web). */
+function ChiefBadge({ size, title }: ChiefBadgeProps) {
+  // На web передаём `accessibilityLabel` который React Native Web рендерит
+  // как aria-label. Для tooltip — обёрнем во View с title (web-only).
+  const props = Platform.OS === "web"
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? ({ title } as any)
+    : {};
+  return (
+    <View accessibilityLabel={title} {...props}>
+      <Crown
+        size={size}
+        color={colors.warning ?? "#f5a623"}
+        fill={colors.warning ?? "#f5a623"}
+      />
+    </View>
+  );
+}
+
 export interface StaffCardData {
   id: string;
   firstName: string;
@@ -39,6 +63,9 @@ export default function StaffCard({ staff, compact }: StaffCardProps) {
 
   const fullName = `${staff.lastName} ${staff.firstName} ${staff.middleName ?? ""}`.trim();
   const isChief = /начальник/i.test(staff.position);
+  // На web (десктоп) — корона вместо текста должности (с tooltip).
+  // На native/мобильном — оставляем текст, иначе непонятно.
+  const showPositionText = !(Platform.OS === "web" && isChief);
 
   const hoverProps =
     Platform.OS === "web"
@@ -81,7 +108,7 @@ export default function StaffCard({ staff, compact }: StaffCardProps) {
       >
         <Avatar name={fullName} imageUrl={staff.photoUrl ?? undefined} size={compact ? "sm" : "md"} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <View className="flex-row items-center" style={{ gap: 4 }}>
+          <View className="flex-row items-center" style={{ gap: 6 }}>
             <Text
               style={{
                 fontSize: compact ? 13 : 14,
@@ -94,19 +121,29 @@ export default function StaffCard({ staff, compact }: StaffCardProps) {
               {fullName}
             </Text>
             {isChief && (
-              <Crown
-                size={compact ? 12 : 14}
-                color={colors.warning ?? "#f5a623"}
-                fill={colors.warning ?? "#f5a623"}
+              <ChiefBadge
+                size={compact ? 12 : 15}
+                title={`Начальник: ${staff.position.toLowerCase()}${staff.department ? ` · ${staff.department}` : ""}`}
               />
             )}
           </View>
-          <Text
-            style={{ fontSize: 12, color: colors.primary, marginTop: 2, fontWeight: "600" }}
-            numberOfLines={2}
-          >
-            {staff.position}
-          </Text>
+          {showPositionText && (
+            <Text
+              style={{ fontSize: 12, color: colors.primary, marginTop: 2, fontWeight: "600" }}
+              numberOfLines={2}
+            >
+              {staff.position}
+            </Text>
+          )}
+          {/* Если короны достаточно — показываем только отдел, не position. */}
+          {!showPositionText && staff.department && (
+            <Text
+              style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}
+              numberOfLines={2}
+            >
+              {staff.department}
+            </Text>
+          )}
           {staff.cachedAvgRating != null && staff.cachedReviewsCount != null && staff.cachedReviewsCount > 0 && (
             <View className="flex-row items-center" style={{ gap: 4, marginTop: 4 }}>
               <Star size={11} color={colors.warning ?? "#f5a623"} fill={colors.warning ?? "#f5a623"} />

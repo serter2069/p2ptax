@@ -251,7 +251,7 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const userId = (req as any).user?.id as string | undefined;
+      const userId = (req as any).user?.userId as string | undefined;
       if (!userId) {
         res.status(401).json({ error: "Unauthorized" });
         return;
