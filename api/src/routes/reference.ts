@@ -243,6 +243,64 @@ router.get("/fns/list", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/fns-staff/:id — публичный профиль одного сотрудника.
+router.get("/fns-staff/:id", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const staff = await prisma.fnsStaff.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        middleName: true,
+        position: true,
+        department: true,
+        phone: true,
+        email: true,
+        photoUrl: true,
+        fns: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            workingHours: true,
+            officialPhone: true,
+            city: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+    });
+    if (!staff) {
+      res.status(404).json({ error: "Staff member not found" });
+      return;
+    }
+
+    // Коллеги по тому же отделу — для секции «В отделе работают».
+    const colleagues = await prisma.fnsStaff.findMany({
+      where: {
+        fnsId: staff.fns.id,
+        department: staff.department,
+        id: { not: staff.id },
+      },
+      orderBy: { sortOrder: "asc" },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        middleName: true,
+        position: true,
+        photoUrl: true,
+      },
+    });
+
+    res.json({ ...staff, colleagues });
+  } catch (error) {
+    console.error("fns-staff/:id error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/fns/:id/staff — сотрудники ИФНС.
 router.get("/fns/:id/staff", async (req: Request, res: Response) => {
   try {

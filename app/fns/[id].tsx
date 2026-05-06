@@ -27,6 +27,7 @@ import {
 } from "lucide-react-native";
 import Avatar from "@/components/ui/Avatar";
 import Card from "@/components/ui/Card";
+import CopyableValue from "@/components/ui/CopyableValue";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LandingHeader from "@/components/landing/LandingHeader";
@@ -251,16 +252,16 @@ export default function FnsDetailPage() {
 
   const mapEmbedUrl = useMemo(() => {
     if (!fns) return null;
-    // Полный поисковой запрос — адрес + город. Я.Карты ищут адрес,
-    // ставят пин на конкретное здание, в карточке показывают адрес.
-    // Если есть координаты — добавляем как ll= (центр карты), но
-    // пин ставится по результату поиска адреса.
-    const addressQuery = `${fns.city.name}, ${fns.address ?? ""}`.trim();
-    const q = encodeURIComponent(addressQuery);
+    // Документация Я.Карт-виджета: text= уводит в режим поиска
+    // (пин виден только при клике на «1 найдено»), а pt= рисует
+    // статичный маркер сразу. Используем pt + ll, без text.
     if (fns.latitude != null && fns.longitude != null) {
       const ll = `${fns.longitude},${fns.latitude}`;
-      return `https://yandex.ru/map-widget/v1/?text=${q}&ll=${ll}&z=17`;
+      const pt = `${fns.longitude},${fns.latitude},pm2rdm`; // red large marker
+      return `https://yandex.ru/map-widget/v1/?ll=${ll}&z=17&pt=${pt}&l=map`;
     }
+    // Fallback на текстовый поиск только если нет координат вовсе.
+    const q = encodeURIComponent(`${fns.city.name}, ${fns.address ?? ""}`.trim());
     return `https://yandex.ru/map-widget/v1/?text=${q}&z=17`;
   }, [fns]);
 
@@ -645,7 +646,7 @@ export default function FnsDetailPage() {
             </Text>
           </Card>
 
-          {/* Контакты + реквизиты */}
+          {/* Контакты — короткий блок с самым важным */}
           <Card>
             <Text
               style={{
@@ -657,7 +658,7 @@ export default function FnsDetailPage() {
                 marginBottom: 12,
               }}
             >
-              Контакты и реквизиты
+              Контакты
             </Text>
             <View style={{ gap: 10 }}>
               {fns.workingHours && (
@@ -668,10 +669,18 @@ export default function FnsDetailPage() {
                 />
               )}
               {fns.officialPhone && (
-                <ContactRow label="Телефон" value={fns.officialPhone} />
+                <ContactRow
+                  label="Телефон"
+                  copyable={fns.officialPhone}
+                  value={fns.officialPhone}
+                />
               )}
               {fns.officialEmail && (
-                <ContactRow label="Email" value={fns.officialEmail} />
+                <ContactRow
+                  label="Email"
+                  copyable={fns.officialEmail}
+                  value={fns.officialEmail}
+                />
               )}
               {fns.officialWebsite && (
                 <ContactRow
@@ -680,15 +689,18 @@ export default function FnsDetailPage() {
                   href={fns.officialWebsite}
                 />
               )}
-              {fns.inn && <ContactRow label="ИНН" value={fns.inn} />}
-              {fns.kpp && <ContactRow label="КПП" value={fns.kpp} />}
-              {fns.oktmo && <ContactRow label="ОКТМО" value={fns.oktmo} />}
+              {(fns.inn || fns.kpp) && (
+                <ContactRow
+                  label="ИНН / КПП"
+                  value={[fns.inn, fns.kpp].filter(Boolean).join(" / ")}
+                />
+              )}
             </View>
           </Card>
 
-          {/* Сотрудники — рыба, но с фотками и должностями */}
+          {/* Сотрудники — сгруппированы по отделам */}
           {staff.length > 0 && (
-            <View>
+            <View style={{ gap: 16 }}>
               <Text
                 style={{
                   fontSize: 11,
@@ -696,83 +708,106 @@ export default function FnsDetailPage() {
                   color: colors.textMuted,
                   textTransform: "uppercase",
                   letterSpacing: 1,
-                  marginBottom: 8,
                   paddingHorizontal: 4,
                 }}
               >
                 Сотрудники инспекции · {staff.length}
               </Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 12,
-                }}
-              >
-                {staff.map((s) => {
-                  const fullName = `${s.lastName} ${s.firstName} ${s.middleName ?? ""}`.trim();
-                  return (
-                    <View
-                      key={s.id}
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              {(() => {
+                // Группируем по department, сохраняя порядок появления.
+                const groups = new Map<string, StaffMember[]>();
+                for (const s of staff) {
+                  const key = s.department ?? "Прочее";
+                  const arr = groups.get(key) ?? [];
+                  arr.push(s);
+                  groups.set(key, arr);
+                }
+                return Array.from(groups.entries()).map(([dept, members]) => (
+                  <View key={dept} style={{ gap: 8 }}>
+                    <Text
                       style={{
-                        flexBasis: (isDesktop ? "calc(50% - 6px)" : "100%") as any,
-                        flexGrow: 1,
-                        backgroundColor: colors.white,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        borderRadius: 12,
-                        padding: 14,
-                        gap: 8,
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: colors.text,
+                        paddingHorizontal: 4,
                       }}
                     >
-                      <View
-                        className="flex-row items-start"
-                        style={{ gap: 12 }}
-                      >
-                        <Avatar name={fullName} imageUrl={s.photoUrl ?? undefined} size="md" />
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text
-                            style={{ fontSize: 14, fontWeight: "700", color: colors.text }}
-                            numberOfLines={2}
+                      {dept}
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                        gap: 12,
+                      }}
+                    >
+                      {members.map((s) => {
+                        const fullName = `${s.lastName} ${s.firstName} ${s.middleName ?? ""}`.trim();
+                        return (
+                          <Pressable
+                            key={s.id}
+                            accessibilityRole="link"
+                            accessibilityLabel={`Профиль сотрудника ${fullName}`}
+                            onPress={() => router.push(`/fns-staff/${s.id}` as never)}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            style={({ pressed }) => [
+                              {
+                                flexBasis: (isDesktop ? "calc(50% - 6px)" : "100%") as any,
+                                flexGrow: 1,
+                                backgroundColor: colors.white,
+                                borderWidth: 1,
+                                borderColor: colors.border,
+                                borderRadius: 12,
+                                padding: 14,
+                                gap: 8,
+                              },
+                              pressed && { opacity: 0.85, borderColor: colors.primary },
+                            ]}
                           >
-                            {fullName}
-                          </Text>
-                          <Text
-                            style={{ fontSize: 12, color: colors.primary, marginTop: 2, fontWeight: "600" }}
-                            numberOfLines={2}
-                          >
-                            {s.position}
-                          </Text>
-                          {s.department && (
-                            <Text
-                              style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}
-                              numberOfLines={1}
+                            <View
+                              className="flex-row items-start"
+                              style={{ gap: 12 }}
                             >
-                              {s.department}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                      <View style={{ gap: 4, paddingLeft: 4 }}>
-                        {s.phone && (
-                          <Text style={{ fontSize: 12, color: colors.textSecondary }}>
-                            📞 {s.phone}
-                          </Text>
-                        )}
-                        {s.email && (
-                          <Text
-                            style={{ fontSize: 12, color: colors.textSecondary }}
-                            numberOfLines={1}
-                          >
-                            ✉ {s.email}
-                          </Text>
-                        )}
-                      </View>
+                              <Avatar name={fullName} imageUrl={s.photoUrl ?? undefined} size="md" />
+                              <View style={{ flex: 1, minWidth: 0 }}>
+                                <Text
+                                  style={{ fontSize: 14, fontWeight: "700", color: colors.text }}
+                                  numberOfLines={2}
+                                >
+                                  {fullName}
+                                </Text>
+                                <Text
+                                  style={{ fontSize: 12, color: colors.primary, marginTop: 2, fontWeight: "600" }}
+                                  numberOfLines={2}
+                                >
+                                  {s.position}
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={{ gap: 6, paddingLeft: 4 }}>
+                              {s.phone && (
+                                <CopyableValue
+                                  value={s.phone}
+                                  oneLine
+                                  icon={<Text style={{ fontSize: 12 }}>📞</Text>}
+                                />
+                              )}
+                              {s.email && (
+                                <CopyableValue
+                                  value={s.email}
+                                  oneLine
+                                  primaryColor
+                                  icon={<Mail size={12} color={colors.textMuted} />}
+                                />
+                              )}
+                            </View>
+                          </Pressable>
+                        );
+                      })}
                     </View>
-                  );
-                })}
-              </View>
+                  </View>
+                ));
+              })()}
             </View>
           )}
 
@@ -1178,10 +1213,10 @@ export default function FnsDetailPage() {
                 },
                 {
                   num: "2",
-                  title: `Ответят спецы по ${fns.city.name}`,
+                  title: "Ответят специалисты по этой ИФНС",
                   body: `${fns.specialistCount > 0
                     ? `${fns.specialistCount} ${fns.specialistCount === 1 ? "специалист" : "специалистов"}`
-                    : "Налоговые специалисты"} напишут вам прямо в платформе и предложат план.`,
+                    : "Налоговые специалисты"}, привязанных именно к ${fns.name}, напишут вам в платформе и предложат план.`,
                   metric: "обычно в течение суток",
                 },
                 {
@@ -1340,11 +1375,14 @@ function ContactRow({
   label,
   value,
   href,
+  copyable,
   multiline,
 }: {
   label: string;
   value: string;
   href?: string;
+  /** Если задано — клик копирует это значение (через CopyableValue). */
+  copyable?: string;
   multiline?: boolean;
 }) {
   const onPress = href
@@ -1359,27 +1397,31 @@ function ContactRow({
       <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: "600", minWidth: 100 }}>
         {label}
       </Text>
-      {onPress ? (
-        <Pressable
-          accessibilityRole="link"
-          onPress={onPress}
-          style={({ pressed }) => [{ flex: 1, minWidth: 0 }, pressed && { opacity: 0.6 }]}
-        >
+      <View style={{ flex: 1, minWidth: 0 }}>
+        {copyable ? (
+          <CopyableValue value={value} copyValue={copyable} primaryColor oneLine />
+        ) : onPress ? (
+          <Pressable
+            accessibilityRole="link"
+            onPress={onPress}
+            style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+          >
+            <Text
+              style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}
+              numberOfLines={multiline ? 0 : 1}
+            >
+              {value}
+            </Text>
+          </Pressable>
+        ) : (
           <Text
-            style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}
+            style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}
             numberOfLines={multiline ? 0 : 1}
           >
             {value}
           </Text>
-        </Pressable>
-      ) : (
-        <Text
-          style={{ fontSize: 13, color: colors.text, flex: 1, lineHeight: 18 }}
-          numberOfLines={multiline ? 0 : 1}
-        >
-          {value}
-        </Text>
-      )}
+        )}
+      </View>
     </View>
   );
 }
