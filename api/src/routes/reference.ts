@@ -253,6 +253,11 @@ router.get("/fns/:id", async (req: Request, res: Response) => {
         code: true,
         address: true,
         description: true,
+        latitude: true,
+        longitude: true,
+        yandexRating: true,
+        yandexReviewsCount: true,
+        yandexOrgUrl: true,
         city: { select: { id: true, name: true, slug: true } },
         _count: {
           select: {
@@ -275,6 +280,11 @@ router.get("/fns/:id", async (req: Request, res: Response) => {
       addressSecondary: addr?.secondary ?? null,
       description: fns.description,
       city: fns.city,
+      latitude: fns.latitude,
+      longitude: fns.longitude,
+      yandexRating: fns.yandexRating,
+      yandexReviewsCount: fns.yandexReviewsCount,
+      yandexOrgUrl: fns.yandexOrgUrl,
       specialistCount: fns._count.specialistFns,
       activeRequestCount: fns._count.requests,
     });

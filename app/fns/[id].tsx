@@ -47,6 +47,11 @@ interface FnsDetail {
   addressSecondary?: string | null;
   description: string | null;
   city: { id: string; name: string; slug: string };
+  latitude?: number | null;
+  longitude?: number | null;
+  yandexRating?: number | null;
+  yandexReviewsCount?: number | null;
+  yandexOrgUrl?: string | null;
   specialistCount: number;
   activeRequestCount: number;
 }
@@ -196,9 +201,14 @@ export default function FnsDetailPage() {
 
   const mapEmbedUrl = useMemo(() => {
     if (!fns) return null;
-    // Поиск именно организации, а не адреса: имя ИФНС + город.
-    // Адрес добавляем как «опорный» чтобы Yandex точно поставил пин,
-    // даже если в его справочнике нет такой организации.
+    // Если у нас есть координаты от геокодера — ставим пин по ним
+    // (точка ровно в координатах + центр карты на ней). Иначе fallback
+    // на текстовый поиск по «имя + город + адрес».
+    if (fns.latitude != null && fns.longitude != null) {
+      const ll = `${fns.longitude},${fns.latitude}`;
+      const pt = `${fns.longitude},${fns.latitude},pm2blm`;
+      return `https://yandex.ru/map-widget/v1/?ll=${ll}&z=16&pt=${pt}&l=map`;
+    }
     const q = encodeURIComponent(
       `${fns.name} ${fns.city.name} ${fns.address ?? ""}`.trim(),
     );
@@ -207,6 +217,12 @@ export default function FnsDetailPage() {
 
   const mapExternalUrl = useMemo(() => {
     if (!fns) return null;
+    if (fns.yandexOrgUrl) return fns.yandexOrgUrl;
+    if (fns.latitude != null && fns.longitude != null) {
+      const ll = `${fns.longitude},${fns.latitude}`;
+      const pt = `${fns.longitude},${fns.latitude}`;
+      return `https://yandex.ru/maps/?ll=${ll}&z=16&pt=${pt}`;
+    }
     const q = encodeURIComponent(
       `${fns.name} ${fns.city.name} ${fns.address ?? ""}`.trim(),
     );
@@ -833,7 +849,8 @@ export default function FnsDetailPage() {
             </View>
           )}
 
-          {/* Reviews placeholder (Yandex import to come) */}
+          {/* Рейтинг и отзывы Я.Карт — заполняется фоновым скриптом
+              после подключения Геопоиск-ключа. До этого — заглушка. */}
           <Card>
             <Text
               style={{
@@ -845,11 +862,41 @@ export default function FnsDetailPage() {
                 marginBottom: 8,
               }}
             >
-              Отзывы
+              Рейтинг и отзывы
             </Text>
-            <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
-              Скоро здесь появятся отзывы об этой инспекции, загруженные с Яндекс.Карт. Пока что вы можете ознакомиться с отзывами на самой Яндекс.Карте, перейдя по ссылке выше.
-            </Text>
+            {fns.yandexRating != null ? (
+              <View style={{ gap: 8 }}>
+                <View className="flex-row items-center" style={{ gap: 8 }}>
+                  <Star size={20} color={colors.warning ?? "#f5a623"} fill={colors.warning ?? "#f5a623"} />
+                  <Text style={{ fontSize: 22, fontWeight: "800", color: colors.text }}>
+                    {fns.yandexRating.toFixed(1)}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+                    из 5{fns.yandexReviewsCount ? ` · ${fns.yandexReviewsCount} отзывов` : ""}
+                  </Text>
+                </View>
+                {mapExternalUrl && (
+                  <Pressable
+                    accessibilityRole="link"
+                    onPress={() => {
+                      if (typeof window !== "undefined") {
+                        window.open(mapExternalUrl, "_blank", "noopener,noreferrer");
+                      }
+                    }}
+                    style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                  >
+                    <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}>
+                      Читать отзывы на Яндекс.Картах →
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            ) : (
+              <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
+                Рейтинг и отзывы загружаются с Яндекс.Карт. Пока их нет — почитать
+                свежие отзывы можно по ссылке «Открыть в Яндекс.Картах» выше.
+              </Text>
+            )}
           </Card>
 
           {/* Other FNS in the same city */}

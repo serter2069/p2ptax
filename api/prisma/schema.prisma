@@ -232,6 +232,22 @@ model FnsOffice {
   // can't subscribe). Daily charge = vipMonthlyPriceKopeks / 30.
   vipMonthlyPriceKopeks Int? @map("vip_monthly_price_kopeks")
 
+  // Координаты для Я.Карт. Заполняются скриптом prisma/yandex-geocode.ts
+  // через HTTP Геокодер (geocode-maps.yandex.ru). geocodedAt — когда
+  // последний раз обновляли (для «протухания» данных).
+  latitude    Float?   @map("latitude")
+  longitude   Float?   @map("longitude")
+  geocodedAt  DateTime? @map("geocoded_at")
+
+  // Я.Карты Геопоиск (рейтинг/отзывы/orgId) — заполняются позже,
+  // когда подключим Search API. Все поля nullable, чтобы не ломать
+  // имеющиеся записи.
+  yandexOrgId        String?  @map("yandex_org_id")
+  yandexOrgUrl       String?  @map("yandex_org_url")
+  yandexRating       Float?   @map("yandex_rating")
+  yandexReviewsCount Int?     @map("yandex_reviews_count")
+  yandexUpdatedAt    DateTime? @map("yandex_updated_at")
+
   city               City                @relation(fields: [cityId], references: [id], onDelete: Cascade)
   specialistFns      SpecialistFns[]
   specialistServices SpecialistService[]
