@@ -73,6 +73,7 @@ model User {
   specialistServices      SpecialistService[]
   specialistCases         SpecialistCase[]
   specialistReviews       SpecialistReview[]
+  fnsStaffReviews         FnsStaffReview[]
   requests                Request[]
   clientThreads           Thread[]                 @relation("ClientThreads")
   specialistThreads       Thread[]                 @relation("SpecialistThreads")
@@ -289,13 +290,40 @@ model FnsStaff {
   photoUrl   String? @map("photo_url")
   sortOrder  Int     @default(0) @map("sort_order")
   source     String  @default("seed") // seed | manual | imported
+
+  // Кэшированные агрегаты по отзывам — обновляются при каждом
+  // создании/удалении отзыва. Дешевле, чем считать на лету.
+  cachedAvgRating    Float?  @map("cached_avg_rating")
+  cachedReviewsCount Int     @default(0) @map("cached_reviews_count")
+
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  fns FnsOffice @relation(fields: [fnsId], references: [id], onDelete: Cascade)
+  fns     FnsOffice        @relation(fields: [fnsId], references: [id], onDelete: Cascade)
+  reviews FnsStaffReview[]
 
   @@index([fnsId])
   @@map("fns_staff")
+}
+
+// Отзыв на сотрудника ИФНС. Авторизованные пользователи (userId)
+// и сид/импорт (userId=null) пишут сюда напрямую. Рейтинг 1-5.
+model FnsStaffReview {
+  id         String   @id @default(uuid())
+  staffId    String   @map("staff_id")
+  userId     String?  @map("user_id")
+  authorName String   @map("author_name")
+  rating     Int      // 1..5
+  text       String
+  source     String   @default("user") // user | seed | imported
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  staff FnsStaff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  user  User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([staffId])
+  @@index([userId])
+  @@map("fns_staff_reviews")
 }
 
 // Отзывы про ИФНС. Пока что наполняются сидом из заготовленных

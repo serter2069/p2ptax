@@ -5,6 +5,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  TextInput,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,9 +15,10 @@ import {
   Mail,
   Phone,
   Briefcase,
-  Building2,
   Clock,
   ArrowRight,
+  Star,
+  Crown,
 } from "lucide-react-native";
 import Avatar from "@/components/ui/Avatar";
 import Card from "@/components/ui/Card";
@@ -24,6 +26,8 @@ import CopyableValue from "@/components/ui/CopyableValue";
 import ErrorState from "@/components/ui/ErrorState";
 import LandingHeader from "@/components/landing/LandingHeader";
 import FooterSection from "@/components/landing/FooterSection";
+import FnsLogo from "@/components/fns/FnsLogo";
+import StaffCard, { type StaffCardData } from "@/components/fns/StaffCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTypedRouter } from "@/lib/navigation";
 import { api } from "@/lib/api";
@@ -39,6 +43,8 @@ interface StaffDetail {
   phone: string | null;
   email: string | null;
   photoUrl: string | null;
+  cachedAvgRating?: number | null;
+  cachedReviewsCount?: number | null;
   fns: {
     id: string;
     name: string;
@@ -47,14 +53,16 @@ interface StaffDetail {
     officialPhone: string | null;
     city: { id: string; name: string; slug: string };
   };
-  colleagues: Array<{
-    id: string;
-    firstName: string;
-    lastName: string;
-    middleName: string | null;
-    position: string;
-    photoUrl: string | null;
-  }>;
+  colleagues: StaffCardData[];
+}
+
+interface StaffReview {
+  id: string;
+  authorName: string;
+  rating: number;
+  text: string;
+  source: string;
+  createdAt: string;
 }
 
 /**
@@ -78,22 +86,71 @@ export default function FnsStaffPage() {
   const isAuthenticated = !!user;
 
   const [staff, setStaff] = useState<StaffDetail | null>(null);
+  const [reviews, setReviews] = useState<StaffReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Состояние формы отзыва (для авторизованных).
+  const [formRating, setFormRating] = useState<number>(5);
+  const [formText, setFormText] = useState<string>("");
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!staffId) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await api<StaffDetail>(`/api/fns-staff/${staffId}`, { noAuth: true });
-      setStaff(res);
+      const [staffRes, reviewsRes] = await Promise.all([
+        api<StaffDetail>(`/api/fns-staff/${staffId}`, { noAuth: true }),
+        api<{ items: StaffReview[] }>(
+          `/api/fns-staff/${staffId}/reviews?limit=20`,
+          { noAuth: true },
+        ).catch(() => ({ items: [] })),
+      ]);
+      setStaff(staffRes);
+      setReviews(reviewsRes.items ?? []);
     } catch {
       setError("Не удалось загрузить сотрудника");
     } finally {
       setLoading(false);
     }
   }, [staffId]);
+
+  const submitReview = useCallback(async () => {
+    if (!staffId) return;
+    if (formText.trim().length < 10) {
+      setFormError("Расскажите хотя бы пару предложений (минимум 10 символов).");
+      return;
+    }
+    setFormSubmitting(true);
+    setFormError(null);
+    try {
+      const created = await api<StaffReview>(`/api/fns-staff/${staffId}/reviews`, {
+        method: "POST",
+        body: JSON.stringify({ rating: formRating, text: formText.trim() }),
+      });
+      setReviews((prev) => [created, ...prev]);
+      // Локально обновим кэш-агрегаты, чтобы UI сразу отразил новый отзыв.
+      setStaff((prev) =>
+        prev
+          ? {
+              ...prev,
+              cachedReviewsCount: (prev.cachedReviewsCount ?? 0) + 1,
+              cachedAvgRating:
+                ((prev.cachedAvgRating ?? 0) * (prev.cachedReviewsCount ?? 0) + formRating) /
+                ((prev.cachedReviewsCount ?? 0) + 1),
+            }
+          : prev,
+      );
+      setFormText("");
+      setFormRating(5);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : "Не удалось отправить отзыв.");
+    } finally {
+      setFormSubmitting(false);
+    }
+  }, [staffId, formRating, formText]);
 
   useEffect(() => {
     void load();
@@ -236,6 +293,9 @@ export default function FnsStaffPage() {
                   <Text style={{ fontSize: 14, color: colors.primary, fontWeight: "700" }}>
                     {staff.position}
                   </Text>
+                  {/^начальник/i.test(staff.position) && (
+                    <Crown size={14} color={colors.warning ?? "#f5a623"} fill={colors.warning ?? "#f5a623"} />
+                  )}
                 </View>
                 {staff.department && (
                   <Text
@@ -249,6 +309,33 @@ export default function FnsStaffPage() {
                     {staff.department}
                   </Text>
                 )}
+                {staff.cachedAvgRating != null && staff.cachedReviewsCount != null && staff.cachedReviewsCount > 0 && (
+                  <View
+                    className="flex-row items-center"
+                    style={{
+                      gap: 4,
+                      marginTop: 6,
+                      justifyContent: isDesktop ? "flex-start" : "center",
+                    }}
+                  >
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        size={14}
+                        color={colors.warning ?? "#f5a623"}
+                        fill={n <= Math.round(staff.cachedAvgRating ?? 0) ? colors.warning ?? "#f5a623" : "transparent"}
+                      />
+                    ))}
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginLeft: 4 }}>
+                      <Text style={{ color: colors.text, fontWeight: "700" }}>
+                        {staff.cachedAvgRating.toFixed(1)}
+                      </Text>
+                      {" · "}
+                      {staff.cachedReviewsCount}{" "}
+                      {staff.cachedReviewsCount === 1 ? "отзыв" : "отзывов"}
+                    </Text>
+                  </View>
+                )}
                 <Pressable
                   accessibilityRole="link"
                   accessibilityLabel={`Перейти на страницу ${staff.fns.name}`}
@@ -258,21 +345,33 @@ export default function FnsStaffPage() {
                       marginTop: 12,
                       flexDirection: "row",
                       alignItems: "center",
-                      gap: 6,
+                      gap: 10,
                       paddingVertical: 8,
                       paddingHorizontal: 12,
                       borderRadius: 10,
                       borderWidth: 1,
                       borderColor: colors.border,
+                      backgroundColor: colors.surface,
                       alignSelf: isDesktop ? "flex-start" : "center",
                     },
-                    pressed && { opacity: 0.7 },
+                    pressed && { opacity: 0.7, borderColor: colors.primary },
                   ]}
                 >
-                  <Building2 size={14} color={colors.textSecondary} />
-                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-                    {staff.fns.name}, {staff.fns.city.name}
-                  </Text>
+                  <FnsLogo name={staff.fns.name} cityName={staff.fns.city.name} size="sm" />
+                  <View style={{ flexShrink: 1 }}>
+                    <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1 }}>
+                      Место работы
+                    </Text>
+                    <Text
+                      style={{ fontSize: 13, color: colors.text, fontWeight: "600", marginTop: 2 }}
+                      numberOfLines={2}
+                    >
+                      {staff.fns.name}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                      {staff.fns.city.name}
+                    </Text>
+                  </View>
                   <ArrowRight size={14} color={colors.textMuted} />
                 </Pressable>
               </View>
@@ -326,6 +425,184 @@ export default function FnsStaffPage() {
             </View>
           </Card>
 
+          {/* Отзывы и рейтинг */}
+          <Card>
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "700",
+                color: colors.textMuted,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 12,
+              }}
+            >
+              Отзывы о сотруднике
+            </Text>
+
+            {/* Форма для авторизованных */}
+            {isAuthenticated ? (
+              <View
+                style={{
+                  gap: 10,
+                  paddingBottom: 16,
+                  marginBottom: 16,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.border,
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text }}>
+                  Оставить отзыв
+                </Text>
+                <View className="flex-row items-center" style={{ gap: 4 }}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Pressable
+                      key={n}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Поставить ${n} ${n === 1 ? "звезду" : "звёзд"}`}
+                      onPress={() => setFormRating(n)}
+                      hitSlop={4}
+                    >
+                      <Star
+                        size={26}
+                        color={colors.warning ?? "#f5a623"}
+                        fill={n <= formRating ? colors.warning ?? "#f5a623" : "transparent"}
+                      />
+                    </Pressable>
+                  ))}
+                  <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 8 }}>
+                    {formRating} из 5
+                  </Text>
+                </View>
+                <TextInput
+                  value={formText}
+                  onChangeText={setFormText}
+                  placeholder="Расскажите про опыт общения: помогли ли разобраться, отвечает ли на запросы, что было хорошо или плохо."
+                  placeholderTextColor={colors.placeholder}
+                  multiline
+                  numberOfLines={4}
+                  style={{
+                    fontSize: 14,
+                    color: colors.text,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 10,
+                    padding: 12,
+                    minHeight: 88,
+                    textAlignVertical: "top",
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    outlineWidth: 0 as any,
+                  }}
+                />
+                {formError && (
+                  <Text style={{ fontSize: 12, color: colors.error }}>{formError}</Text>
+                )}
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={formSubmitting}
+                  onPress={submitReview}
+                  style={({ pressed }) => [
+                    {
+                      paddingVertical: 11,
+                      paddingHorizontal: 16,
+                      borderRadius: 10,
+                      backgroundColor: formSubmitting ? colors.border : colors.primary,
+                      alignItems: "center",
+                    },
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  <Text style={{ color: colors.white, fontWeight: "700", fontSize: 14 }}>
+                    {formSubmitting ? "Отправляем…" : "Опубликовать отзыв"}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  borderRadius: 10,
+                  backgroundColor: colors.surface,
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary }}>
+                  Чтобы оставить отзыв, нужно войти.
+                </Text>
+                <Pressable
+                  accessibilityRole="link"
+                  onPress={() => nav.routes.login()}
+                  style={({ pressed }) => [
+                    {
+                      paddingVertical: 8,
+                      paddingHorizontal: 14,
+                      borderRadius: 8,
+                      backgroundColor: colors.primary,
+                    },
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  <Text style={{ color: colors.white, fontSize: 13, fontWeight: "700" }}>
+                    Войти
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+
+            {/* Список отзывов */}
+            {reviews.length === 0 ? (
+              <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
+                Пока нет отзывов. Будьте первым — поделитесь, как прошло общение.
+              </Text>
+            ) : (
+              <View style={{ gap: 14 }}>
+                {reviews.map((r, idx) => (
+                  <View
+                    key={r.id}
+                    style={{
+                      paddingBottom: idx === reviews.length - 1 ? 0 : 14,
+                      borderBottomWidth: idx === reviews.length - 1 ? 0 : 1,
+                      borderBottomColor: colors.border,
+                    }}
+                  >
+                    <View
+                      className="flex-row items-center justify-between"
+                      style={{ marginBottom: 4 }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text }}>
+                        {r.authorName}
+                      </Text>
+                      <View className="flex-row items-center" style={{ gap: 2 }}>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            size={11}
+                            color={colors.warning ?? "#f5a623"}
+                            fill={n <= r.rating ? colors.warning ?? "#f5a623" : "transparent"}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 19 }}>
+                      {r.text}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
+                      {new Date(r.createdAt).toLocaleDateString("ru-RU", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </Card>
+
           {/* Био-заглушка */}
           <Card>
             <Text
@@ -366,50 +643,18 @@ export default function FnsStaffPage() {
                 {staff.department ?? "В этой инспекции"} · ещё {staff.colleagues.length}
               </Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-                {staff.colleagues.map((c) => {
-                  const cName = `${c.lastName} ${c.firstName} ${c.middleName ?? ""}`.trim();
-                  return (
-                    <Pressable
-                      key={c.id}
-                      accessibilityRole="link"
-                      accessibilityLabel={`Профиль ${cName}`}
-                      onPress={() => router.push(`/fns-staff/${c.id}` as never)}
+                {staff.colleagues.map((c) => (
+                  <View
+                    key={c.id}
+                    style={{
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      style={({ pressed }) => [
-                        {
-                          flexBasis: (isDesktop ? "calc(50% - 6px)" : "100%") as any,
-                          flexGrow: 1,
-                          backgroundColor: colors.white,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          borderRadius: 10,
-                          padding: 12,
-                          flexDirection: "row",
-                          gap: 10,
-                          alignItems: "center",
-                        },
-                        pressed && { opacity: 0.85, borderColor: colors.primary },
-                      ]}
-                    >
-                      <Avatar name={cName} imageUrl={c.photoUrl ?? undefined} size="sm" />
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text
-                          style={{ fontSize: 13, fontWeight: "700", color: colors.text }}
-                          numberOfLines={1}
-                        >
-                          {cName}
-                        </Text>
-                        <Text
-                          style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}
-                          numberOfLines={1}
-                        >
-                          {c.position}
-                        </Text>
-                      </View>
-                      <ArrowRight size={14} color={colors.textMuted} />
-                    </Pressable>
-                  );
-                })}
+                      flexBasis: (isDesktop ? "calc(50% - 6px)" : "100%") as any,
+                      flexGrow: 1,
+                    }}
+                  >
+                    <StaffCard staff={c} compact />
+                  </View>
+                ))}
               </View>
             </View>
           )}

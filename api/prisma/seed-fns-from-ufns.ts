@@ -32,14 +32,26 @@ interface UfnsParsed {
 
 const FILE = "/var/www/p2ptax/api/prisma/data/nalog-gov-ufns.json";
 
+// На разных страницах ФНС бывает либо «Иванов Иван Иванович» (Фамилия
+// Имя Отчество), либо «Иван Иванович Иванов». Детектируем по позиции
+// отчества (оканчивается на -вич/-вна/-ична/-ыч).
+function isPatronymic(s: string): boolean {
+  return /(вич|вна|ична|ыч)$/i.test(s);
+}
+
 function splitFullName(raw: string): { firstName: string; lastName: string; middleName: string | null } | null {
   const parts = raw.trim().split(/\s+/).filter(Boolean);
   if (parts.length < 2) return null;
-  return {
-    lastName: parts[0],
-    firstName: parts[1],
-    middleName: parts[2] ?? null,
-  };
+  if (parts.length === 2) {
+    return { lastName: parts[0], firstName: parts[1], middleName: null };
+  }
+  // 3 слова: определяем порядок по отчеству.
+  if (isPatronymic(parts[1])) {
+    // «Имя Отчество Фамилия» — pos[0]=имя, pos[1]=отчество, pos[2]=фамилия
+    return { firstName: parts[0], middleName: parts[1], lastName: parts[2] };
+  }
+  // По умолчанию «Фамилия Имя Отчество».
+  return { lastName: parts[0], firstName: parts[1], middleName: parts[2] };
 }
 
 async function main() {

@@ -58,31 +58,59 @@ async function fetchPage(url: string): Promise<{ html: string; status: number }>
 }
 
 function parseSubdivisions(html: string): UfnsParsed["departments"] {
-  let s = html;
-  s = s.replace(/<script[^>]*>[\s\S]*?<\/script>/g, "");
+  // Принципиально парсим структурно, по h6-заголовкам.
+  // Структура страницы УФНС:
+  //   <h6>Название отдела</h6>
+  //   ... контент карточки ...
+  //   ↑ К началу страницы (или Начальник: ФИО)
+  //   <h6>Следующий отдел</h6>
+  //
+  // Стратегия: достаём все <h6> с «Отдел…» и для каждого ищем
+  // ближайший «Начальник: ФИО» в HTML после этого h6 и до следующего
+  // h6 (это гарантирует, что описание следующего отдела не утечёт).
+  let s = html.replace(/<script[^>]*>[\s\S]*?<\/script>/g, "");
   s = s.replace(/<style[^>]*>[\s\S]*?<\/style>/g, "");
-  s = s.replace(/<[^>]+>/g, " ");
-  s = s.replace(/\s+/g, " ");
-  // Якорь «↑ К началу страницы Начальник:» — это конец карточки отдела.
-  // Перед стрелкой идёт название отдела (с возможным мусором от
-  // предыдущей карточки), после ФИО — начальник.
-  const re = /(Отдел[^↑]{2,400}?)\s*↑\s*К\s+началу\s+страницы\s*Начальник:\s+([А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+)/g;
+
+  // Соберём все позиции заголовков (h2/h3/h6 — на разных страницах
+  // ФНС используют разные уровни). Беру h2-h6 со словом «отдел».
+  const hxRe = /<h[2-6][^>]*>\s*([^<]+?)\s*<\/h[2-6]>/g;
+  const h6s: { title: string; start: number; end: number }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = hxRe.exec(s)) !== null) {
+    h6s.push({ title: m[1].trim(), start: m.index, end: hxRe.lastIndex });
+  }
+
+  // Для каждого h6 со словом «отдел» (любого регистра) найдём
+  // ближайший «Начальник: ФИО» в куске до следующего h6.
   const out: UfnsBlock[] = [];
   const seen = new Set<string>();
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(s)) !== null) {
-    let dept = m[1].trim();
-    // Берём только ПОСЛЕДНИЙ "Отдел..." в строке — захватом могло
-    // зацепить хвост от предыдущей карточки («…отдела. Отдел Х»).
-    const lastIdx = dept.lastIndexOf("Отдел");
-    if (lastIdx > 0) dept = dept.slice(lastIdx);
-    // Чистим точку «...отдела.» и trailing пробелы.
-    dept = dept.replace(/\s+$/, "").replace(/\.$/, "").trim();
-    const chief = m[2].trim();
-    const key = chief; // дедуп по ФИО
+  const chiefRe = /Начальник:\s*<\/[^>]+>\s*<[^>]+>\s*([А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+)?)\s*</;
+  // Альтернатива — текстом, без HTML тегов.
+  const chiefReText = /Начальник:\s+([А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+)?)/;
+
+  for (let i = 0; i < h6s.length; i++) {
+    const h = h6s[i];
+    if (!/отдел|управление|инспекция|сектор/i.test(h.title)) continue;
+    // Внутренние «Контакты»-h6 — это вложенный заголовок, пропускаем.
+    if (/^(Контакты|Деятельность|Кабинет)$/i.test(h.title)) continue;
+
+    const segmentEnd = i + 1 < h6s.length ? h6s[i + 1].start : s.length;
+    const segment = s.slice(h.end, segmentEnd);
+
+    // Пробуем сначала HTML-структурированный вариант, потом текстовый.
+    let chief: string | null = null;
+    const m1 = segment.match(chiefRe);
+    if (m1) chief = m1[1].trim();
+    if (!chief) {
+      const cleanText = segment.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+      const m2 = cleanText.match(chiefReText);
+      if (m2) chief = m2[1].trim();
+    }
+    if (!chief) continue;
+    const key = chief;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ department: dept, chief });
+    out.push({ department: h.title, chief });
   }
   return out;
 }

@@ -36,6 +36,7 @@ import HowItWorksFlow from "@/components/landing/HowItWorksFlow";
 import FooterSection from "@/components/landing/FooterSection";
 import FnsLogo from "@/components/fns/FnsLogo";
 import ReportFnsModal from "@/components/fns/ReportFnsModal";
+import StaffCard from "@/components/fns/StaffCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTypedRouter } from "@/lib/navigation";
 import { api } from "@/lib/api";
@@ -77,6 +78,8 @@ interface StaffMember {
   phone: string | null;
   email: string | null;
   photoUrl: string | null;
+  cachedAvgRating?: number | null;
+  cachedReviewsCount?: number | null;
 }
 
 interface SpecialistRow {
@@ -815,69 +818,18 @@ export default function FnsDetailPage() {
                         gap: 12,
                       }}
                     >
-                      {members.map((s) => {
-                        const fullName = `${s.lastName} ${s.firstName} ${s.middleName ?? ""}`.trim();
-                        return (
-                          <Pressable
-                            key={s.id}
-                            accessibilityRole="link"
-                            accessibilityLabel={`Профиль сотрудника ${fullName}`}
-                            onPress={() => router.push(`/fns-staff/${s.id}` as never)}
+                      {members.map((s) => (
+                        <View
+                          key={s.id}
+                          style={{
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            style={({ pressed }) => [
-                              {
-                                flexBasis: (isDesktop ? "calc(50% - 6px)" : "100%") as any,
-                                flexGrow: 1,
-                                backgroundColor: colors.white,
-                                borderWidth: 1,
-                                borderColor: colors.border,
-                                borderRadius: 12,
-                                padding: 14,
-                                gap: 8,
-                              },
-                              pressed && { opacity: 0.85, borderColor: colors.primary },
-                            ]}
-                          >
-                            <View
-                              className="flex-row items-start"
-                              style={{ gap: 12 }}
-                            >
-                              <Avatar name={fullName} imageUrl={s.photoUrl ?? undefined} size="md" />
-                              <View style={{ flex: 1, minWidth: 0 }}>
-                                <Text
-                                  style={{ fontSize: 14, fontWeight: "700", color: colors.text }}
-                                  numberOfLines={2}
-                                >
-                                  {fullName}
-                                </Text>
-                                <Text
-                                  style={{ fontSize: 12, color: colors.primary, marginTop: 2, fontWeight: "600" }}
-                                  numberOfLines={2}
-                                >
-                                  {s.position}
-                                </Text>
-                              </View>
-                            </View>
-                            <View style={{ gap: 6, paddingLeft: 4 }}>
-                              {s.phone && (
-                                <CopyableValue
-                                  value={s.phone}
-                                  oneLine
-                                  icon={<Text style={{ fontSize: 12 }}>📞</Text>}
-                                />
-                              )}
-                              {s.email && (
-                                <CopyableValue
-                                  value={s.email}
-                                  oneLine
-                                  primaryColor
-                                  icon={<Mail size={12} color={colors.textMuted} />}
-                                />
-                              )}
-                            </View>
-                          </Pressable>
-                        );
-                      })}
+                            flexBasis: (isDesktop ? "calc(50% - 6px)" : "100%") as any,
+                            flexGrow: 1,
+                          }}
+                        >
+                          <StaffCard staff={s} />
+                        </View>
+                      ))}
                     </View>
                   </View>
                 ));
