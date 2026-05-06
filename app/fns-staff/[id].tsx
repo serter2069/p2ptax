@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TextInput,
   useWindowDimensions,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -18,7 +19,9 @@ import {
   Clock,
   ArrowRight,
   Star,
-  Crown,
+  Share2,
+  Copy,
+  Check,
 } from "lucide-react-native";
 import Avatar from "@/components/ui/Avatar";
 import Card from "@/components/ui/Card";
@@ -95,6 +98,7 @@ export default function FnsStaffPage() {
   const [formText, setFormText] = useState<string>("");
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const load = useCallback(async () => {
     if (!staffId) return;
@@ -160,6 +164,32 @@ export default function FnsStaffPage() {
     ? `${staff.lastName} ${staff.firstName} ${staff.middleName ?? ""}`.trim()
     : "";
 
+  // Поделиться: на десктоп-вебе всегда clipboard, на мобиле — Web Share API.
+  const handleShare = useCallback(async () => {
+    if (!staff) return;
+    const url =
+      Platform.OS === "web" && typeof window !== "undefined"
+        ? window.location.href
+        : `https://p2ptax.smartlaunchhub.com/fns-staff/${staff.id}`;
+    const title = `${fullName} — ${staff.fns.name}`;
+    const text = `${fullName}, ${staff.position}${staff.department ? ` (${staff.department})` : ""} — ${staff.fns.name}.`;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const navigatorAny = typeof navigator !== "undefined" ? (navigator as any) : null;
+      const useNative =
+        Platform.OS !== "web" || (isDesktop ? false : !!navigatorAny?.share);
+      if (useNative && navigatorAny?.share) {
+        await navigatorAny.share({ title, text, url });
+      } else if (navigatorAny?.clipboard?.writeText) {
+        await navigatorAny.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      /* user cancelled */
+    }
+  }, [staff, fullName, isDesktop]);
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
@@ -224,29 +254,81 @@ export default function FnsStaffPage() {
             paddingBottom: 40,
           }}
         >
-          {/* Back */}
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel="Назад к ИФНС"
-            onPress={() => router.push(`/fns/${staff.fns.id}` as never)}
-            style={({ pressed }) => [
-              {
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                paddingVertical: 6,
-                paddingHorizontal: 10,
-                borderRadius: 10,
-                alignSelf: "flex-start",
-              },
-              pressed && { backgroundColor: colors.accentSoft },
-            ]}
+          {/* Top bar — back + share */}
+          <View
+            className="flex-row items-center justify-between"
+            style={{ gap: 8 }}
           >
-            <ArrowLeft size={16} color={colors.textSecondary} />
-            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-              К {staff.fns.name}
-            </Text>
-          </Pressable>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Назад к ИФНС"
+              onPress={() => router.push(`/fns/${staff.fns.id}` as never)}
+              style={({ pressed }) => [
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  paddingVertical: 6,
+                  paddingHorizontal: 10,
+                  borderRadius: 10,
+                  flexShrink: 1,
+                },
+                pressed && { backgroundColor: colors.accentSoft },
+              ]}
+            >
+              <ArrowLeft size={16} color={colors.textSecondary} />
+              <Text
+                style={{ color: colors.textSecondary, fontSize: 13 }}
+                numberOfLines={1}
+              >
+                К {staff.fns.name}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                isDesktop && Platform.OS === "web"
+                  ? "Скопировать ссылку"
+                  : "Поделиться ссылкой на профиль сотрудника"
+              }
+              onPress={handleShare}
+              style={({ pressed }) => [
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.white,
+                  flexShrink: 0,
+                },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              {shareCopied ? (
+                <>
+                  <Check size={14} color={colors.success} />
+                  <Text style={{ color: colors.success, fontSize: 13, fontWeight: "600" }}>
+                    Скопировано
+                  </Text>
+                </>
+              ) : (
+                <>
+                  {isDesktop && Platform.OS === "web" ? (
+                    <Copy size={14} color={colors.textSecondary} />
+                  ) : (
+                    <Share2 size={14} color={colors.textSecondary} />
+                  )}
+                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                    {isDesktop && Platform.OS === "web" ? "Копировать ссылку" : "Поделиться"}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          </View>
 
           {/* Hero — про сотрудника. Информация о ИФНС вынесена в
               отдельный блок «Место работы» ниже. */}
@@ -338,57 +420,29 @@ export default function FnsStaffPage() {
             </View>
           </Card>
 
-          {/* Место работы — отдельным блоком, крупно с гербом ФНС. */}
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={`Перейти на страницу ${staff.fns.name}`}
-            onPress={() => router.push(`/fns/${staff.fns.id}` as never)}
-            style={({ pressed }) => [
-              {
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 16,
-                paddingVertical: isDesktop ? 18 : 14,
-                paddingHorizontal: isDesktop ? 20 : 14,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: colors.white,
-              },
-              pressed && { opacity: 0.85, borderColor: colors.primary },
-            ]}
-          >
-            <FnsLogo name={staff.fns.name} cityName={staff.fns.city.name} size={isDesktop ? "lg" : "md"} />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: colors.textMuted,
-                  fontWeight: "700",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                }}
-              >
-                Место работы · код {staff.fns.code}
-              </Text>
-              <Text
-                style={{
-                  fontSize: isDesktop ? 18 : 16,
-                  color: colors.text,
-                  fontWeight: "700",
-                  marginTop: 4,
-                  lineHeight: isDesktop ? 24 : 22,
-                }}
-                numberOfLines={3}
-              >
-                {staff.fns.name}
-              </Text>
-              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>
-                {staff.fns.city.name}
-              </Text>
-            </View>
-            <ArrowRight size={18} color={colors.textMuted} />
-          </Pressable>
+          {/* О сотруднике — сразу под Hero. Это страница про человека,
+              био должно идти первым делом. */}
+          <Card>
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "700",
+                color: colors.textMuted,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 8,
+              }}
+            >
+              О сотруднике
+            </Text>
+            <Text style={{ fontSize: 14, color: colors.text, lineHeight: 21 }}>
+              {fullName} — государственный налоговый инспектор, занимает
+              должность «{staff.position.toLowerCase()}»
+              {staff.department ? ` в подразделении «${staff.department}»` : ""}{" "}
+              в составе {staff.fns.name}. Подробное досье и часы приёма
+              появятся после публикации внутренних регламентов инспекции.
+            </Text>
+          </Card>
 
           {/* Контакты */}
           <Card>
@@ -615,28 +669,51 @@ export default function FnsStaffPage() {
             )}
           </Card>
 
-          {/* Био-заглушка */}
-          <Card>
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: "700",
-                color: colors.textMuted,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                marginBottom: 8,
-              }}
-            >
-              О сотруднике
-            </Text>
-            <Text style={{ fontSize: 14, color: colors.text, lineHeight: 21 }}>
-              {fullName} — государственный налоговый инспектор, занимает
-              должность «{staff.position.toLowerCase()}»
-              {staff.department ? ` в подразделении «${staff.department}»` : ""}{" "}
-              в составе {staff.fns.name}. Подробное досье и часы приёма
-              появятся после публикации внутренних регламентов инспекции.
-            </Text>
-          </Card>
+          {/* Место работы — компактный баннер с гербом ФНС перед коллегами. */}
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={`Перейти на страницу ${staff.fns.name}`}
+            onPress={() => router.push(`/fns/${staff.fns.id}` as never)}
+            style={({ pressed }) => [
+              {
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 14,
+                paddingVertical: 14,
+                paddingHorizontal: 14,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+              },
+              pressed && { opacity: 0.85, borderColor: colors.primary },
+            ]}
+          >
+            <FnsLogo name={staff.fns.name} cityName={staff.fns.city.name} size="md" />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: colors.textMuted,
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                }}
+              >
+                Место работы · код {staff.fns.code}
+              </Text>
+              <Text
+                style={{ fontSize: 14, color: colors.text, fontWeight: "700", marginTop: 2, lineHeight: 19 }}
+                numberOfLines={2}
+              >
+                {staff.fns.name}
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                {staff.fns.city.name}
+              </Text>
+            </View>
+            <ArrowRight size={16} color={colors.textMuted} />
+          </Pressable>
 
           {/* Коллеги по отделу */}
           {staff.colleagues.length > 0 && (
