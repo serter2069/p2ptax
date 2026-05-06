@@ -16,9 +16,11 @@ function normalizeQuery(q: string): string {
 }
 
 // GET /api/cities — list all cities (with offices count)
+// Cap=1000: Россия ≈85 субъектов + крупные города → текущая база 209,
+// клиенту нужен полный список для дропдаунов фильтра/биллинга.
 router.get("/cities", async (req: Request, res: Response) => {
   try {
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 100));
+    const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit as string) || 1000));
     const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
     const [cities, total] = await Promise.all([

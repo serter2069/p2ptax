@@ -487,7 +487,10 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
     }
 
     const listHeader = (
-      <View>
+      // zIndex поднимаем, чтобы поповеры внутри фильтра (дропдаун
+      // городов/ИФНС) перекрывали карточки списка ниже — иначе они
+      // на web заезжают под карточки.
+      <View style={{ position: "relative", zIndex: 100 }}>
         {title && <PageTitle title={title} subtitle={subtitle} />}
         {mode === "favorites" && hasFilters && (
           <View style={{ paddingHorizontal: 16, paddingBottom: 4, alignItems: "flex-end" }}>

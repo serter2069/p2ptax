@@ -204,7 +204,7 @@ export default function BillingTab({
   }, [topupSuccess, refresh]);
 
   useEffect(() => {
-    apiGet<{ items: CityRow[] }>("/api/cities?limit=100")
+    apiGet<{ items: CityRow[] }>("/api/cities?limit=1000")
       .then((res) => setCities(res.items))
       .catch(() => undefined);
   }, []);

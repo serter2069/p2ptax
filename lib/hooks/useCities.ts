@@ -18,7 +18,7 @@ export function useCities() {
   useEffect(() => {
     if (_cache) return;
     if (!_inflight) {
-      _inflight = api<{ items: City[] }>("/api/cities", { noAuth: true })
+      _inflight = api<{ items: City[] }>("/api/cities?limit=1000", { noAuth: true })
         .then((r) => { _cache = r.items; return r.items; })
         .catch(() => { _inflight = null; return [] as City[]; });
     }

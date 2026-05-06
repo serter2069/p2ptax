@@ -120,14 +120,17 @@ export default function SpecialistFilter({
   );
 
   return (
-    <View>
+    // Внешний View поднимаем над карточками списка: фильтр живёт в
+    // ListHeaderComponent у FlatList, карточки — его соседи. Поповеру
+    // нужно перекрывать карточки, а не уезжать под них.
+    <View style={{ position: "relative", zIndex: Z.POPOVER }}>
       {/* Card-style wrapper matches the /requests catalog filter — same
           rounded white box with a border. Both catalogs share visual
           language so users don't perceive 'specialists' and 'requests'
           as differently-shaped UIs. */}
       <View
         className="bg-white border border-border rounded-2xl mt-2 mb-3 px-4 py-3"
-        style={{ zIndex: Z.STICKY }}
+        style={{ position: "relative", zIndex: Z.POPOVER }}
       >
         <CityFnsServicePicker
           mode="entry"
