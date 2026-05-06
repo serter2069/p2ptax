@@ -121,15 +121,13 @@ function formatActivatedAt(iso: string): string {
 function txKindLabel(kind: string): string {
   switch (kind) {
     case "bind_plan":
-      return "Привязка карты + день 1";
-    case "bind_pending":
-      return "Платёж в обработке";
+      return "Подключение тарифа";
     case "plan_switch":
-      return "Смена тарифа — день 1";
+      return "Смена тарифа";
     case "plan_cancelled":
       return "Тариф отменён";
-    case "daily_charge":
-      return "Ежедневное списание";
+    case "monthly_charge":
+      return "Ежемесячное списание";
     case "charge_failed":
       return "Списание отклонено";
     case "card_unbound":
@@ -138,6 +136,10 @@ function txKindLabel(kind: string): string {
       return kind;
   }
 }
+
+// Old per-day model — скрываем из истории, чтобы не путать
+// пользователей пачкой 16,67 ₽-записей и «платежей в обработке».
+const HIDDEN_TX_KINDS = new Set(["daily_charge", "bind_pending"]);
 
 /**
  * PRO tab — per-account plan + per-FNS slots.
@@ -160,6 +162,7 @@ export default function BillingTab({
   const [busyFnsId, setBusyFnsId] = useState<string | null>(null);
   const [unbindBusy, setUnbindBusy] = useState(false);
   const [showPlanSwitcher, setShowPlanSwitcher] = useState(false);
+  const [showAddSearch, setShowAddSearch] = useState(false);
   const [trimDialog, setTrimDialog] = useState<{
     plan: PlanRow;
     keep: ActiveVipFns[];
@@ -745,11 +748,14 @@ export default function BillingTab({
   // ─── has plan: management screen ────────────────────────────────
   const plan = data.plan!;
   const slotsLeft = data.slotsLimit - data.slotsUsed;
+  const visibleTxs = (txs ?? []).filter((t) => !HIDDEN_TX_KINDS.has(t.kind));
 
   return (
     <View style={{ gap: 16 }}>
-      {/* Plan header */}
+      {/* Главная карточка тарифа: всё управление в одном блоке —
+          заголовок → слоты → активные ИФНС → подключить → действия. */}
       <Card>
+        {/* Header */}
         <View className="flex-row items-center justify-between" style={{ gap: 12 }}>
           <View className="flex-row items-center" style={{ gap: 10, flex: 1 }}>
             <View
@@ -817,7 +823,288 @@ export default function BillingTab({
           </View>
         </View>
 
-        <View className="flex-row" style={{ gap: 8, marginTop: 16 }}>
+        {/* Active priority FNS — встроены в карточку тарифа. */}
+        {data.activeVipFns.length > 0 && (
+          <View
+            style={{
+              marginTop: 16,
+              paddingTop: 12,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "700",
+                color: colors.textMuted,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 8,
+              }}
+            >
+              Мои приоритетные ИФНС
+            </Text>
+            {data.activeVipFns.map((sub, idx) => {
+              const busy = busyFnsId === sub.fnsId;
+              return (
+                <View
+                  key={sub.fnsId}
+                  className="flex-row items-center"
+                  style={{
+                    gap: 10,
+                    paddingTop: idx === 0 ? 4 : 10,
+                    paddingBottom: idx === data.activeVipFns.length - 1 ? 0 : 10,
+                    borderTopWidth: idx === 0 ? 0 : 1,
+                    borderTopColor: colors.border,
+                  }}
+                >
+                  <CheckCircle2 size={16} color={colors.success} style={{ flexShrink: 0 }} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text
+                      style={{ fontSize: 13, fontWeight: "600", color: colors.text }}
+                      numberOfLines={1}
+                    >
+                      {sub.fnsName}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 1 }}>
+                      {sub.cityName} · код {sub.fnsCode} · с {formatActivatedAt(sub.activatedAt)}
+                    </Text>
+                  </View>
+                  {busy ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Отключить приоритет по ${sub.fnsName}`}
+                      onPress={() => handleRemoveFns(sub)}
+                      style={({ pressed }) => [
+                        {
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          backgroundColor: colors.white,
+                        },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                    >
+                      <X size={12} color={colors.textSecondary} />
+                    </Pressable>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Подключить ИФНС — раскрывающийся блок поиска. */}
+        <View
+          style={{
+            marginTop: 16,
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+          }}
+        >
+          {!showAddSearch ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Подключить приоритет по ИФНС"
+              onPress={() => setShowAddSearch(true)}
+              disabled={slotsLeft <= 0}
+              style={({ pressed }) => [
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderStyle: "dashed",
+                  borderColor: slotsLeft > 0 ? colors.primary : colors.border,
+                  backgroundColor: colors.white,
+                },
+                pressed && { opacity: 0.7 },
+                slotsLeft <= 0 && { opacity: 0.6 },
+              ]}
+            >
+              <Plus size={14} color={slotsLeft > 0 ? colors.primary : colors.textMuted} />
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "600",
+                  color: slotsLeft > 0 ? colors.primary : colors.textMuted,
+                }}
+              >
+                {slotsLeft > 0
+                  ? `Подключить ИФНС${data.activeVipFns.length === 0 ? "" : " ещё"}`
+                  : "Лимит тарифа исчерпан"}
+              </Text>
+            </Pressable>
+          ) : (
+            <View>
+              <View className="flex-row items-center justify-between" style={{ marginBottom: 10 }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text }}>
+                  Подключить приоритет
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Скрыть поиск"
+                  onPress={() => {
+                    setShowAddSearch(false);
+                    setQ("");
+                    setCityFilterId(null);
+                  }}
+                  style={({ pressed }) => [
+                    { padding: 4 },
+                    pressed && { opacity: 0.6 },
+                  ]}
+                >
+                  <X size={16} color={colors.textMuted} />
+                </Pressable>
+              </View>
+
+              <View
+                className="flex-row items-center"
+                style={{
+                  gap: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 10,
+                  backgroundColor: colors.white,
+                  marginBottom: 10,
+                }}
+              >
+                <Search size={16} color={colors.textMuted} />
+                <TextInput
+                  value={q}
+                  onChangeText={setQ}
+                  placeholder="Код, имя ИФНС или город"
+                  placeholderTextColor={colors.placeholder}
+                  autoFocus
+                  style={{
+                    flex: 1,
+                    fontSize: 14,
+                    color: colors.text,
+                    paddingVertical: 4,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    outlineWidth: 0 as any,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    outlineStyle: "none" as any,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    borderStyle: "none" as any,
+                  }}
+                />
+              </View>
+
+              {cityChips.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 6, paddingBottom: 10 }}
+                >
+                  <CityChip
+                    label="Все города"
+                    active={cityFilterId == null}
+                    onPress={() => setCityFilterId(null)}
+                  />
+                  {cityChips.map((c) => (
+                    <CityChip
+                      key={c.id}
+                      label={c.name}
+                      active={cityFilterId === c.id}
+                      onPress={() => setCityFilterId(cityFilterId === c.id ? null : c.id)}
+                    />
+                  ))}
+                </ScrollView>
+              )}
+
+              {searchLoading ? (
+                <View className="items-center py-6">
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              ) : searchResults.length === 0 ? (
+                <Text style={{ fontSize: 13, color: colors.textSecondary, paddingVertical: 8 }}>
+                  {q || cityFilterId
+                    ? "По вашему запросу ничего не найдено."
+                    : "Начните вводить код ИФНС или название города."}
+                </Text>
+              ) : (
+                searchResults.map((item, idx) => {
+                  const busy = busyFnsId === item.fnsId;
+                  return (
+                    <View
+                      key={item.fnsId}
+                      className="flex-row items-center"
+                      style={{
+                        gap: 10,
+                        paddingTop: idx === 0 ? 4 : 10,
+                        paddingBottom: 10,
+                        borderTopWidth: idx === 0 ? 0 : 1,
+                        borderTopColor: colors.border,
+                      }}
+                    >
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text
+                          style={{ fontSize: 13, fontWeight: "600", color: colors.text }}
+                          numberOfLines={1}
+                        >
+                          {item.fnsName}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 1 }}>
+                          {item.cityName} · код {item.fnsCode}
+                        </Text>
+                      </View>
+                      {busy ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Подключить приоритет по ${item.fnsName}`}
+                          onPress={() => handleSubscribeFns(item.fnsId)}
+                          style={({ pressed }) => [
+                            {
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 4,
+                              paddingHorizontal: 10,
+                              paddingVertical: 6,
+                              borderRadius: 8,
+                              backgroundColor: colors.primary,
+                            },
+                            pressed && { opacity: 0.85 },
+                          ]}
+                        >
+                          <Plus size={12} color={colors.white} />
+                          <Text style={{ color: colors.white, fontSize: 12, fontWeight: "600" }}>
+                            Подключить
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Действия — отделяем от списков визуально. */}
+        <View
+          className="flex-row"
+          style={{
+            gap: 8,
+            marginTop: 16,
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+          }}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Сменить тариф"
@@ -953,222 +1240,13 @@ export default function BillingTab({
         </Card>
       )}
 
-      {/* Active VIP FNS */}
-      {data.activeVipFns.length > 0 && (
-        <Card>
-          <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
-            Мои приоритетные ИФНС
-          </Text>
-          <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
-            По этим ИФНС email приходит мгновенно
-          </Text>
-          {data.activeVipFns.map((sub, idx) => {
-            const busy = busyFnsId === sub.fnsId;
-            return (
-              <View
-                key={sub.fnsId}
-                className="flex-row items-center"
-                style={{
-                  gap: 12,
-                  paddingTop: idx === 0 ? 0 : 12,
-                  paddingBottom: 12,
-                  borderTopWidth: idx === 0 ? 0 : 1,
-                  borderTopColor: colors.border,
-                }}
-              >
-                <CheckCircle2 size={18} color={colors.success} style={{ flexShrink: 0 }} />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    style={{ fontSize: 14, fontWeight: "600", color: colors.text }}
-                    numberOfLines={1}
-                  >
-                    {sub.fnsName}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                    {sub.cityName} · код {sub.fnsCode} · с {formatActivatedAt(sub.activatedAt)}
-                  </Text>
-                </View>
-                {busy ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Отключить приоритет по ${sub.fnsName}`}
-                    onPress={() => handleRemoveFns(sub)}
-                    style={({ pressed }) => [
-                      {
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 4,
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
-                        borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        backgroundColor: colors.white,
-                      },
-                      pressed && { opacity: 0.7 },
-                    ]}
-                  >
-                    <X size={12} color={colors.textSecondary} />
-                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>
-                      Убрать
-                    </Text>
-                  </Pressable>
-                )}
-              </View>
-            );
-          })}
-        </Card>
-      )}
-
-      {/* Add ИФНС */}
-      <Card>
-        <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
-          Подключить приоритет по ИФНС
-        </Text>
-        <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
-          {slotsLeft > 0
-            ? `Свободно ${slotsLeft} из ${data.slotsLimit}. Поиск по любой ИФНС России.`
-            : `Лимит тарифа исчерпан (${data.slotsUsed}/${data.slotsLimit}). Чтобы добавить ещё — повысьте тариф или уберите одну из текущих.`}
-        </Text>
-
-        {/* Search input */}
-        <View
-          className="flex-row items-center"
-          style={{
-            gap: 8,
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 10,
-            backgroundColor: colors.white,
-            marginBottom: 12,
-            opacity: slotsLeft <= 0 ? 0.5 : 1,
-          }}
-        >
-          <Search size={16} color={colors.textMuted} />
-          <TextInput
-            value={q}
-            onChangeText={setQ}
-            placeholder="Код, имя ИФНС или город"
-            placeholderTextColor={colors.placeholder}
-            editable={slotsLeft > 0}
-            style={{
-              flex: 1,
-              fontSize: 14,
-              color: colors.text,
-              paddingVertical: 4,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              outlineWidth: 0 as any,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              outlineStyle: "none" as any,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              borderStyle: "none" as any,
-            }}
-          />
-        </View>
-
-        {/* City filter chips */}
-        {slotsLeft > 0 && cityChips.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 6, paddingBottom: 12 }}
-          >
-            <CityChip
-              label="Все города"
-              active={cityFilterId == null}
-              onPress={() => setCityFilterId(null)}
-            />
-            {cityChips.map((c) => (
-              <CityChip
-                key={c.id}
-                label={c.name}
-                active={cityFilterId === c.id}
-                onPress={() => setCityFilterId(cityFilterId === c.id ? null : c.id)}
-              />
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Results */}
-        {slotsLeft <= 0 ? null : searchLoading ? (
-          <View className="items-center py-6">
-            <ActivityIndicator size="small" color={colors.primary} />
-          </View>
-        ) : searchResults.length === 0 ? (
-          <Text style={{ fontSize: 13, color: colors.textSecondary, paddingVertical: 8 }}>
-            {q || cityFilterId
-              ? "По вашему запросу ничего не найдено."
-              : "По всем доступным ИФНС приоритет уже подключён."}
-          </Text>
-        ) : (
-          searchResults.map((item, idx) => {
-            const busy = busyFnsId === item.fnsId;
-            return (
-              <View
-                key={item.fnsId}
-                className="flex-row items-center"
-                style={{
-                  gap: 12,
-                  paddingTop: idx === 0 ? 0 : 12,
-                  paddingBottom: 12,
-                  borderTopWidth: idx === 0 ? 0 : 1,
-                  borderTopColor: colors.border,
-                }}
-              >
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    style={{ fontSize: 14, fontWeight: "600", color: colors.text }}
-                    numberOfLines={1}
-                  >
-                    {item.fnsName}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                    {item.cityName} · код {item.fnsCode}
-                  </Text>
-                </View>
-                {busy ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Подключить приоритет по ${item.fnsName}`}
-                    onPress={() => handleSubscribeFns(item.fnsId)}
-                    style={({ pressed }) => [
-                      {
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 10,
-                        backgroundColor: colors.primary,
-                      },
-                      pressed && { opacity: 0.85 },
-                    ]}
-                  >
-                    <Plus size={14} color={colors.white} />
-                    <Text style={{ color: colors.white, fontSize: 13, fontWeight: "600" }}>
-                      Подключить
-                    </Text>
-                  </Pressable>
-                )}
-              </View>
-            );
-          })
-        )}
-      </Card>
-
-      {/* History */}
-      {txs && txs.length > 0 && (
+      {/* History — без устаревших ежедневных списаний и pending-платежей. */}
+      {visibleTxs.length > 0 && (
         <Card>
           <Text className="text-base font-semibold mb-3" style={{ color: colors.text }}>
             История операций
           </Text>
-          {txs.map((t) => {
+          {visibleTxs.map((t) => {
             const isFailed = t.kind === "charge_failed";
             return (
               <View
