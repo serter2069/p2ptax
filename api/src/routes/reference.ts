@@ -246,103 +246,6 @@ router.get("/fns/list", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/fns-staff/:id/reviews — добавить отзыв (требует auth).
-router.post(
-  "/fns-staff/:id/reviews",
-  authMiddleware,
-  async (req: Request, res: Response) => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const userId = (req as any).user?.userId as string | undefined;
-      if (!userId) {
-        res.status(401).json({ error: "Unauthorized" });
-        return;
-      }
-      const id = req.params.id as string;
-      const { rating, text } = req.body as { rating?: number; text?: string };
-      if (typeof rating !== "number" || rating < 1 || rating > 5) {
-        res.status(400).json({ error: "rating must be 1..5" });
-        return;
-      }
-      if (!text || typeof text !== "string" || text.trim().length < 10) {
-        res.status(400).json({ error: "text must be at least 10 characters" });
-        return;
-      }
-      const trimmed = text.trim().slice(0, 4000);
-
-      const staff = await prisma.fnsStaff.findUnique({ where: { id } });
-      if (!staff) {
-        res.status(404).json({ error: "staff not found" });
-        return;
-      }
-
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { firstName: true, lastName: true },
-      });
-      const authorName = [user?.firstName ?? "", user?.lastName ? `${user.lastName[0]}.` : ""]
-        .filter(Boolean)
-        .join(" ") || "Пользователь";
-
-      const review = await prisma.fnsStaffReview.create({
-        data: {
-          staffId: id,
-          userId,
-          authorName,
-          rating: Math.round(rating),
-          text: trimmed,
-          source: "user",
-        },
-        select: { id: true, authorName: true, rating: true, text: true, source: true, createdAt: true },
-      });
-
-      // Перепишем кэшированные агрегаты.
-      const agg = await prisma.fnsStaffReview.aggregate({
-        where: { staffId: id },
-        _avg: { rating: true },
-        _count: true,
-      });
-      await prisma.fnsStaff.update({
-        where: { id },
-        data: {
-          cachedAvgRating: agg._avg.rating ?? null,
-          cachedReviewsCount: agg._count,
-        },
-      });
-
-      res.json(review);
-    } catch (error) {
-      console.error("POST fns-staff/:id/reviews error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  },
-);
-
-// GET /api/fns-staff/:id/reviews — отзывы про сотрудника.
-router.get("/fns-staff/:id/reviews", async (req: Request, res: Response) => {
-  try {
-    const id = req.params.id as string;
-    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
-    const reviews = await prisma.fnsStaffReview.findMany({
-      where: { staffId: id },
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      select: {
-        id: true,
-        authorName: true,
-        rating: true,
-        text: true,
-        source: true,
-        createdAt: true,
-      },
-    });
-    res.json({ items: reviews });
-  } catch (error) {
-    console.error("fns-staff/:id/reviews error:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
 // GET /api/fns-staff/:id — публичный профиль одного сотрудника.
 router.get("/fns-staff/:id", async (req: Request, res: Response) => {
   try {
@@ -359,8 +262,6 @@ router.get("/fns-staff/:id", async (req: Request, res: Response) => {
         phone: true,
         email: true,
         photoUrl: true,
-        cachedAvgRating: true,
-        cachedReviewsCount: true,
         fns: {
           select: {
             id: true,
@@ -422,8 +323,6 @@ router.get("/fns/:id/staff", async (req: Request, res: Response) => {
         phone: true,
         email: true,
         photoUrl: true,
-        cachedAvgRating: true,
-        cachedReviewsCount: true,
       },
     });
     res.json({ items: staff });
@@ -433,32 +332,6 @@ router.get("/fns/:id/staff", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/fns/:id/reviews — отзывы по ИФНС. Сейчас отдаёт сид
-// «как с Я.Карт», когда подключим реальный источник — он же
-// продолжит работать, фильтр по source убран.
-router.get("/fns/:id/reviews", async (req: Request, res: Response) => {
-  try {
-    const id = req.params.id as string;
-    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
-    const reviews = await prisma.fnsReview.findMany({
-      where: { fnsId: id },
-      orderBy: { reviewDate: "desc" },
-      take: limit,
-      select: {
-        id: true,
-        authorName: true,
-        rating: true,
-        text: true,
-        source: true,
-        reviewDate: true,
-      },
-    });
-    res.json({ items: reviews });
-  } catch (error) {
-    console.error("fns/:id/reviews error:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 
 // GET /api/fns/:id — single FNS detail (public). Powers the /fns/[id]
 // landing page. Returns name + address + description + city + counts

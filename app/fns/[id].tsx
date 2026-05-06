@@ -78,8 +78,6 @@ interface StaffMember {
   phone: string | null;
   email: string | null;
   photoUrl: string | null;
-  cachedAvgRating?: number | null;
-  cachedReviewsCount?: number | null;
 }
 
 interface SpecialistRow {
