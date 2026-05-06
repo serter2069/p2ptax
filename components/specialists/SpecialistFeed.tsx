@@ -545,6 +545,8 @@ export default function SpecialistFeed({ mode, title, subtitle }: SpecialistFeed
           isDesktop={isDesktop}
           onHome={() => nav.routes.home()}
           onCatalog={() => nav.routes.specialists()}
+          onFnsCatalog={() => nav.any("/fns")}
+          onRequestsBoard={() => nav.any("/requests")}
           onLogin={() => nav.routes.login()}
           onCreateRequest={() => nav.routes.requestsNew()}
           isAuthenticated={false}

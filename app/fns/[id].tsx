@@ -288,6 +288,7 @@ export default function FnsDetailPage() {
           onHome={() => nav.routes.home()}
           onCatalog={() => nav.routes.specialists()}
           onFnsCatalog={() => nav.any("/fns")}
+          onRequestsBoard={() => nav.any("/requests")}
           onLogin={() => nav.routes.login()}
           onCreateRequest={() => nav.routes.requestsNew()}
           isAuthenticated={isAuthenticated}
@@ -309,6 +310,7 @@ export default function FnsDetailPage() {
           onHome={() => nav.routes.home()}
           onCatalog={() => nav.routes.specialists()}
           onFnsCatalog={() => nav.any("/fns")}
+          onRequestsBoard={() => nav.any("/requests")}
           onLogin={() => nav.routes.login()}
           onCreateRequest={() => nav.routes.requestsNew()}
           isAuthenticated={isAuthenticated}
@@ -329,6 +331,7 @@ export default function FnsDetailPage() {
         onHome={() => nav.routes.home()}
         onCatalog={() => nav.routes.specialists()}
         onFnsCatalog={() => nav.any("/fns")}
+        onRequestsBoard={() => nav.any("/requests")}
         onLogin={() => nav.routes.login()}
         onCreateRequest={() => nav.routes.requestsNew()}
         isAuthenticated={isAuthenticated}

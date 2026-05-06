@@ -27,6 +27,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import RequestCard from "@/components/RequestCard";
+import LandingHeader from "@/components/landing/LandingHeader";
 import PageTitle from "@/components/layout/PageTitle";
 import { api } from "@/lib/api";
 import { useCities } from "@/lib/hooks/useCities";
@@ -418,14 +419,19 @@ export default function RequestsFeed({
     // sibling above the FlatList — that pinned title + filters to the top
     // even though the rest of the list scrolled.
     const inlineHeader = (
-      <View>
+      // zIndex поднимаем, чтобы выпадающие списки городов/ИФНС
+      // в фильтре перекрывали карточки запросов ниже на web.
+      <View style={{ position: "relative", zIndex: Z.POPOVER }}>
         {title && <PageTitle title={title} subtitle={subtitle} />}
         {mode === "catalog" && (
           /* Card styling matches the request rows below — rounded
              border, white surface. Width comes from the FlatList
              contentContainerStyle.paddingHorizontal so filter and
              rows share the left/right edge (no extra mx-4 here). */
-          <View className="bg-white border border-border rounded-2xl mt-2 mb-3 px-4 py-3">
+          <View
+            className="bg-white border border-border rounded-2xl mt-2 mb-3 px-4 py-3"
+            style={{ position: "relative", zIndex: Z.POPOVER }}
+          >
             <CityFnsCascade
               mode="typeahead"
               value={filterValue}
@@ -549,6 +555,21 @@ export default function RequestsFeed({
 
   return (
     <SafeAreaView className="flex-1 bg-surface2" edges={safeEdges}>
+      {/* Анонимам в публичной ленте показываем тот же лэндинг-хедер,
+          что и в /specialists — каталог запросов открыт всем, header
+          даёт навигацию обратно на главную / в каталоги. */}
+      {mode === "catalog" && !isAuth && (
+        <LandingHeader
+          isDesktop={isDesktop}
+          onHome={() => nav.routes.home()}
+          onCatalog={() => nav.routes.specialists()}
+          onFnsCatalog={() => nav.any("/fns")}
+          onRequestsBoard={() => nav.any("/requests")}
+          onLogin={() => nav.routes.login()}
+          onCreateRequest={() => nav.routes.requestsNew()}
+          isAuthenticated={false}
+        />
+      )}
       {/* Title + filter strip moved INTO the FlatList header (renderContent)
           so they scroll away with the list, matching /specialists. */}
       <View className="flex-1">{renderContent()}</View>

@@ -382,6 +382,8 @@ export default function CreateRequest() {
           isDesktop={width >= 768}
           onHome={() => nav.routes.home()}
           onCatalog={() => nav.routes.specialists()}
+          onFnsCatalog={() => nav.any("/fns")}
+          onRequestsBoard={() => nav.any("/requests")}
           onLogin={() => nav.routes.login()}
           onCreateRequest={() => {}}
           isAuthenticated={false}

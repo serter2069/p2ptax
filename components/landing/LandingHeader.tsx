@@ -7,6 +7,7 @@ interface LandingHeaderProps {
   onHome: () => void;
   onCatalog: () => void;
   onFnsCatalog?: () => void;
+  onRequestsBoard?: () => void;
   onLogin: () => void;
   onCreateRequest: () => void;
   transparent?: boolean;
@@ -25,6 +26,7 @@ export default function LandingHeader({
   onHome,
   onCatalog,
   onFnsCatalog,
+  onRequestsBoard,
   onLogin,
   onCreateRequest,
   transparent = true,
@@ -74,6 +76,18 @@ export default function LandingHeader({
                   Специалисты
                 </Text>
               </Pressable>
+              {onRequestsBoard && (
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel="Лента запросов клиентов"
+                  onPress={onRequestsBoard}
+                  className="min-h-[44px] items-center justify-center px-3"
+                >
+                  <Text className="font-medium" style={{ color: colors.textSecondary, fontSize: 14 }}>
+                    Запросы
+                  </Text>
+                </Pressable>
+              )}
               {onFnsCatalog && (
                 <Pressable
                   accessibilityRole="link"
@@ -87,6 +101,18 @@ export default function LandingHeader({
                 </Pressable>
               )}
             </>
+          )}
+          {!isDesktop && onRequestsBoard && (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Лента запросов клиентов"
+              onPress={onRequestsBoard}
+              className="min-h-[44px] items-center justify-center px-2"
+            >
+              <Text className="font-medium" style={{ color: colors.textSecondary, fontSize: 13 }}>
+                Запросы
+              </Text>
+            </Pressable>
           )}
           {!isDesktop && onFnsCatalog && (
             <Pressable

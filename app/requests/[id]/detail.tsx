@@ -741,6 +741,8 @@ export default function RequestDetail() {
           isDesktop={isDesktop}
           onHome={() => nav.routes.home()}
           onCatalog={() => nav.routes.specialists()}
+          onFnsCatalog={() => nav.any("/fns")}
+          onRequestsBoard={() => nav.any("/requests")}
           onLogin={() =>
             nav.dynamic.loginWithReturnTo(`/requests/${id}/detail`)
           }

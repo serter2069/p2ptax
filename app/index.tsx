@@ -219,6 +219,7 @@ export default function LandingScreen() {
       >
         <LandingHeader
           onFnsCatalog={goFnsCatalog}
+          onRequestsBoard={() => nav.any("/requests")}
           isDesktop={isDesktop}
           onHome={goHome}
           onCatalog={goCatalog}
