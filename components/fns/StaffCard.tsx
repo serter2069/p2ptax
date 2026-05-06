@@ -1,6 +1,6 @@
 import { createElement, useState } from "react";
 import { Pressable, View, Text, Platform } from "react-native";
-import { ArrowRight, Crown, Mail, Star } from "lucide-react-native";
+import { ArrowRight, Crown, Mail } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import Avatar from "@/components/ui/Avatar";
 import CopyableValue from "@/components/ui/CopyableValue";
@@ -51,8 +51,6 @@ export interface StaffCardData {
   phone?: string | null;
   email?: string | null;
   photoUrl?: string | null;
-  cachedAvgRating?: number | null;
-  cachedReviewsCount?: number | null;
 }
 
 interface StaffCardProps {
@@ -162,19 +160,6 @@ export default function StaffCard({ staff, compact }: StaffCardProps) {
             >
               {staff.position}
             </Text>
-          )}
-          {staff.cachedAvgRating != null && staff.cachedReviewsCount != null && staff.cachedReviewsCount > 0 && (
-            <View className="flex-row items-center" style={{ gap: 4, marginTop: 4 }}>
-              <Star size={11} color={colors.warning ?? "#f5a623"} fill={colors.warning ?? "#f5a623"} />
-              <Text style={{ fontSize: 11, color: colors.textSecondary }}>
-                <Text style={{ color: colors.text, fontWeight: "600" }}>
-                  {staff.cachedAvgRating.toFixed(1)}
-                </Text>
-                {" · "}
-                {staff.cachedReviewsCount}{" "}
-                {staff.cachedReviewsCount === 1 ? "отзыв" : "отзывов"}
-              </Text>
-            </View>
           )}
         </View>
         <ArrowRight size={14} color={hovered ? colors.primary : colors.textMuted} />

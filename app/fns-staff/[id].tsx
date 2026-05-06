@@ -5,7 +5,6 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  TextInput,
   useWindowDimensions,
   Platform,
 } from "react-native";
@@ -18,7 +17,6 @@ import {
   Briefcase,
   Clock,
   ArrowRight,
-  Star,
   Share2,
   Copy,
   Check,
@@ -46,8 +44,6 @@ interface StaffDetail {
   phone: string | null;
   email: string | null;
   photoUrl: string | null;
-  cachedAvgRating?: number | null;
-  cachedReviewsCount?: number | null;
   fns: {
     id: string;
     name: string;
@@ -57,15 +53,6 @@ interface StaffDetail {
     city: { id: string; name: string; slug: string };
   };
   colleagues: StaffCardData[];
-}
-
-interface StaffReview {
-  id: string;
-  authorName: string;
-  rating: number;
-  text: string;
-  source: string;
-  createdAt: string;
 }
 
 /**
@@ -89,15 +76,8 @@ export default function FnsStaffPage() {
   const isAuthenticated = !!user;
 
   const [staff, setStaff] = useState<StaffDetail | null>(null);
-  const [reviews, setReviews] = useState<StaffReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Состояние формы отзыва (для авторизованных).
-  const [formRating, setFormRating] = useState<number>(5);
-  const [formText, setFormText] = useState<string>("");
-  const [formSubmitting, setFormSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
 
   const load = useCallback(async () => {
@@ -105,56 +85,14 @@ export default function FnsStaffPage() {
     setLoading(true);
     setError(null);
     try {
-      const [staffRes, reviewsRes] = await Promise.all([
-        api<StaffDetail>(`/api/fns-staff/${staffId}`, { noAuth: true }),
-        api<{ items: StaffReview[] }>(
-          `/api/fns-staff/${staffId}/reviews?limit=20`,
-          { noAuth: true },
-        ).catch(() => ({ items: [] })),
-      ]);
+      const staffRes = await api<StaffDetail>(`/api/fns-staff/${staffId}`, { noAuth: true });
       setStaff(staffRes);
-      setReviews(reviewsRes.items ?? []);
     } catch {
       setError("Не удалось загрузить сотрудника");
     } finally {
       setLoading(false);
     }
   }, [staffId]);
-
-  const submitReview = useCallback(async () => {
-    if (!staffId) return;
-    if (formText.trim().length < 10) {
-      setFormError("Расскажите хотя бы пару предложений (минимум 10 символов).");
-      return;
-    }
-    setFormSubmitting(true);
-    setFormError(null);
-    try {
-      const created = await api<StaffReview>(`/api/fns-staff/${staffId}/reviews`, {
-        method: "POST",
-        body: { rating: formRating, text: formText.trim() },
-      });
-      setReviews((prev) => [created, ...prev]);
-      // Локально обновим кэш-агрегаты, чтобы UI сразу отразил новый отзыв.
-      setStaff((prev) =>
-        prev
-          ? {
-              ...prev,
-              cachedReviewsCount: (prev.cachedReviewsCount ?? 0) + 1,
-              cachedAvgRating:
-                ((prev.cachedAvgRating ?? 0) * (prev.cachedReviewsCount ?? 0) + formRating) /
-                ((prev.cachedReviewsCount ?? 0) + 1),
-            }
-          : prev,
-      );
-      setFormText("");
-      setFormRating(5);
-    } catch (e) {
-      setFormError(e instanceof Error ? e.message : "Не удалось отправить отзыв.");
-    } finally {
-      setFormSubmitting(false);
-    }
-  }, [staffId, formRating, formText]);
 
   useEffect(() => {
     void load();
@@ -408,33 +346,6 @@ export default function FnsStaffPage() {
                     {staff.position}
                   </Text>
                 </View>
-                {staff.cachedAvgRating != null && staff.cachedReviewsCount != null && staff.cachedReviewsCount > 0 && (
-                  <View
-                    className="flex-row items-center"
-                    style={{
-                      gap: 4,
-                      marginTop: 12,
-                      justifyContent: isDesktop ? "flex-start" : "center",
-                    }}
-                  >
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <Star
-                        key={n}
-                        size={16}
-                        color={colors.warning ?? "#f5a623"}
-                        fill={n <= Math.round(staff.cachedAvgRating ?? 0) ? colors.warning ?? "#f5a623" : "transparent"}
-                      />
-                    ))}
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 6 }}>
-                      <Text style={{ color: colors.text, fontWeight: "800", fontSize: 15 }}>
-                        {staff.cachedAvgRating.toFixed(1)}
-                      </Text>
-                      {" · "}
-                      {staff.cachedReviewsCount}{" "}
-                      {staff.cachedReviewsCount === 1 ? "отзыв" : "отзывов"}
-                    </Text>
-                  </View>
-                )}
               </View>
             </View>
           </Card>
@@ -508,184 +419,6 @@ export default function FnsStaffPage() {
                 </View>
               )}
             </View>
-          </Card>
-
-          {/* Отзывы и рейтинг */}
-          <Card>
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: "700",
-                color: colors.textMuted,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                marginBottom: 12,
-              }}
-            >
-              Отзывы о сотруднике
-            </Text>
-
-            {/* Форма для авторизованных */}
-            {isAuthenticated ? (
-              <View
-                style={{
-                  gap: 10,
-                  paddingBottom: 16,
-                  marginBottom: 16,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colors.border,
-                }}
-              >
-                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text }}>
-                  Оставить отзыв
-                </Text>
-                <View className="flex-row items-center" style={{ gap: 4 }}>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <Pressable
-                      key={n}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Поставить ${n} ${n === 1 ? "звезду" : "звёзд"}`}
-                      onPress={() => setFormRating(n)}
-                      hitSlop={4}
-                    >
-                      <Star
-                        size={26}
-                        color={colors.warning ?? "#f5a623"}
-                        fill={n <= formRating ? colors.warning ?? "#f5a623" : "transparent"}
-                      />
-                    </Pressable>
-                  ))}
-                  <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 8 }}>
-                    {formRating} из 5
-                  </Text>
-                </View>
-                <TextInput
-                  value={formText}
-                  onChangeText={setFormText}
-                  placeholder="Расскажите про опыт общения: помогли ли разобраться, отвечает ли на запросы, что было хорошо или плохо."
-                  placeholderTextColor={colors.placeholder}
-                  multiline
-                  numberOfLines={4}
-                  style={{
-                    fontSize: 14,
-                    color: colors.text,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 10,
-                    padding: 12,
-                    minHeight: 88,
-                    textAlignVertical: "top",
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    outlineWidth: 0 as any,
-                  }}
-                />
-                {formError && (
-                  <Text style={{ fontSize: 12, color: colors.error }}>{formError}</Text>
-                )}
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={formSubmitting}
-                  onPress={submitReview}
-                  style={({ pressed }) => [
-                    {
-                      paddingVertical: 11,
-                      paddingHorizontal: 16,
-                      borderRadius: 10,
-                      backgroundColor: formSubmitting ? colors.border : colors.primary,
-                      alignItems: "center",
-                    },
-                    pressed && { opacity: 0.85 },
-                  ]}
-                >
-                  <Text style={{ color: colors.white, fontWeight: "700", fontSize: 14 }}>
-                    {formSubmitting ? "Отправляем…" : "Опубликовать отзыв"}
-                  </Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                  paddingVertical: 12,
-                  paddingHorizontal: 14,
-                  borderRadius: 10,
-                  backgroundColor: colors.surface,
-                  marginBottom: 16,
-                }}
-              >
-                <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary }}>
-                  Чтобы оставить отзыв, нужно войти.
-                </Text>
-                <Pressable
-                  accessibilityRole="link"
-                  onPress={() => nav.routes.login()}
-                  style={({ pressed }) => [
-                    {
-                      paddingVertical: 8,
-                      paddingHorizontal: 14,
-                      borderRadius: 8,
-                      backgroundColor: colors.primary,
-                    },
-                    pressed && { opacity: 0.85 },
-                  ]}
-                >
-                  <Text style={{ color: colors.white, fontSize: 13, fontWeight: "700" }}>
-                    Войти
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-
-            {/* Список отзывов */}
-            {reviews.length === 0 ? (
-              <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
-                Пока нет отзывов. Будьте первым — поделитесь, как прошло общение.
-              </Text>
-            ) : (
-              <View style={{ gap: 14 }}>
-                {reviews.map((r, idx) => (
-                  <View
-                    key={r.id}
-                    style={{
-                      paddingBottom: idx === reviews.length - 1 ? 0 : 14,
-                      borderBottomWidth: idx === reviews.length - 1 ? 0 : 1,
-                      borderBottomColor: colors.border,
-                    }}
-                  >
-                    <View
-                      className="flex-row items-center justify-between"
-                      style={{ marginBottom: 4 }}
-                    >
-                      <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text }}>
-                        {r.authorName}
-                      </Text>
-                      <View className="flex-row items-center" style={{ gap: 2 }}>
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <Star
-                            key={n}
-                            size={11}
-                            color={colors.warning ?? "#f5a623"}
-                            fill={n <= r.rating ? colors.warning ?? "#f5a623" : "transparent"}
-                          />
-                        ))}
-                      </View>
-                    </View>
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 19 }}>
-                      {r.text}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
-                      {new Date(r.createdAt).toLocaleDateString("ru-RU", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
           </Card>
 
           {/* Место работы — компактный баннер с гербом ФНС перед коллегами. */}
