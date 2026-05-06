@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { formatKladrAddress } from "../lib/kladrAddress";
 
 const router = Router();
 
@@ -216,15 +217,19 @@ router.get("/fns/list", async (req: Request, res: Response) => {
     ]);
 
     res.json({
-      items: offices.map((o) => ({
-        id: o.id,
-        name: o.name,
-        code: o.code,
-        address: o.address,
-        city: o.city,
-        specialistCount: o._count.specialistFns,
-        activeRequestCount: o._count.requests,
-      })),
+      items: offices.map((o) => {
+        const addr = formatKladrAddress(o.address);
+        return {
+          id: o.id,
+          name: o.name,
+          code: o.code,
+          address: addr?.primary ?? o.address,
+          addressSecondary: addr?.secondary ?? null,
+          city: o.city,
+          specialistCount: o._count.specialistFns,
+          activeRequestCount: o._count.requests,
+        };
+      }),
       total,
       hasMore: offset + offices.length < total,
     });
@@ -261,11 +266,13 @@ router.get("/fns/:id", async (req: Request, res: Response) => {
       res.status(404).json({ error: "FNS not found" });
       return;
     }
+    const addr = formatKladrAddress(fns.address);
     res.json({
       id: fns.id,
       name: fns.name,
       code: fns.code,
-      address: fns.address,
+      address: addr?.primary ?? fns.address,
+      addressSecondary: addr?.secondary ?? null,
       description: fns.description,
       city: fns.city,
       specialistCount: fns._count.specialistFns,

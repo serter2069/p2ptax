@@ -27,6 +27,8 @@ import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LandingHeader from "@/components/landing/LandingHeader";
+import HowItWorksFlow from "@/components/landing/HowItWorksFlow";
+import FooterSection from "@/components/landing/FooterSection";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTypedRouter } from "@/lib/navigation";
 import { api } from "@/lib/api";
@@ -37,6 +39,7 @@ interface FnsDetail {
   name: string;
   code: string;
   address: string | null;
+  addressSecondary?: string | null;
   description: string | null;
   city: { id: string; name: string; slug: string };
   specialistCount: number;
@@ -228,12 +231,11 @@ export default function FnsDetailPage() {
       <ScrollView
         contentContainerStyle={{
           paddingTop: 16,
-          paddingBottom: 40,
-          paddingHorizontal: 16,
+          paddingBottom: 0,
           alignItems: "center",
         }}
       >
-        <View style={{ width: "100%", maxWidth: isDesktop ? 880 : "100%", gap: 16 }}>
+        <View style={{ width: "100%", maxWidth: isDesktop ? 880 : "100%", gap: 16, paddingHorizontal: 16, paddingBottom: 40 }}>
           {/* Top bar — back + share */}
           <View
             className="flex-row items-center justify-between"
@@ -333,9 +335,16 @@ export default function FnsDetailPage() {
                 style={{ gap: 8 }}
               >
                 <MapPin size={14} color={colors.textMuted} style={{ marginTop: 2, flexShrink: 0 }} />
-                <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
-                  {fns.address}
-                </Text>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
+                    {fns.address}
+                  </Text>
+                  {fns.addressSecondary && (
+                    <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 17 }}>
+                      Доп. адрес: {fns.addressSecondary}
+                    </Text>
+                  )}
+                </View>
               </View>
             )}
 
@@ -410,6 +419,32 @@ export default function FnsDetailPage() {
             </Pressable>
           </Card>
 
+          {/* Что это вообще такое — для пользователя, попавшего с поиска */}
+          <View
+            style={{
+              backgroundColor: colors.white,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: colors.border,
+              paddingVertical: isDesktop ? 24 : 18,
+              paddingHorizontal: isDesktop ? 20 : 14,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "700",
+                color: colors.textMuted,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 12,
+              }}
+            >
+              Как это работает
+            </Text>
+            <HowItWorksFlow isDesktop={isDesktop} />
+          </View>
+
           {/* Yandex Maps embed */}
           {mapEmbedUrl && Platform.OS === "web" && (
             <Card>
@@ -473,6 +508,8 @@ export default function FnsDetailPage() {
                   icon={Users}
                   title="Пока нет специалистов"
                   subtitle="По этой ИФНС никто ещё не подключился. Оставьте запрос — мы оповестим всех специалистов как только они появятся."
+                  actionLabel="Оставить запрос"
+                  onAction={goCreateRequest}
                 />
               </Card>
             ) : (
@@ -643,6 +680,23 @@ export default function FnsDetailPage() {
             </View>
           )}
         </View>
+
+        {/* Footer for visitors who scrolled to the bottom of the FNS page */}
+        {!isAuthenticated && (
+          <View style={{ width: "100%", marginTop: 24 }}>
+            <FooterSection
+              isDesktop={isDesktop}
+              onHome={() => nav.routes.home()}
+              onViewCatalog={() => nav.routes.specialists()}
+              onFnsCatalog={() => nav.any("/fns")}
+              onCreateRequest={() => nav.routes.requestsNew()}
+              onBecomeSpecialist={() => nav.any("/login?intent=specialist")}
+              onLegal={(t) =>
+                t === "terms" ? nav.routes.legalTerms() : nav.routes.legalPrivacy()
+              }
+            />
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

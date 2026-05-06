@@ -20,6 +20,7 @@ import {
 } from "lucide-react-native";
 import Card from "@/components/ui/Card";
 import LandingHeader from "@/components/landing/LandingHeader";
+import FooterSection from "@/components/landing/FooterSection";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTypedRouter } from "@/lib/navigation";
 import { api } from "@/lib/api";
@@ -138,12 +139,11 @@ export default function FnsCatalogPage() {
       <ScrollView
         contentContainerStyle={{
           paddingTop: 16,
-          paddingBottom: 40,
-          paddingHorizontal: containerPad,
+          paddingBottom: 0,
           alignItems: "center",
         }}
       >
-        <View style={{ width: "100%", maxWidth: 1080, gap: 16 }}>
+        <View style={{ width: "100%", maxWidth: 1080, gap: 16, paddingHorizontal: containerPad, paddingBottom: 40 }}>
           {/* Hero */}
           <View>
             <View
@@ -298,6 +298,22 @@ export default function FnsCatalogPage() {
             </View>
           )}
         </View>
+
+        {!isAuthenticated && (
+          <View style={{ width: "100%", marginTop: 24 }}>
+            <FooterSection
+              isDesktop={isDesktop}
+              onHome={() => nav.routes.home()}
+              onViewCatalog={() => nav.routes.specialists()}
+              onFnsCatalog={() => nav.any("/fns")}
+              onCreateRequest={() => nav.routes.requestsNew()}
+              onBecomeSpecialist={() => nav.any("/login?intent=specialist")}
+              onLegal={(t) =>
+                t === "terms" ? nav.routes.legalTerms() : nav.routes.legalPrivacy()
+              }
+            />
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
