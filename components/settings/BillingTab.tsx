@@ -280,7 +280,7 @@ export default function BillingTab({
         if (res.needsPlan) {
           await dialog.alert({
             title: "Сначала выберите тариф",
-            message: "Чтобы добавлять ИФНС в VIP, нужен активный тариф PRO.",
+            message: "Чтобы подключать приоритет по ИФНС, нужен активный тариф PRO.",
           });
           return;
         }
@@ -298,9 +298,9 @@ export default function BillingTab({
   const handleRemoveFns = useCallback(
     async (sub: ActiveVipFns) => {
       const confirmed = await dialog.confirm({
-        title: `Убрать «${sub.fnsName}» из VIP?`,
+        title: `Отключить приоритет по «${sub.fnsName}»?`,
         message:
-          "Уведомления по этой ИФНС снова будут приходить с задержкой 5 минут. Вернуть в VIP можно в любой момент.",
+          "Запросы по этой ИФНС снова будут приходить с задержкой 5 минут. Подключить приоритет можно в любой момент.",
         confirmLabel: "Убрать",
         destructive: true,
       });
@@ -323,7 +323,7 @@ export default function BillingTab({
     const confirmed = await dialog.confirm({
       title: "Отменить тариф?",
       message:
-        "Все VIP-ИФНС будут сняты, ежедневные списания прекратятся. Карта останется привязанной — её можно отвязать отдельно.",
+        "Все приоритеты по ИФНС будут отключены, ежемесячные списания прекратятся. Карта останется привязанной — её можно отвязать отдельно.",
       confirmLabel: "Отменить тариф",
       destructive: true,
     });
@@ -344,7 +344,7 @@ export default function BillingTab({
     const confirmed = await dialog.confirm({
       title: "Отвязать карту?",
       message:
-        "Это отменит тариф и снимет все VIP-ИФНС. Чтобы возобновить — придётся выбрать тариф заново и привязать карту.",
+        "Это отменит тариф и отключит приоритеты по всем ИФНС. Чтобы возобновить — придётся выбрать тариф заново и привязать карту.",
       confirmLabel: "Отвязать",
       destructive: true,
     });
@@ -573,7 +573,7 @@ export default function BillingTab({
             <BulletRow
               n={1}
               title="Выбираете тариф"
-              text="Lite, Pro или Premium — отличаются только лимитом ИФНС, по которым вы получаете VIP-уведомления."
+              text="Lite, Pro или Premium — отличаются только лимитом ИФНС, по которым вы получаете запросы мгновенно (приоритетная очередь)."
             />
             <BulletRow
               n={2}
@@ -659,7 +659,7 @@ export default function BillingTab({
             Выберите тариф
           </Text>
           <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>
-            Тариф = лимит ИФНС в VIP. Цена списывается каждый день автоматически (1/30 от месячной). Можно сменить тариф или отменить в любой момент.
+            Тариф = лимит ИФНС с приоритетом. Полная стоимость тарифа списывается раз в месяц с привязанной карты. Сменить тариф или отменить — в любой момент.
           </Text>
         </View>
 
@@ -734,7 +734,7 @@ export default function BillingTab({
           />
           <FaqItem
             q="Можно ли отменить?"
-            a="Да, кнопкой «Отменить тариф». Списания прекратятся со следующего дня, все VIP-ИФНС снимутся, карта останется привязанной."
+            a="Да, кнопкой «Отменить тариф». Следующее месячное списание не пройдёт, приоритеты по всем ИФНС отключатся, карта останется привязанной."
             last
           />
         </Card>
@@ -793,10 +793,10 @@ export default function BillingTab({
           }}
         >
           <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-            Слотов ИФНС: <Text style={{ color: colors.text, fontWeight: "700" }}>
-              {data.slotsUsed}/{data.slotsLimit}
+            Подключено ИФНС: <Text style={{ color: colors.text, fontWeight: "700" }}>
+              {data.slotsUsed} из {data.slotsLimit}
             </Text>
-            {slotsLeft > 0 && ` · свободно ${slotsLeft}`}
+            {slotsLeft > 0 && ` · можно ещё ${slotsLeft}`}
           </Text>
           <View
             style={{
@@ -957,7 +957,7 @@ export default function BillingTab({
       {data.activeVipFns.length > 0 && (
         <Card>
           <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
-            Мои VIP-ИФНС
+            Мои приоритетные ИФНС
           </Text>
           <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
             По этим ИФНС email приходит мгновенно
@@ -993,7 +993,7 @@ export default function BillingTab({
                 ) : (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Убрать ${sub.fnsName} из VIP`}
+                    accessibilityLabel={`Отключить приоритет по ${sub.fnsName}`}
                     onPress={() => handleRemoveFns(sub)}
                     style={({ pressed }) => [
                       {
@@ -1025,7 +1025,7 @@ export default function BillingTab({
       {/* Add ИФНС */}
       <Card>
         <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
-          Добавить ИФНС в VIP
+          Подключить приоритет по ИФНС
         </Text>
         <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
           {slotsLeft > 0
@@ -1102,7 +1102,7 @@ export default function BillingTab({
           <Text style={{ fontSize: 13, color: colors.textSecondary, paddingVertical: 8 }}>
             {q || cityFilterId
               ? "По вашему запросу ничего не найдено."
-              : "Все доступные ИФНС уже добавлены в VIP."}
+              : "По всем доступным ИФНС приоритет уже подключён."}
           </Text>
         ) : (
           searchResults.map((item, idx) => {
@@ -1135,7 +1135,7 @@ export default function BillingTab({
                 ) : (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Добавить ${item.fnsName} в VIP`}
+                    accessibilityLabel={`Подключить приоритет по ${item.fnsName}`}
                     onPress={() => handleSubscribeFns(item.fnsId)}
                     style={({ pressed }) => [
                       {
@@ -1152,7 +1152,7 @@ export default function BillingTab({
                   >
                     <Plus size={14} color={colors.white} />
                     <Text style={{ color: colors.white, fontSize: 13, fontWeight: "600" }}>
-                      Добавить
+                      Подключить
                     </Text>
                   </Pressable>
                 )}
@@ -1272,7 +1272,7 @@ function PlanCardsRow({
               </Text>
             </Text>
             <Text style={{ fontSize: 12, color: colors.textMuted }}>
-              ≈ {formatRub(p.dailyChargeKopeks)} в день
+              Списание раз в месяц
             </Text>
             <View
               style={{
@@ -1285,7 +1285,7 @@ function PlanCardsRow({
               <View className="flex-row items-center" style={{ gap: 6 }}>
                 <Check size={14} color={colors.success} />
                 <Text style={{ fontSize: 13, color: colors.text }}>
-                  До <Text style={{ fontWeight: "700" }}>{p.fnsLimit}</Text> ИФНС в VIP
+                  До <Text style={{ fontWeight: "700" }}>{p.fnsLimit}</Text> ИФНС с приоритетом
                 </Text>
               </View>
               <View className="flex-row items-center" style={{ gap: 6, marginTop: 6 }}>

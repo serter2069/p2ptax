@@ -227,7 +227,11 @@ export default function UnifiedProfile() {
   const { router, user, isSpecialistUser } = form;
 
   const setTab = useCallback((next: Tab) => {
-    routerSingleton.setParams({ tab: next });
+    // Внутренний key таба = "billing" (исторический), но в URL посылаем
+    // «plan», чтобы строка адреса соответствовала видимому лейблу «PRO».
+    // Старые ссылки `?tab=billing` остаются работать как алиас.
+    const urlParam = next === "billing" ? "plan" : next;
+    routerSingleton.setParams({ tab: urlParam });
   }, []);
 
   // Legacy ?focus=specialist links — flip to the specialist tab + auto-
