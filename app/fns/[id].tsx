@@ -775,68 +775,6 @@ export default function FnsDetailPage() {
             </View>
           </Card>
 
-          {/* Сотрудники — сгруппированы по отделам */}
-          {staff.length > 0 && (
-            <View style={{ gap: 16 }}>
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: "700",
-                  color: colors.textMuted,
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  paddingHorizontal: 4,
-                }}
-              >
-                Сотрудники инспекции · {staff.length}
-              </Text>
-              {(() => {
-                // Группируем по department, сохраняя порядок появления.
-                const groups = new Map<string, StaffMember[]>();
-                for (const s of staff) {
-                  const key = s.department ?? "Прочее";
-                  const arr = groups.get(key) ?? [];
-                  arr.push(s);
-                  groups.set(key, arr);
-                }
-                return Array.from(groups.entries()).map(([dept, members]) => (
-                  <View key={dept} style={{ gap: 8 }}>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: "700",
-                        color: colors.text,
-                        paddingHorizontal: 4,
-                      }}
-                    >
-                      {dept}
-                    </Text>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        flexWrap: "wrap",
-                        gap: 12,
-                      }}
-                    >
-                      {members.map((s) => (
-                        <View
-                          key={s.id}
-                          style={{
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            flexBasis: (isDesktop ? "calc(50% - 6px)" : "100%") as any,
-                            flexGrow: 1,
-                          }}
-                        >
-                          <StaffCard staff={s} />
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                ));
-              })()}
-            </View>
-          )}
-
           {/* Specialist roster */}
           <View>
             <Text
@@ -1313,6 +1251,69 @@ export default function FnsDetailPage() {
               </Text>
             </Pressable>
           </View>
+
+          {/* Сотрудники — справочный блок про инспекцию, идёт ниже
+              наших специалистов и отзывов (главного контента ради
+              которого посетитель пришёл). */}
+          {staff.length > 0 && (
+            <View style={{ gap: 16 }}>
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: "700",
+                  color: colors.textMuted,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  paddingHorizontal: 4,
+                }}
+              >
+                Сотрудники инспекции · {staff.length}
+              </Text>
+              {(() => {
+                const groups = new Map<string, StaffMember[]>();
+                for (const s of staff) {
+                  const key = s.department ?? "Прочее";
+                  const arr = groups.get(key) ?? [];
+                  arr.push(s);
+                  groups.set(key, arr);
+                }
+                return Array.from(groups.entries()).map(([dept, members]) => (
+                  <View key={dept} style={{ gap: 8 }}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: colors.text,
+                        paddingHorizontal: 4,
+                      }}
+                    >
+                      {dept}
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                        gap: 12,
+                      }}
+                    >
+                      {members.map((s) => (
+                        <View
+                          key={s.id}
+                          style={{
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            flexBasis: (isDesktop ? "calc(50% - 6px)" : "100%") as any,
+                            flexGrow: 1,
+                          }}
+                        >
+                          <StaffCard staff={s} />
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ));
+              })()}
+            </View>
+          )}
 
           {/* Other FNS in the same city */}
           {neighbors.length > 0 && (

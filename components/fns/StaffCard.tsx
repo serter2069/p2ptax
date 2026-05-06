@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { createElement, useState } from "react";
 import { Pressable, View, Text, Platform } from "react-native";
 import { ArrowRight, Crown, Mail, Star } from "lucide-react-native";
 import { useRouter } from "expo-router";
@@ -11,23 +11,34 @@ interface ChiefBadgeProps {
   title: string;
 }
 
-/** Иконка-корона с tooltip (через title-аттрибут на web). */
-function ChiefBadge({ size, title }: ChiefBadgeProps) {
-  // На web передаём `accessibilityLabel` который React Native Web рендерит
-  // как aria-label. Для tooltip — обёрнем во View с title (web-only).
-  const props = Platform.OS === "web"
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ? ({ title } as any)
-    : {};
-  return (
-    <View accessibilityLabel={title} {...props}>
-      <Crown
-        size={size}
-        color={colors.warning ?? "#f5a623"}
-        fill={colors.warning ?? "#f5a623"}
-      />
-    </View>
+/**
+ * Иконка-корона с tooltip. На web рендерим в `<div title="…">` —
+ * React Native View не пробрасывает `title`, и нативный браузерный
+ * tooltip работает только через настоящий DOM-элемент.
+ */
+export function ChiefBadge({ size, title }: ChiefBadgeProps) {
+  const icon = (
+    <Crown
+      size={size}
+      color={colors.warning ?? "#f5a623"}
+      fill={colors.warning ?? "#f5a623"}
+    />
   );
+  if (Platform.OS === "web") {
+    return createElement(
+      "div",
+      {
+        title,
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          cursor: "help",
+        },
+      },
+      icon,
+    );
+  }
+  return <View accessibilityLabel={title}>{icon}</View>;
 }
 
 export interface StaffCardData {
@@ -127,21 +138,29 @@ export default function StaffCard({ staff, compact }: StaffCardProps) {
               />
             )}
           </View>
-          {showPositionText && (
+          {/* Отдел — главное (под именем), у всех сотрудников. */}
+          {staff.department && (
             <Text
-              style={{ fontSize: 12, color: colors.primary, marginTop: 2, fontWeight: "600" }}
-              numberOfLines={2}
-            >
-              {staff.position}
-            </Text>
-          )}
-          {/* Если короны достаточно — показываем только отдел, не position. */}
-          {!showPositionText && staff.department && (
-            <Text
-              style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}
+              style={{
+                fontSize: compact ? 12 : 13,
+                color: colors.primary,
+                marginTop: 2,
+                fontWeight: "700",
+              }}
               numberOfLines={2}
             >
               {staff.department}
+            </Text>
+          )}
+          {/* Должность — менее заметным. На десктопе у начальника
+              достаточно короны + отдела (текст должности скрываем —
+              иначе дубль), на мобильном — оставляем. */}
+          {showPositionText && (
+            <Text
+              style={{ fontSize: compact ? 11 : 12, color: colors.textSecondary, marginTop: 2 }}
+              numberOfLines={1}
+            >
+              {staff.position}
             </Text>
           )}
           {staff.cachedAvgRating != null && staff.cachedReviewsCount != null && staff.cachedReviewsCount > 0 && (

@@ -3,29 +3,30 @@ import { chargeWithSavedMethod } from "../lib/yookassa";
 import { sendVipChargeFailedEmail } from "../lib/email";
 
 /**
- * PRO daily autopay — runs once a day from setInterval in index.ts.
+ * PRO monthly autopay — runs once a day from setInterval in index.ts.
  *
- * Pricing model: per-user. Each user with subscriptionPlanId is
- * charged `plan.monthlyPriceKopeks / 30` once per calendar day,
- * regardless of how many SpecialistVipFns rows they have under it.
+ * Pricing model: per-user. Each user with subscriptionPlanId has a
+ * `subscriptionNextChargeAt` set on first payment (= startedAt + 30
+ * days). Cron picks up everyone whose nextChargeAt <= now, charges
+ * the **full** monthlyPriceKopeks once, and rolls nextChargeAt forward
+ * by 30 days.
  *
  * Outcomes per user:
- *   - card succeeds → write a single 'daily_charge' BillingTx row.
+ *   - card succeeds → write a single 'monthly_charge' BillingTx row,
+ *                     advance nextChargeAt by 30 days.
  *   - card fails    → unset the plan, wipe ALL VIP rows, set
  *                     lastChargeFailedAt, send "обновите карту" email.
  *   - no saved card → defensive cleanup: same as fail.
  *
- * Idempotency: per-user, per-day key prefix `pro-day:YYYY-MM-DD:`.
+ * Idempotency: per-user, per-due-day key prefix `pro-mon:YYYY-MM-DD:`.
+ * Same user can't be charged twice for the same due date even if cron
+ * runs twice.
  */
 
-const KOPEKS_PER_DAY_DIVISOR = 30;
+const RENEWAL_DAYS = 30;
 
-function todayKey(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 10);
-}
-
-function dailyChargeKopeks(monthlyKopeks: number): number {
-  return Math.ceil(monthlyKopeks / KOPEKS_PER_DAY_DIVISOR);
+function ymd(d: Date): string {
+  return d.toISOString().slice(0, 10);
 }
 
 export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
@@ -33,16 +34,17 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
   failed: number;
   skipped: number;
 }> {
-  const dayKey = todayKey(now);
-  const todayPrefix = `pro-day:${dayKey}:`;
-
   const subscribers = await prisma.user.findMany({
-    where: { subscriptionPlanId: { not: null } },
+    where: {
+      subscriptionPlanId: { not: null },
+      subscriptionNextChargeAt: { lte: now },
+    },
     select: {
       id: true,
       email: true,
       firstName: true,
       yookassaPaymentMethodId: true,
+      subscriptionNextChargeAt: true,
       subscriptionPlan: {
         select: { id: true, name: true, monthlyPriceKopeks: true },
       },
@@ -55,14 +57,17 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
 
   for (const user of subscribers) {
     const plan = user.subscriptionPlan;
-    if (!plan) continue;
+    if (!plan || !user.subscriptionNextChargeAt) continue;
 
-    // Idempotency check.
+    const dueDay = ymd(user.subscriptionNextChargeAt);
+    const duePrefix = `pro-mon:${dueDay}:`;
+
+    // Idempotency: уже списали (или провалили) сегодня для этой due-даты?
     const already = await prisma.billingTx.findFirst({
       where: {
         userId: user.id,
-        kind: { in: ["daily_charge", "charge_failed"] },
-        description: { startsWith: todayPrefix },
+        kind: { in: ["monthly_charge", "charge_failed"] },
+        description: { startsWith: duePrefix },
       },
       select: { id: true },
     });
@@ -71,10 +76,10 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
       continue;
     }
 
-    const dayPrice = dailyChargeKopeks(plan.monthlyPriceKopeks);
-    if (dayPrice <= 0) continue;
+    const monthPrice = plan.monthlyPriceKopeks;
+    if (monthPrice <= 0) continue;
 
-    // Defensive: plan but no card. Wipe everything.
+    // Подписка есть, а карты нет. Чистим.
     if (!user.yookassaPaymentMethodId) {
       await prisma.$transaction(async (tx) => {
         await tx.specialistVipFns.deleteMany({ where: { specialistId: user.id } });
@@ -83,15 +88,16 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
           data: {
             subscriptionPlanId: null,
             subscriptionStartedAt: null,
+            subscriptionNextChargeAt: null,
             lastChargeFailedAt: new Date(),
           },
         });
         await tx.billingTx.create({
           data: {
             userId: user.id,
-            amountKopeks: -dayPrice,
+            amountKopeks: -monthPrice,
             kind: "charge_failed",
-            description: `${todayPrefix}no_payment_method`,
+            description: `${duePrefix}no_payment_method`,
           },
         });
       });
@@ -99,38 +105,45 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
       continue;
     }
 
-    const idempotenceKey = `pro-day-${dayKey}-${user.id}`;
+    const idempotenceKey = `pro-mon-${dueDay}-${user.id}`;
     let chargeOk = false;
     let paymentId: string | null = null;
     try {
       const charge = await chargeWithSavedMethod({
-        amountKopeks: dayPrice,
-        description: `Тариф ${plan.name} — ${dayKey}`,
+        amountKopeks: monthPrice,
+        description: `Тариф ${plan.name} — продление на 30 дней`,
         paymentMethodId: user.yookassaPaymentMethodId,
         idempotenceKey,
-        metadata: { userId: user.id, planId: plan.id, kind: "daily_charge", day: dayKey },
+        metadata: { userId: user.id, planId: plan.id, kind: "monthly_charge", dueDay },
       });
       chargeOk = charge.status === "succeeded" && charge.paid;
       paymentId = charge.paymentId;
     } catch (err) {
-      console.error(`[pro-daily] autopay error for ${user.id}:`, err);
+      console.error(`[pro-monthly] autopay error for ${user.id}:`, err);
       chargeOk = false;
     }
 
     if (chargeOk) {
+      // Сдвигаем nextChargeAt вперёд на 30 дней от прежней due-даты,
+      // чтобы платежи были ровно по графику и не сползали при
+      // задержках cron.
+      const nextDue = new Date(user.subscriptionNextChargeAt.getTime() + RENEWAL_DAYS * 24 * 60 * 60 * 1000);
       await prisma.$transaction(async (tx) => {
         await tx.billingTx.create({
           data: {
             userId: user.id,
-            amountKopeks: -dayPrice,
-            kind: "daily_charge",
+            amountKopeks: -monthPrice,
+            kind: "monthly_charge",
             externalRef: paymentId ?? undefined,
-            description: `${todayPrefix}${plan.name}`,
+            description: `${duePrefix}${plan.name}`,
           },
         });
         await tx.user.update({
           where: { id: user.id },
-          data: { lastChargeFailedAt: null },
+          data: {
+            lastChargeFailedAt: null,
+            subscriptionNextChargeAt: nextDue,
+          },
         });
       });
       charged++;
@@ -142,16 +155,17 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
           data: {
             subscriptionPlanId: null,
             subscriptionStartedAt: null,
+            subscriptionNextChargeAt: null,
             lastChargeFailedAt: new Date(),
           },
         });
         await tx.billingTx.create({
           data: {
             userId: user.id,
-            amountKopeks: -dayPrice,
+            amountKopeks: -monthPrice,
             kind: "charge_failed",
             externalRef: paymentId ?? undefined,
-            description: `${todayPrefix}autopay_rejected`,
+            description: `${duePrefix}autopay_rejected`,
           },
         });
       });
@@ -161,10 +175,10 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
           await sendVipChargeFailedEmail({
             toEmail: user.email,
             toName: user.firstName ?? "коллега",
-            amountRub: Math.round(dayPrice / 100),
+            amountRub: Math.round(monthPrice / 100),
           });
         } catch (err) {
-          console.error(`[pro-daily] email error for ${user.id}:`, err);
+          console.error(`[pro-monthly] email error for ${user.id}:`, err);
         }
       }
     }

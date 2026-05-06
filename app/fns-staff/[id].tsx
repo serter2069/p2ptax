@@ -30,7 +30,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import LandingHeader from "@/components/landing/LandingHeader";
 import FooterSection from "@/components/landing/FooterSection";
 import FnsLogo from "@/components/fns/FnsLogo";
-import StaffCard, { type StaffCardData } from "@/components/fns/StaffCard";
+import StaffCard, { type StaffCardData, ChiefBadge } from "@/components/fns/StaffCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTypedRouter } from "@/lib/navigation";
 import { api } from "@/lib/api";
@@ -132,7 +132,7 @@ export default function FnsStaffPage() {
     try {
       const created = await api<StaffReview>(`/api/fns-staff/${staffId}/reviews`, {
         method: "POST",
-        body: JSON.stringify({ rating: formRating, text: formText.trim() }),
+        body: { rating: formRating, text: formText.trim() },
       });
       setReviews((prev) => [created, ...prev]);
       // Локально обновим кэш-агрегаты, чтобы UI сразу отразил новый отзыв.
@@ -330,8 +330,10 @@ export default function FnsStaffPage() {
             </Pressable>
           </View>
 
-          {/* Hero — про сотрудника. Информация о ИФНС вынесена в
-              отдельный блок «Место работы» ниже. */}
+          {/* Hero — следует тому же паттерну, что StaffCard на странице
+              ИФНС, только в большем размере: фото, ФИО + корона у
+              начальника, ОТДЕЛ крупным заголовком (главное про
+              сотрудника), должность вторым уровнем, рейтинг. */}
           <Card>
             <View
               style={{
@@ -346,55 +348,69 @@ export default function FnsStaffPage() {
                 size="xl"
               />
               <View style={{ flex: 1, minWidth: 0, alignItems: isDesktop ? "flex-start" : "center" }}>
-                <Text
-                  style={{
-                    fontSize: 11,
-                    color: colors.textMuted,
-                    fontWeight: "700",
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                  }}
-                >
-                  Сотрудник налоговой инспекции
-                </Text>
-                <Text
-                  style={{
-                    fontSize: isDesktop ? 28 : 22,
-                    fontWeight: "800",
-                    color: colors.text,
-                    marginTop: 6,
-                    textAlign: isDesktop ? "left" : "center",
-                  }}
-                >
-                  {fullName}
-                </Text>
+                {/* ФИО + корона рядом */}
                 <View
                   className="flex-row items-center"
-                  style={{ gap: 6, marginTop: 8, flexWrap: "wrap", justifyContent: isDesktop ? "flex-start" : "center" }}
+                  style={{
+                    gap: 10,
+                    flexWrap: "wrap",
+                    justifyContent: isDesktop ? "flex-start" : "center",
+                  }}
                 >
-                  <Briefcase size={15} color={colors.primary} />
-                  <Text style={{ fontSize: 15, color: colors.primary, fontWeight: "700" }}>
-                    {staff.position}
+                  <Text
+                    style={{
+                      fontSize: isDesktop ? 28 : 22,
+                      fontWeight: "800",
+                      color: colors.text,
+                      textAlign: isDesktop ? "left" : "center",
+                    }}
+                  >
+                    {fullName}
                   </Text>
+                  {/^начальник/i.test(staff.position) && (
+                    <ChiefBadge
+                      size={isDesktop ? 22 : 18}
+                      title={`Начальник: ${staff.position.toLowerCase()}${staff.department ? ` · ${staff.department}` : ""}`}
+                    />
+                  )}
                 </View>
+                {/* Отдел — крупный заголовок (главное про сотрудника
+                    после имени). */}
                 {staff.department && (
                   <Text
                     style={{
-                      fontSize: 13,
-                      color: colors.textSecondary,
-                      marginTop: 4,
+                      fontSize: isDesktop ? 18 : 16,
+                      color: colors.primary,
+                      fontWeight: "700",
+                      marginTop: 8,
                       textAlign: isDesktop ? "left" : "center",
+                      lineHeight: isDesktop ? 24 : 22,
                     }}
                   >
                     {staff.department}
                   </Text>
                 )}
+                {/* Должность — мелче и сером */}
+                <View
+                  className="flex-row items-center"
+                  style={{
+                    gap: 6,
+                    marginTop: 4,
+                    flexWrap: "wrap",
+                    justifyContent: isDesktop ? "flex-start" : "center",
+                  }}
+                >
+                  <Briefcase size={14} color={colors.textMuted} />
+                  <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                    {staff.position}
+                  </Text>
+                </View>
                 {staff.cachedAvgRating != null && staff.cachedReviewsCount != null && staff.cachedReviewsCount > 0 && (
                   <View
                     className="flex-row items-center"
                     style={{
                       gap: 4,
-                      marginTop: 10,
+                      marginTop: 12,
                       justifyContent: isDesktop ? "flex-start" : "center",
                     }}
                   >

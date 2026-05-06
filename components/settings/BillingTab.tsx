@@ -55,6 +55,7 @@ interface MePayload {
   lastChargeFailedAt: string | null;
   plan: PlanRow | null;
   planStartedAt: string | null;
+  planNextChargeAt: string | null;
   activeVipFns: ActiveVipFns[];
   slotsUsed: number;
   slotsLimit: number;
@@ -721,7 +722,7 @@ export default function BillingTab({
           </Text>
           <FaqItem
             q="Как происходит списание?"
-            a="Раз в день автоматически с привязанной карты — 1/30 от месячной цены тарифа. Один платёж покрывает все ИФНС, которые вы добавили в VIP."
+            a="Один раз в месяц автоматически с привязанной карты — целиком стоимость тарифа за 30 дней. Один платёж покрывает все ИФНС из вашего списка."
           />
           <FaqItem
             q="Можно ли менять список ИФНС?"
@@ -771,8 +772,12 @@ export default function BillingTab({
                 {plan.name}
               </Text>
               <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
-                {formatRub(plan.monthlyPriceKopeks)}/мес · ≈ {formatRub(plan.dailyChargeKopeks)}/день
-                {data.planStartedAt && ` · с ${formatActivatedAt(data.planStartedAt)}`}
+                {formatRub(plan.monthlyPriceKopeks)}/мес
+                {data.planNextChargeAt
+                  ? ` · следующий платёж ${formatActivatedAt(data.planNextChargeAt)}`
+                  : data.planStartedAt
+                  ? ` · с ${formatActivatedAt(data.planStartedAt)}`
+                  : ""}
               </Text>
             </View>
           </View>

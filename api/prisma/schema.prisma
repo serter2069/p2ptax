@@ -65,6 +65,10 @@ model User {
   // line on the PRO tab. Cleared along with subscriptionPlanId on
   // failed-charge or explicit cancel.
   subscriptionStartedAt        DateTime? @map("subscription_started_at")
+  // Когда списываем PRO в следующий раз. Выставляется при первом
+  // платеже (startedAt + 30 дней) и сдвигается +30 дней после
+  // каждого успешного автосписания. NULL = подписки нет.
+  subscriptionNextChargeAt     DateTime? @map("subscription_next_charge_at")
   createdAt                    DateTime  @default(now()) @map("created_at")
   updatedAt                    DateTime  @updatedAt @map("updated_at")
 

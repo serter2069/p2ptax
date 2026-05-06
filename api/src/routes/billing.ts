@@ -117,6 +117,7 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
           yookassaPaymentMethodTitle: true,
           lastChargeFailedAt: true,
           subscriptionStartedAt: true,
+          subscriptionNextChargeAt: true,
           subscriptionPlan: {
             select: {
               id: true,
@@ -169,6 +170,7 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
       lastChargeFailedAt: user.lastChargeFailedAt ?? null,
       plan,
       planStartedAt: user.subscriptionStartedAt ?? null,
+      planNextChargeAt: user.subscriptionNextChargeAt ?? null,
       activeVipFns,
       slotsUsed: activeVipFns.length,
       slotsLimit: plan?.fnsLimit ?? 0,
@@ -339,16 +341,16 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    const dayPrice = dailyChargeKopeks(plan.monthlyPriceKopeks);
+    const monthPrice = plan.monthlyPriceKopeks;
     const returnBase =
       process.env.YK_RETURN_URL_BASE ?? "https://p2ptax.smartlaunchhub.com";
 
     if (!user.yookassaPaymentMethodId) {
-      // First-ever activation. Bind card + pay first day in one
-      // ЮKassa redirect.
+      // Первое подключение PRO. ЮKassa-redirect: бинд карты +
+      // первый месячный платёж в одной транзакции.
       const payment = await createPayment({
-        amountKopeks: dayPrice,
-        description: `PRO «${plan.name}» — день 1 + привязка карты`,
+        amountKopeks: monthPrice,
+        description: `PRO «${plan.name}» — оплата за 30 дней + привязка карты`,
         userId,
         returnUrl: `${returnBase}/profile?tab=plan&plan=ok`,
         savePaymentMethod: true,
@@ -357,7 +359,7 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
       await prisma.billingTx.create({
         data: {
           userId,
-          amountKopeks: -dayPrice,
+          amountKopeks: -monthPrice,
           kind: "bind_pending",
           externalRef: payment.paymentId,
           description: `Ожидание оплаты тарифа ${plan.name}`,
@@ -372,34 +374,9 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    // User has a card. Charge the new plan's first day and switch in
-    // one transaction. Trim downsized rows in the same step.
-    const idempotenceKey = `plan-switch-${userId}-${plan.id}-${Date.now()}`;
-    let charge;
-    try {
-      charge = await chargeWithSavedMethod({
-        amountKopeks: dayPrice,
-        description: `PRO «${plan.name}» — день 1`,
-        paymentMethodId: user.yookassaPaymentMethodId,
-        idempotenceKey,
-        metadata: { userId, planId: plan.id, kind: "plan_switch" },
-      });
-    } catch (err) {
-      console.error("billing/plan autopay error:", err);
-      res.status(402).json({
-        error: "Не удалось списать с карты. Попробуйте привязать карту заново.",
-      });
-      return;
-    }
-
-    if (charge.status !== "succeeded" || !charge.paid) {
-      res.status(402).json({
-        error: "ЮKassa отклонила платёж — обновите карту.",
-        status: charge.status,
-      });
-      return;
-    }
-
+    // У пользователя уже есть карта = смена плана. НЕ списываем —
+    // тариф просто переключается, новая месячная сумма спишется
+    // на следующем продлении (subscriptionNextChargeAt).
     await prisma.$transaction(async (tx) => {
       if (removeFnsIds.length > 0) {
         await tx.specialistVipFns.deleteMany({
@@ -410,25 +387,26 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
         where: { id: userId },
         data: {
           subscriptionPlanId: plan.id,
-          subscriptionStartedAt: new Date(),
           lastChargeFailedAt: null,
+          // subscriptionStartedAt и subscriptionNextChargeAt не трогаем —
+          // продление по графику, по новой цене.
         },
       });
       await tx.billingTx.create({
         data: {
           userId,
-          amountKopeks: -dayPrice,
+          amountKopeks: 0,
           kind: "plan_switch",
-          externalRef: charge.paymentId,
-          description: `Тариф ${plan.name} — день 1`,
+          description: `Смена тарифа на «${plan.name}» (списание со следующего продления)`,
         },
       });
     });
 
     res.json({
       ok: true,
-      charged: dayPrice,
+      charged: 0,
       plan: planBrief(plan),
+      message: `Тариф изменён на «${plan.name}». Новая стоимость спишется на следующем продлении.`,
     });
   } catch (error) {
     console.error("billing/plan POST error:", error);
@@ -446,7 +424,11 @@ router.delete("/plan", authMiddleware, async (req: Request, res: Response) => {
       await tx.specialistVipFns.deleteMany({ where: { specialistId: userId } });
       await tx.user.update({
         where: { id: userId },
-        data: { subscriptionPlanId: null, subscriptionStartedAt: null },
+        data: {
+          subscriptionPlanId: null,
+          subscriptionStartedAt: null,
+          subscriptionNextChargeAt: null,
+        },
       });
       await tx.billingTx.create({
         data: {
@@ -564,6 +546,7 @@ router.delete("/payment-method", authMiddleware, async (req: Request, res: Respo
           lastChargeFailedAt: null,
           subscriptionPlanId: null,
           subscriptionStartedAt: null,
+          subscriptionNextChargeAt: null,
         },
       });
       await tx.billingTx.create({
@@ -638,6 +621,8 @@ router.post("/webhook", async (req: Request, res: Response) => {
       return;
     }
 
+    const now = new Date();
+    const nextDue = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     await prisma.$transaction(async (tx) => {
       if (pmId && pmSaved) {
         await tx.user.update({
@@ -647,7 +632,8 @@ router.post("/webhook", async (req: Request, res: Response) => {
             yookassaPaymentMethodTitle: pmTitle,
             lastChargeFailedAt: null,
             subscriptionPlanId: planId,
-            subscriptionStartedAt: new Date(),
+            subscriptionStartedAt: now,
+            subscriptionNextChargeAt: nextDue,
           },
         });
       } else {
@@ -657,7 +643,8 @@ router.post("/webhook", async (req: Request, res: Response) => {
           where: { id: userId },
           data: {
             subscriptionPlanId: planId,
-            subscriptionStartedAt: new Date(),
+            subscriptionStartedAt: now,
+            subscriptionNextChargeAt: nextDue,
             lastChargeFailedAt: null,
           },
         });
@@ -668,7 +655,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
           amountKopeks: -amountKopeks,
           kind: "bind_plan",
           externalRef: paymentId,
-          description: `Привязка карты + тариф ${plan.name}, день 1`,
+          description: `Подключение PRO «${plan.name}» — оплата за 30 дней`,
         },
       });
       await tx.billingTx.deleteMany({
