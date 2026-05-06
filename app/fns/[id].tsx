@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
-  Building2,
   Plus,
   Users,
   FileText,
@@ -21,6 +20,10 @@ import {
   Star,
   ArrowRight,
   Check,
+  Mail,
+  AlertTriangle,
+  UserCircle2,
+  Copy,
 } from "lucide-react-native";
 import Avatar from "@/components/ui/Avatar";
 import Card from "@/components/ui/Card";
@@ -29,6 +32,8 @@ import ErrorState from "@/components/ui/ErrorState";
 import LandingHeader from "@/components/landing/LandingHeader";
 import HowItWorksFlow from "@/components/landing/HowItWorksFlow";
 import FooterSection from "@/components/landing/FooterSection";
+import FnsLogo from "@/components/fns/FnsLogo";
+import ReportFnsModal from "@/components/fns/ReportFnsModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTypedRouter } from "@/lib/navigation";
 import { api } from "@/lib/api";
@@ -95,9 +100,17 @@ export default function FnsDetailPage() {
   const [fns, setFns] = useState<FnsDetail | null>(null);
   const [specialists, setSpecialists] = useState<SpecialistRow[] | null>(null);
   const [neighbors, setNeighbors] = useState<NeighborFns[]>([]);
+  const [publicRequests, setPublicRequests] = useState<Array<{
+    id: string;
+    title: string;
+    description: string;
+    createdAt: string;
+    user: { firstName: string | null };
+  }>>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [shareCopied, setShareCopied] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!fnsId) return;
@@ -123,6 +136,17 @@ export default function FnsDetailPage() {
         setNeighbors(neighborsRes.items.filter((f) => f.id !== fnsRes.id));
       } catch {
         setNeighbors([]);
+      }
+
+      // Публичные запросы по этой ИФНС.
+      try {
+        const reqRes = await api<{ items: typeof publicRequests }>(
+          `/api/requests/public?fns_id=${fnsId}&limit=5`,
+          { noAuth: true }
+        );
+        setPublicRequests(reqRes.items ?? []);
+      } catch {
+        setPublicRequests([]);
       }
     } catch (e) {
       if (__DEV__) console.error("fns load error", e);
@@ -152,12 +176,15 @@ export default function FnsDetailPage() {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const navigatorAny = typeof navigator !== "undefined" ? (navigator as any) : null;
-      if (Platform.OS === "web" && navigatorAny?.share) {
+      // На десктоп-вебе всегда копируем — там Web Share API уродует
+      // UX (нативный шит не вызывает реакции). На мобилке сначала
+      // пробуем Web Share, fallback — clipboard.
+      const useNative =
+        Platform.OS !== "web" ||
+        (isDesktop ? false : !!navigatorAny?.share);
+      if (useNative && navigatorAny?.share) {
         await navigatorAny.share({ title, text, url });
-      } else if (
-        Platform.OS === "web" &&
-        navigatorAny?.clipboard?.writeText
-      ) {
+      } else if (navigatorAny?.clipboard?.writeText) {
         await navigatorAny.clipboard.writeText(url);
         setShareCopied(true);
         setTimeout(() => setShareCopied(false), 2000);
@@ -165,28 +192,41 @@ export default function FnsDetailPage() {
     } catch {
       /* user cancelled, or clipboard unavailable */
     }
-  }, [fns]);
+  }, [fns, isDesktop]);
 
   const mapEmbedUrl = useMemo(() => {
-    if (!fns?.address) return null;
-    const q = encodeURIComponent(`${fns.city.name}, ${fns.address}`);
+    if (!fns) return null;
+    // Поиск именно организации, а не адреса: имя ИФНС + город.
+    // Адрес добавляем как «опорный» чтобы Yandex точно поставил пин,
+    // даже если в его справочнике нет такой организации.
+    const q = encodeURIComponent(
+      `${fns.name} ${fns.city.name} ${fns.address ?? ""}`.trim(),
+    );
     return `https://yandex.ru/map-widget/v1/?text=${q}&z=16`;
+  }, [fns]);
+
+  const mapExternalUrl = useMemo(() => {
+    if (!fns) return null;
+    const q = encodeURIComponent(
+      `${fns.name} ${fns.city.name} ${fns.address ?? ""}`.trim(),
+    );
+    return `https://yandex.ru/maps/?text=${q}`;
   }, [fns]);
 
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        {!isAuthenticated && (
-          <LandingHeader
-            isDesktop={isDesktop}
-            onHome={() => nav.routes.home()}
-            onCatalog={() => nav.routes.specialists()}
-            onFnsCatalog={() => nav.any("/fns")}
-            onLogin={() => nav.routes.login()}
-            onCreateRequest={() => nav.routes.requestsNew()}
-            isAuthenticated={false}
-          />
-        )}
+        <LandingHeader
+          isDesktop={isDesktop}
+          onHome={() => nav.routes.home()}
+          onCatalog={() => nav.routes.specialists()}
+          onFnsCatalog={() => nav.any("/fns")}
+          onLogin={() => nav.routes.login()}
+          onCreateRequest={() => nav.routes.requestsNew()}
+          isAuthenticated={isAuthenticated}
+          onOpenDashboard={() => nav.routes.dashboard()}
+        />
+
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -197,17 +237,17 @@ export default function FnsDetailPage() {
   if (error || !fns) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        {!isAuthenticated && (
-          <LandingHeader
-            isDesktop={isDesktop}
-            onHome={() => nav.routes.home()}
-            onCatalog={() => nav.routes.specialists()}
-            onFnsCatalog={() => nav.any("/fns")}
-            onLogin={() => nav.routes.login()}
-            onCreateRequest={() => nav.routes.requestsNew()}
-            isAuthenticated={false}
-          />
-        )}
+        <LandingHeader
+          isDesktop={isDesktop}
+          onHome={() => nav.routes.home()}
+          onCatalog={() => nav.routes.specialists()}
+          onFnsCatalog={() => nav.any("/fns")}
+          onLogin={() => nav.routes.login()}
+          onCreateRequest={() => nav.routes.requestsNew()}
+          isAuthenticated={isAuthenticated}
+          onOpenDashboard={() => nav.routes.dashboard()}
+        />
+
         <View className="flex-1 items-center justify-center px-4">
           <ErrorState message={error ?? "ИФНС не найдена"} onRetry={load} />
         </View>
@@ -263,59 +303,81 @@ export default function FnsDetailPage() {
                 Все ИФНС
               </Text>
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Поделиться ссылкой на эту ИФНС"
-              onPress={handleShare}
-              style={({ pressed }) => [
-                {
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  backgroundColor: colors.white,
-                },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              {shareCopied ? (
-                <>
-                  <Check size={14} color={colors.success} />
-                  <Text style={{ color: colors.success, fontSize: 13, fontWeight: "600" }}>
-                    Скопировано
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Share2 size={14} color={colors.textSecondary} />
-                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                    Поделиться
-                  </Text>
-                </>
-              )}
-            </Pressable>
+            <View className="flex-row items-center" style={{ gap: 8 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Пожаловаться на эту ИФНС"
+                onPress={() => setReportOpen(true)}
+                style={({ pressed }) => [
+                  {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.white,
+                  },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <AlertTriangle size={14} color={colors.warning ?? "#f5a623"} />
+                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                  Пожаловаться
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isDesktop && Platform.OS === "web"
+                    ? "Скопировать ссылку"
+                    : "Поделиться ссылкой на эту ИФНС"
+                }
+                onPress={handleShare}
+                style={({ pressed }) => [
+                  {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.white,
+                  },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                {shareCopied ? (
+                  <>
+                    <Check size={14} color={colors.success} />
+                    <Text style={{ color: colors.success, fontSize: 13, fontWeight: "600" }}>
+                      Скопировано
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    {isDesktop && Platform.OS === "web" ? (
+                      <Copy size={14} color={colors.textSecondary} />
+                    ) : (
+                      <Share2 size={14} color={colors.textSecondary} />
+                    )}
+                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                      {isDesktop && Platform.OS === "web" ? "Копировать ссылку" : "Поделиться"}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
           </View>
 
           {/* Hero card */}
           <Card>
             <View className="flex-row items-start" style={{ gap: 14 }}>
-              <View
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 16,
-                  backgroundColor: colors.accentSoft,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <Building2 size={32} color={colors.primary} />
-              </View>
+              <FnsLogo name={fns.name} cityName={fns.city.name} size="lg" />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1 }}>
                   Налоговая инспекция · код {fns.code}
@@ -323,9 +385,19 @@ export default function FnsDetailPage() {
                 <Text style={{ fontSize: isDesktop ? 24 : 20, fontWeight: "700", color: colors.text, marginTop: 4 }}>
                   {fns.name}
                 </Text>
-                <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 2 }}>
-                  {fns.city.name}
-                </Text>
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel={`Все ИФНС в городе ${fns.city.name}`}
+                  onPress={() => router.push(`/fns?cityId=${fns.city.id}` as never)}
+                  style={({ pressed }) => [
+                    { alignSelf: "flex-start", marginTop: 2 },
+                    pressed && { opacity: 0.6 },
+                  ]}
+                >
+                  <Text style={{ fontSize: 14, color: colors.primary, fontWeight: "600" }}>
+                    {fns.city.name} →
+                  </Text>
+                </Pressable>
               </View>
             </View>
 
@@ -448,18 +520,38 @@ export default function FnsDetailPage() {
           {/* Yandex Maps embed */}
           {mapEmbedUrl && Platform.OS === "web" && (
             <Card>
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: "700",
-                  color: colors.textMuted,
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  marginBottom: 8,
-                }}
+              <View
+                className="flex-row items-center justify-between"
+                style={{ marginBottom: 8 }}
               >
-                На карте
-              </Text>
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "700",
+                    color: colors.textMuted,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                  }}
+                >
+                  На карте
+                </Text>
+                {mapExternalUrl && (
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel="Открыть в Яндекс.Картах"
+                    onPress={() => {
+                      if (typeof window !== "undefined") {
+                        window.open(mapExternalUrl, "_blank", "noopener,noreferrer");
+                      }
+                    }}
+                    style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                  >
+                    <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "600" }}>
+                      Открыть в Яндекс.Картах →
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
               <View
                 style={{
                   height: 280,
@@ -486,6 +578,87 @@ export default function FnsDetailPage() {
               </View>
             </Card>
           )}
+
+          {/* SEO-текст об ИФНС (рыба-заглушка пока нет реальной справки) */}
+          <Card>
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "700",
+                color: colors.textMuted,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 8,
+              }}
+            >
+              Об инспекции
+            </Text>
+            <Text style={{ fontSize: 14, color: colors.text, lineHeight: 21 }}>
+              {fns.name} — территориальный налоговый орган в составе ФНС России,
+              отвечающий за обслуживание налогоплательщиков на территории{" "}
+              <Text style={{ fontWeight: "600" }}>{fns.city.name}</Text>. В её
+              ведении регистрация ИП и юридических лиц, приём отчётности по
+              УСН/ОСНО/НДС/НДФЛ, выездные и камеральные проверки, выдача справок
+              об отсутствии задолженности и ведение работы с налоговыми
+              уведомлениями физических лиц.
+            </Text>
+            <Text
+              style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 19, marginTop: 8 }}
+            >
+              Если у вас вопрос по этой ИФНС — отчётность, спор по начислению,
+              выездная проверка или просто непонятная квитанция — оставьте запрос
+              на платформе. Специалисты, которые знают именно эту инспекцию,
+              ответят и предложат план действий.
+            </Text>
+          </Card>
+
+          {/* Контакты — email заглушка пока нет реальных данных */}
+          <Card>
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "700",
+                color: colors.textMuted,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 8,
+              }}
+            >
+              Контакты
+            </Text>
+            <View className="flex-row items-center" style={{ gap: 8 }}>
+              <Mail size={14} color={colors.textMuted} />
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+                Электронная почта инспекции уточняется. До обновления используйте
+                форму обращения через сайт ФНС России (nalog.gov.ru).
+              </Text>
+            </View>
+          </Card>
+
+          {/* Руководители отделов — заглушка под будущие реальные данные */}
+          <Card>
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "700",
+                color: colors.textMuted,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 8,
+              }}
+            >
+              Руководители отделов
+            </Text>
+            <View className="flex-row items-start" style={{ gap: 10 }}>
+              <UserCircle2 size={20} color={colors.textMuted} />
+              <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 19 }}>
+                Информация о руководителях отделов камеральных и выездных
+                проверок, регистрации, налогообложения юр. лиц и физ. лиц
+                появится здесь после первой синхронизации с открытыми данными
+                ФНС.
+              </Text>
+            </View>
+          </Card>
 
           {/* Specialist roster */}
           <View>
@@ -594,6 +767,72 @@ export default function FnsDetailPage() {
             )}
           </View>
 
+          {/* Открытые публичные запросы по этой ИФНС */}
+          {publicRequests.length > 0 && (
+            <View>
+              <View
+                className="flex-row items-center justify-between"
+                style={{ marginBottom: 8, paddingHorizontal: 4 }}
+              >
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "700",
+                    color: colors.textMuted,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                  }}
+                >
+                  Открытые запросы по этой ИФНС · {publicRequests.length}
+                </Text>
+                <Pressable
+                  accessibilityRole="link"
+                  onPress={() => router.push(`/requests/public?fnsId=${fnsId}` as never)}
+                  style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                >
+                  <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "600" }}>
+                    Все →
+                  </Text>
+                </Pressable>
+              </View>
+              <Card>
+                {publicRequests.map((r, idx) => (
+                  <Pressable
+                    key={r.id}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Открыть запрос ${r.title}`}
+                    onPress={() => router.push(`/requests/${r.id}` as never)}
+                    style={({ pressed }) => [
+                      {
+                        paddingVertical: 12,
+                        borderTopWidth: idx === 0 ? 0 : 1,
+                        borderTopColor: colors.border,
+                      },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Text
+                      style={{ fontSize: 14, fontWeight: "600", color: colors.text }}
+                      numberOfLines={1}
+                    >
+                      {r.title}
+                    </Text>
+                    <Text
+                      style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2, lineHeight: 18 }}
+                      numberOfLines={2}
+                    >
+                      {r.description}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
+                      {r.user?.firstName ?? "Анонимно"} ·{" "}
+                      {new Date(r.createdAt).toLocaleDateString("ru-RU")}
+                    </Text>
+                  </Pressable>
+                ))}
+              </Card>
+            </View>
+          )}
+
           {/* Reviews placeholder (Yandex import to come) */}
           <Card>
             <Text
@@ -651,19 +890,7 @@ export default function FnsDetailPage() {
                     ]}
                   >
                     <View className="flex-row items-center" style={{ gap: 10 }}>
-                      <View
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 8,
-                          backgroundColor: colors.accentSoft,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <Building2 size={16} color={colors.primary} />
-                      </View>
+                      <FnsLogo name={n.name} size="sm" />
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text }} numberOfLines={1}>
                           {n.name}
@@ -698,6 +925,12 @@ export default function FnsDetailPage() {
           </View>
         )}
       </ScrollView>
+
+      <ReportFnsModal
+        visible={reportOpen}
+        onClose={() => setReportOpen(false)}
+        fnsName={fns.name}
+      />
     </SafeAreaView>
   );
 }

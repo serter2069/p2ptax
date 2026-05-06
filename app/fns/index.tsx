@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Search,
   Building2,
@@ -21,6 +21,7 @@ import {
 import Card from "@/components/ui/Card";
 import LandingHeader from "@/components/landing/LandingHeader";
 import FooterSection from "@/components/landing/FooterSection";
+import FnsLogo from "@/components/fns/FnsLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTypedRouter } from "@/lib/navigation";
 import { api } from "@/lib/api";
@@ -52,6 +53,13 @@ interface FnsCard {
 export default function FnsCatalogPage() {
   const router = useRouter();
   const nav = useTypedRouter();
+  const params = useLocalSearchParams<{ cityId?: string }>();
+  const initialCityId =
+    typeof params.cityId === "string"
+      ? params.cityId
+      : Array.isArray(params.cityId)
+      ? params.cityId[0]
+      : null;
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
   const { user } = useAuth();
@@ -62,8 +70,13 @@ export default function FnsCatalogPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
-  const [cityFilterId, setCityFilterId] = useState<string | null>(null);
+  const [cityFilterId, setCityFilterId] = useState<string | null>(initialCityId);
   const [cities, setCities] = useState<CityRow[]>([]);
+
+  // Sync URL → state when query param changes (deep-link / back button).
+  useEffect(() => {
+    setCityFilterId(initialCityId);
+  }, [initialCityId]);
 
   useEffect(() => {
     api<{ items: CityRow[] }>("/api/cities?limit=200", { noAuth: true })
@@ -125,17 +138,16 @@ export default function FnsCatalogPage() {
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.surface }}>
-      {!isAuthenticated && (
-        <LandingHeader
-          isDesktop={isDesktop}
-          onHome={() => nav.routes.home()}
-          onCatalog={() => nav.routes.specialists()}
-          onFnsCatalog={() => nav.any("/fns")}
-          onLogin={() => nav.routes.login()}
-          onCreateRequest={() => nav.routes.requestsNew()}
-          isAuthenticated={false}
-        />
-      )}
+      <LandingHeader
+        isDesktop={isDesktop}
+        onHome={() => nav.routes.home()}
+        onCatalog={() => nav.routes.specialists()}
+        onFnsCatalog={() => nav.any("/fns")}
+        onLogin={() => nav.routes.login()}
+        onCreateRequest={() => nav.routes.requestsNew()}
+        isAuthenticated={isAuthenticated}
+        onOpenDashboard={() => nav.routes.dashboard()}
+      />
       <ScrollView
         contentContainerStyle={{
           paddingTop: 16,
@@ -358,19 +370,7 @@ function FnsGrid({
           ]}
         >
           <View className="flex-row items-start" style={{ gap: 10 }}>
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                backgroundColor: colors.accentSoft,
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Building2 size={18} color={colors.primary} />
-            </View>
+            <FnsLogo name={item.name} size="sm" />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text }} numberOfLines={2}>
                 {item.name}
