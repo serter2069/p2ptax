@@ -30,8 +30,11 @@ export default function WorkAreaSection({ fnsServices, cardShadow }: WorkAreaSec
             className="border border-border rounded-xl p-3 mb-2"
             style={{ backgroundColor: colors.surface2 }}
           >
+            {/* Город уже зашит в названии ФНС («ИФНС № 7 по г. Москве»),
+                поэтому отдельную плашку «Москва — ИФНС № 7…» убрали —
+                был дубль. */}
             <Text className="text-sm font-semibold mb-2" style={{ color: colors.text }}>
-              {group.city.name} — {group.fns.name}
+              {group.fns.name}
             </Text>
             <View className="flex-row flex-wrap" style={{ gap: 6 }}>
               {coversAll ? (

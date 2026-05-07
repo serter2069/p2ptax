@@ -4,13 +4,14 @@ import {
   Text,
   ScrollView,
   Pressable,
+  Platform,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
 import Head from "expo-router/head";
-import { AlertCircle, Pencil, ChevronLeft } from "lucide-react-native";
+import { AlertCircle, Pencil, ChevronLeft, Share2, Check } from "lucide-react-native";
 import Button from "@/components/ui/Button";
 import LoadingState from "@/components/ui/LoadingState";
 import ContactsView from "@/components/specialist/ContactsView";
@@ -464,15 +465,84 @@ export default function SpecialistPublicProfile() {
     </View>
   );
 
-  const rightAction = isOwnProfile ? (
+  // Поделиться: на десктоп-вебе — clipboard + кратко «Скопировано»,
+  // на мобиле — Web Share API (нативное окно). Тот же паттерн, что
+  // на /fns-staff/[id], для согласованности.
+  const [shareCopied, setShareCopied] = useState(false);
+  const handleShare = useCallback(async () => {
+    if (!specialist) return;
+    const url =
+      Platform.OS === "web" && typeof window !== "undefined"
+        ? window.location.href
+        : `https://p2ptax.smartlaunchhub.com/profile/${id}`;
+    const title = `${name} — специалист по налогам | P2PTax`;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const navigatorAny = typeof navigator !== "undefined" ? (navigator as any) : null;
+      const useNative = Platform.OS !== "web" || (isDesktop ? false : !!navigatorAny?.share);
+      if (useNative && navigatorAny?.share) {
+        await navigatorAny.share({ title, url });
+      } else if (navigatorAny?.clipboard?.writeText) {
+        await navigatorAny.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      /* user cancelled */
+    }
+  }, [specialist, id, name, isDesktop]);
+
+  const shareButton = (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Редактировать профиль"
-      onPress={() => nav.routes.profile()}
+      accessibilityLabel="Поделиться ссылкой на профиль"
+      onPress={handleShare}
+      style={({ pressed }) => [
+        {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          paddingVertical: 8,
+          paddingHorizontal: 12,
+          borderRadius: 10,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.white,
+        },
+        pressed && { opacity: 0.7 },
+      ]}
     >
-      <Pencil size={16} color={colors.text} />
+      {shareCopied ? (
+        <>
+          <Check size={14} color={colors.success} />
+          <Text style={{ color: colors.success, fontSize: 13, fontWeight: "600" }}>
+            Скопировано
+          </Text>
+        </>
+      ) : (
+        <>
+          <Share2 size={14} color={colors.textSecondary} />
+          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Поделиться</Text>
+        </>
+      )}
     </Pressable>
-  ) : null;
+  );
+
+  const rightAction = (
+    <View className="flex-row items-center" style={{ gap: 8 }}>
+      {shareButton}
+      {isOwnProfile && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Редактировать профиль"
+          onPress={() => nav.routes.profile()}
+          style={{ padding: 8 }}
+        >
+          <Pencil size={16} color={colors.text} />
+        </Pressable>
+      )}
+    </View>
+  );
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.surface2 }}>
