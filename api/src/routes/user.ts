@@ -87,12 +87,28 @@ router.get("/:id/public", async (req: Request, res: Response) => {
 router.patch("/profile", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { firstName, lastName, avatarUrl } = req.body;
+    const { firstName, lastName, avatarUrl, consultantFnsId } = req.body;
 
     const data: Record<string, unknown> = {};
     if (firstName !== undefined) data.firstName = firstName;
     if (lastName !== undefined) data.lastName = lastName;
     if (avatarUrl !== undefined) data.avatarUrl = avatarUrl;
+    // consultantFnsId: null/"" — сброс, либо строка-uuid существующей ИФНС.
+    if (consultantFnsId !== undefined) {
+      if (consultantFnsId === null || consultantFnsId === "") {
+        data.consultantFnsId = null;
+      } else if (typeof consultantFnsId === "string") {
+        const exists = await prisma.fnsOffice.findUnique({
+          where: { id: consultantFnsId },
+          select: { id: true },
+        });
+        if (!exists) {
+          res.status(400).json({ error: "Указанная ИФНС не найдена" });
+          return;
+        }
+        data.consultantFnsId = consultantFnsId;
+      }
+    }
 
     const user = await prisma.user.update({
       where: { id: userId },
@@ -104,6 +120,15 @@ router.patch("/profile", authMiddleware, async (req: Request, res: Response) => 
         firstName: true,
         lastName: true,
         avatarUrl: true,
+        consultantFns: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: { select: { id: true, name: true, slug: true } },
+          },
+        },
       },
     });
 

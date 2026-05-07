@@ -352,6 +352,15 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
         avatarUrl: true,
         isAvailable: true,
         createdAt: true,
+        consultantFns: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: { select: { id: true, name: true, slug: true } },
+          },
+        },
       },
     });
 

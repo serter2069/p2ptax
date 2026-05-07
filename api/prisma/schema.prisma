@@ -31,6 +31,13 @@ model User {
   firstName                    String?   @map("first_name")
   lastName                     String?   @map("last_name")
   avatarUrl                    String?   @map("avatar_url")
+  // ИФНС юзера для контекста налогового консультанта. Подмешивается в
+  // каждый /chat/stream запрос как «Контекст пользователя — Моя ИФНС:
+  // …». Юзер выбирает в /profile, бот в чате может попросить указать
+  // если ситуация требует. Связь soft (SetNull) — если ИФНС удалят из
+  // справочника, поле обнулится, но юзер не сломается.
+  consultantFnsId              String?   @map("consultant_fns_id")
+  consultantFns                FnsOffice? @relation("UserConsultantFns", fields: [consultantFnsId], references: [id], onDelete: SetNull)
   isAvailable                  Boolean   @default(false) @map("is_available")
   isBanned                     Boolean   @default(false) @map("is_banned")
   // Iter13 — specialist catalog visibility. When true, appears in public catalog.
@@ -288,6 +295,9 @@ model FnsOffice {
   requests           Request[]
   vipSubscribers     SpecialistVipFns[]
   staff              FnsStaff[]
+  // Юзеры, выбравшие эту инспекцию своей в настройках консультанта.
+  // SetNull сверху — если запись удалят, у юзера обнулится поле.
+  consultantUsers    User[]              @relation("UserConsultantFns")
 
   @@map("fns_offices")
 }

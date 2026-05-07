@@ -32,6 +32,7 @@ import ProfileTab from "@/components/settings/ProfileTab";
 import BillingTab from "@/components/settings/BillingTab";
 import SpecialistTab from "@/components/settings/SpecialistTab";
 import InlineWorkArea from "@/components/settings/InlineWorkArea";
+import ConsultantFnsCard from "@/components/settings/ConsultantFnsCard";
 import { dialog } from "@/lib/dialog";
 import { useNoIndex } from "@/components/seo/NoIndex";
 
@@ -368,6 +369,11 @@ export default function UnifiedProfile() {
                 onToggleSpecialist={form.handleToggleSpecialist}
                 onPersonalBlur={form.autosavePersonal}
               />
+
+              {/* Карточка с выбором ИФНС для бота-консультанта.
+                  Не зависит от useSettingsForm — пишет напрямую через
+                  /api/user/profile и обновляет user в auth-context. */}
+              <ConsultantFnsCard />
 
               {/* Specialist section appears below personal data when
                   the toggle is on. Disappears entirely when off. */}
