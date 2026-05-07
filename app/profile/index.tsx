@@ -12,7 +12,6 @@ import PageTitle from "@/components/layout/PageTitle";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router as routerSingleton } from "expo-router";
 import {
-  ChevronLeft,
   LogOut,
   Trash2,
   RefreshCw,
@@ -28,7 +27,6 @@ import LoadingState from "@/components/ui/LoadingState";
 import StyledSwitch from "@/components/ui/StyledSwitch";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { colors } from "@/lib/theme";
-import { Z } from "@/lib/zIndex";
 import { useSettingsForm, type AutosaveStatus } from "@/lib/useSettingsForm";
 import ProfileTab from "@/components/settings/ProfileTab";
 import BillingTab from "@/components/settings/BillingTab";
@@ -293,21 +291,11 @@ export default function UnifiedProfile() {
   if (!ready) {
     return (
       <SafeAreaView className="flex-1 bg-surface2">
-        {!isDesktop && (
-          <View className="px-4 pt-4">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Назад"
-              onPress={() => router.back()}
-              className="flex-row items-center mb-2"
-              style={{ minHeight: 44 }}
-            >
-              <ChevronLeft size={20} color={colors.text} />
-              <Text className="text-text-base ml-1">Назад</Text>
-            </Pressable>
-          </View>
-        )}
-        <PageTitle title="Профиль" />
+        <PageTitle
+          title="Профиль"
+          maxWidth={720}
+          onBack={router.canGoBack() ? () => router.back() : undefined}
+        />
         <LoadingState variant="skeleton" lines={5} />
       </SafeAreaView>
     );
@@ -315,53 +303,22 @@ export default function UnifiedProfile() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface2">
-      {!isDesktop && (
-        <View className="px-4 pt-4">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Назад"
-            onPress={() => router.back()}
-            className="flex-row items-center mb-2"
-            style={{ minHeight: 44 }}
-          >
-            <ChevronLeft size={20} color={colors.text} />
-            <Text className="text-text-base ml-1">Назад</Text>
-          </Pressable>
-        </View>
-      )}
-
-      {/* Sticky title + autosave indicator */}
-      <View
-        className="bg-surface2"
-        style={
-          Platform.OS === "web"
-            ? ({ position: "sticky", top: 0, zIndex: Z.STICKY } as never)
-            : undefined
-        }
-      >
-        <View
-          style={{
-            width: "100%",
-            maxWidth: 720,
-            alignSelf: "center",
-            paddingHorizontal: 24,
-            paddingTop: 12,
-            paddingBottom: 8,
-            flexDirection: "row",
-            alignItems: "center",
-            minHeight: 56,
-          }}
-        >
-          <Text className="text-xl font-bold text-text-base" style={{ flex: 1 }}>
-            Профиль
-          </Text>
+      {/* Унифицированный header: «Назад» (если есть куда) + заголовок
+          в одной строке + AutosaveIndicator справа. Раньше был
+          sticky-заголовок с отдельной кнопкой «Назад» сверху —
+          получалось три строки заголовка вместо одной. */}
+      <PageTitle
+        title="Профиль"
+        maxWidth={720}
+        onBack={router.canGoBack() ? () => router.back() : undefined}
+        rightSlot={
           <AutosaveIndicator
             status={form.autosaveStatus}
             lastSavedAt={form.lastSavedAt}
             onRetry={form.retryAutosave}
           />
-        </View>
-      </View>
+        }
+      />
 
       <ScrollView
         className="flex-1"

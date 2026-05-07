@@ -15,7 +15,8 @@ import MyContactsEditor from "@/components/contacts/MyContactsEditor";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
-import { ChevronLeft, X, Check } from "lucide-react-native";
+import { X, Check } from "lucide-react-native";
+import PageTitle from "@/components/layout/PageTitle";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -27,7 +28,6 @@ import { colors } from "@/lib/theme";
 import CityFnsServicePicker, {
   type FnsCascadeOption,
 } from "@/components/shared/CityFnsServicePicker";
-import { Z } from "@/lib/zIndex";
 import InlineOtpFlow from "@/components/requests/InlineOtpFlow";
 import FileUploadSection, { type AttachedFile } from "@/components/requests/FileUploadSection";
 import { draftStorage } from "@/lib/draftStorage";
@@ -397,49 +397,20 @@ export default function CreateRequest() {
           isAuthenticated={false}
         />
       )}
-      <View
-        className="bg-surface2"
-        style={{
-          ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: Z.STICKY } as object) : {}),
+      {/* Унифицированный header: «Назад» слева в той же строке, что и
+          заголовок — раньше «Назад» была отдельной строкой сверху и
+          толкала всю форму вниз. */}
+      <PageTitle
+        title="Новый запрос"
+        maxWidth={720}
+        onBack={() => {
+          // router.back() возвращает на предыдущую страницу. Если
+          // /requests/new — точка входа (deep-link, шаринг ссылки),
+          // back-stack пустой — отправляем на главную по умолчанию.
+          if (router.canGoBack()) router.back();
+          else nav.routes.home();
         }}
-      >
-        <View
-          style={{
-            width: "100%",
-            maxWidth: 720,
-            alignSelf: "center",
-            paddingHorizontal: 24,
-          }}
-        >
-          {/* Кнопка «Назад» — всегда видна, не только на мобиле.
-              Раньше прятали на десктопе для авторизованных, и юзер,
-              нечаянно нажавший «Создать запрос», оставался без выхода.
-              Анонимам тоже полезно — есть LandingHeader, но кнопка
-              «назад в исходник» более прямой путь. */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Назад"
-            onPress={() => {
-              // router.back() возвращает на предыдущую страницу. Если
-              // /requests/new — точка входа (deep-link, шаринг ссылки),
-              // back-stack пустой — отправляем на каталог по умолчанию.
-              if (router.canGoBack()) router.back();
-              else nav.routes.home();
-            }}
-            className="flex-row items-center mt-4 mb-1"
-            style={{ minHeight: 44 }}
-          >
-            <ChevronLeft size={20} color={colors.text} />
-            <Text className="text-text-base ml-1">Назад</Text>
-          </Pressable>
-          <Text
-            className="text-xl font-bold text-text-base"
-            style={{ paddingTop: 16, paddingBottom: 16 }}
-          >
-            Новый запрос
-          </Text>
-        </View>
-      </View>
+      />
       <ScrollView
         className="flex-1"
         keyboardShouldPersistTaps="handled"
