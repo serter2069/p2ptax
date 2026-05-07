@@ -134,7 +134,15 @@ router.post("/threads/:id/archive", async (req: Request, res: Response) => {
 
 // ─────────────────────── POST /chat — main endpoint
 
-interface ChatBody { message?: string; threadId?: string }
+interface ChatBody {
+  message?: string;
+  threadId?: string;
+  // FE-only: если юзер выбрал свою ИФНС в шапке консультанта, она шлётся
+  // как отдельное поле. В БД сохраняем оригинал message, а в TaxLLM
+  // отправляем склейку — чтобы в истории чата юзер видел свой чистый
+  // вопрос, а бот всё равно учитывал регион.
+  userContext?: string | null;
+}
 
 router.post("/chat", chatLimiter, async (req: Request, res: Response) => {
   const userId = req.user!.userId;
@@ -261,6 +269,7 @@ router.post("/chat/stream", chatLimiter, async (req: Request, res: Response) => 
   const userId = req.user!.userId;
   const body = req.body as ChatBody;
   const message = (body.message ?? "").trim();
+  const userContext = (body.userContext ?? "").trim();
   if (!message) return res.status(400).json({ error: "message_required" });
   if (message.length > 4000) return res.status(400).json({ error: "message_too_long" });
 
@@ -313,9 +322,14 @@ router.post("/chat/stream", chatLimiter, async (req: Request, res: Response) => 
   const tempId = `tmp-${Date.now()}`;
   send({ type: "start", threadId: thread.id, tempId, autoRolled });
 
+  // ФНС-контекст подмешиваем только в TaxLLM, в БД остаётся чистый message.
+  const taxllmMessage = userContext
+    ? `[Контекст пользователя — ${userContext}]\n\n${message}`
+    : message;
+
   let upstream: globalThis.Response;
   try {
-    upstream = await streamTaxLLM(message, {
+    upstream = await streamTaxLLM(taxllmMessage, {
       conversationId: `p2ptax-${userId}-${thread.id}`,
       history,
     });
@@ -407,11 +421,31 @@ router.post("/chat/stream", chatLimiter, async (req: Request, res: Response) => 
   const suggestedActions =
     intent === "tax" ? suggestTemplatesFor(`${message}\n\n${answer}`) : [];
 
+  // CTA-пилюли «Создать запрос на P2PTax» + «Найти специалиста». Показываем
+  // только в tax-режиме (на casual/clarify «найти специалиста по как-дела»
+  // выглядит абсурдно). create_request приоритетнее когда юзер сам в
+  // ответе пушит «обратитесь к специалисту» — этот флаг детектим по
+  // тексту ответа.
+  const actions: Array<{ type: string; label: string; href: string }> = [];
+  if (intent === "tax") {
+    actions.push({
+      type: "create_request",
+      label: "Создать запрос на P2PTax",
+      href: "/requests/new",
+    });
+    actions.push({
+      type: "find_specialist",
+      label: "Найти специалиста",
+      href: "/specialists",
+    });
+  }
+
   send({
     type: "done",
     messageId: assistant.id,
     createdAt: assistant.createdAt,
     suggestedActions,
+    actions,
     usage,
     intent,
   });
