@@ -1,103 +1,144 @@
-import { useEffect, useState, useCallback } from "react";
-import { View, Text, Pressable, TextInput, ActivityIndicator } from "react-native";
-import { Plus, Trash2 } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { View, Text, Pressable, Modal, ActivityIndicator } from "react-native";
+import {
+  Trash2,
+  ChevronDown,
+  Plus,
+  Phone,
+  Mail,
+  Send,
+  MessageCircle,
+  Globe,
+  type LucideIcon,
+} from "lucide-react-native";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import { dialog } from "@/lib/dialog";
 import { apiGet, apiPost, apiDelete } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
 export interface UserContactRow {
   id: string;
-  kind: string; // email | phone | telegram | whatsapp | other
+  kind: string;
   value: string;
   label: string | null;
   sortOrder: number;
 }
 
-const KIND_OPTIONS: { value: string; label: string; icon: string; placeholder: string }[] = [
-  { value: "email",    label: "Email",    icon: "✉️", placeholder: "you@example.com" },
-  { value: "phone",    label: "Телефон",  icon: "📞", placeholder: "+7 (___) ___-__-__" },
-  { value: "telegram", label: "Telegram", icon: "✈️", placeholder: "@username или t.me/username" },
-  { value: "whatsapp", label: "WhatsApp", icon: "💬", placeholder: "+7 (___) ___-__-__" },
-  { value: "other",    label: "Другое",   icon: "🔗", placeholder: "ссылка / ник / адрес" },
-];
+// Тот же набор и UX, что у специалиста (components/settings/
+// ContactMethodsList) — просто другой эндпоинт + другая модель
+// (UserContact вместо ContactMethod). Пользователь жаловался что
+// тут был свой собственный плохой UX; восстанавливаем единообразие.
+const KIND_LABELS: Record<string, string> = {
+  phone: "Телефон",
+  email: "Email",
+  telegram: "Telegram",
+  whatsapp: "WhatsApp",
+  other: "Другое",
+};
+const KIND_ICONS: Record<string, LucideIcon> = {
+  phone: Phone,
+  email: Mail,
+  telegram: Send,
+  whatsapp: MessageCircle,
+  other: Globe,
+};
+const KINDS = Object.keys(KIND_LABELS);
 
-const KIND_BY: Record<string, (typeof KIND_OPTIONS)[number]> = Object.fromEntries(
-  KIND_OPTIONS.map((k) => [k.value, k]),
-);
+function placeholderFor(kind: string): string {
+  switch (kind) {
+    case "phone":
+    case "whatsapp":
+      return "+7 (___) ___-__-__";
+    case "telegram":
+      return "@username";
+    case "email":
+      return "email@example.com";
+    default:
+      return "ссылка / ник / адрес";
+  }
+}
+
+function keyboardFor(kind: string) {
+  if (kind === "phone" || kind === "whatsapp") return "phone-pad" as const;
+  if (kind === "email") return "email-address" as const;
+  return "default" as const;
+}
 
 interface Props {
-  /** Если true — всё компактно (без хедера), для встраивания в форму запроса. */
-  compact?: boolean;
-  /** Колбэк после любого изменения списка (полезно вызывающему). */
+  /** Колбэк после любого изменения списка. */
   onChange?: (items: UserContactRow[]) => void;
 }
 
 /**
- * CRUD-редактор «Мои контакты». Используется на /profile и инлайн на
- * /requests/new (когда клиент включает «Показывать мои контакты»).
- * Хранит данные на сервере в UserContact, а email-контакт автоматически
- * создаётся при регистрации — пользователь может удалить и его.
+ * Редактор контактов клиента — UX идентичен ContactMethodsList у
+ * специалиста: список карточек + кнопка «Добавить контакт» снизу,
+ * раскрывающаяся в форму с Modal-пикером типа.
+ *
+ * Используется на /profile (постоянная секция) и инлайн на
+ * /requests/new (когда тумблер «Опубликовать мои контакты» включён).
  */
-export default function MyContactsEditor({ compact, onChange }: Props) {
-  const [items, setItems] = useState<UserContactRow[]>([]);
+export default function MyContactsEditor({ onChange }: Props) {
+  const [contacts, setContacts] = useState<UserContactRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Форма добавления нового контакта.
+  const [adding, setAdding] = useState(false);
   const [newKind, setNewKind] = useState<string>("phone");
   const [newValue, setNewValue] = useState("");
-  const [adding, setAdding] = useState(false);
-
-  const refresh = useCallback(async () => {
-    try {
-      const res = await apiGet<{ items: UserContactRow[] }>("/api/user/contacts");
-      setItems(res.items);
-      onChange?.(res.items);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Не удалось загрузить контакты");
-    } finally {
-      setLoading(false);
-    }
-  }, [onChange]);
+  const [showTypePicker, setShowTypePicker] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    apiGet<{ items: UserContactRow[] }>("/api/user/contacts")
+      .then((res) => {
+        setContacts(res.items);
+        onChange?.(res.items);
+      })
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleAdd = useCallback(async () => {
-    const v = newValue.trim();
-    if (!v) return;
-    setAdding(true);
-    setError(null);
+  const handleAdd = async () => {
+    if (!newValue.trim()) {
+      dialog.alert({ title: "Ошибка", message: "Введите значение контакта" });
+      return;
+    }
+    setSaving(true);
     try {
       const created = await apiPost<UserContactRow>("/api/user/contacts", {
         kind: newKind,
-        value: v,
+        value: newValue.trim(),
       });
-      const next = [...items, created];
-      setItems(next);
+      const next = [...contacts, created];
+      setContacts(next);
       onChange?.(next);
-      setNewValue("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Не удалось добавить контакт");
-    } finally {
       setAdding(false);
+      setNewValue("");
+      setNewKind("phone");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Не удалось добавить контакт";
+      dialog.alert({ title: "Ошибка", message: msg });
+    } finally {
+      setSaving(false);
     }
-  }, [items, newKind, newValue, onChange]);
+  };
 
-  const handleDelete = useCallback(
-    async (id: string) => {
-      const next = items.filter((c) => c.id !== id);
-      setItems(next);
+  const handleDelete = async (id: string) => {
+    const ok = await dialog.confirm({
+      title: "Удалить контакт?",
+      message: "Это действие нельзя отменить",
+      confirmLabel: "Удалить",
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await apiDelete(`/api/user/contacts/${id}`);
+      const next = contacts.filter((c) => c.id !== id);
+      setContacts(next);
       onChange?.(next);
-      try {
-        await apiDelete(`/api/user/contacts/${id}`);
-      } catch {
-        // откат
-        await refresh();
-      }
-    },
-    [items, onChange, refresh],
-  );
+    } catch {
+      dialog.alert({ title: "Ошибка", message: "Не удалось удалить контакт" });
+    }
+  };
 
   if (loading) {
     return (
@@ -109,178 +150,169 @@ export default function MyContactsEditor({ compact, onChange }: Props) {
 
   return (
     <View>
-      {!compact && (
-        <Text
-          style={{
-            fontSize: 11,
-            fontWeight: "700",
-            color: colors.textMuted,
-            textTransform: "uppercase",
-            letterSpacing: 1,
-            marginBottom: 8,
-          }}
-        >
-          Мои контакты
-        </Text>
-      )}
-      <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12, lineHeight: 16 }}>
-        Эти контакты увидят авторизованные специалисты по кнопке «Показать контакты» на запросе — если вы включили показ. На каждом запросе видимость можно переключить отдельно.
-      </Text>
+      {contacts.map((contact) => {
+        const Icon = KIND_ICONS[contact.kind] ?? Globe;
+        return (
+          <View
+            key={contact.id}
+            className="flex-row items-center bg-surface2 border border-border rounded-xl px-4 py-3 mb-2"
+          >
+            <Icon size={18} color={colors.textMuted} style={{ marginRight: 12 }} />
+            <View className="flex-1">
+              <Text className="text-xs text-text-mute mb-0.5">
+                {KIND_LABELS[contact.kind] ?? contact.kind}
+              </Text>
+              <Text className="text-sm font-medium text-text-base">{contact.value}</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Удалить контакт"
+              onPress={() => handleDelete(contact.id)}
+              className="ml-2 p-2"
+            >
+              <Trash2 size={16} color={colors.error} />
+            </Pressable>
+          </View>
+        );
+      })}
 
-      {/* Список существующих контактов */}
-      {items.length > 0 && (
-        <View style={{ gap: 8, marginBottom: 12 }}>
-          {items.map((c) => {
-            const kind = KIND_BY[c.kind] ?? KIND_BY.other;
-            return (
-              <View
-                key={c.id}
-                className="flex-row items-center"
-                style={{
-                  gap: 10,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  backgroundColor: colors.white,
-                }}
-              >
-                <Text style={{ fontSize: 16 }}>{kind.icon}</Text>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: "600" }}>
-                    {kind.label}
-                  </Text>
-                  <Text style={{ fontSize: 14, color: colors.text, marginTop: 1 }} numberOfLines={1}>
-                    {c.value}
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Удалить контакт"
-                  onPress={() => handleDelete(c.id)}
-                  hitSlop={8}
-                  style={({ pressed }) => [
-                    {
-                      padding: 6,
-                      borderRadius: 8,
-                    },
-                    pressed && { opacity: 0.6 },
-                  ]}
-                >
-                  <Trash2 size={15} color={colors.textMuted} />
-                </Pressable>
+      {adding ? (
+        <View className="bg-surface2 border border-border rounded-xl p-4 mb-2">
+          <Text className="text-sm font-medium text-text-base mb-2">Тип контакта</Text>
+
+          <View style={{ marginBottom: 12 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Выбрать тип контакта"
+              onPress={() => setShowTypePicker(true)}
+              className="flex-row items-center justify-between bg-white border border-border rounded-xl px-4 py-3"
+            >
+              <View className="flex-row items-center">
+                {(() => {
+                  const Icon = KIND_ICONS[newKind] ?? Globe;
+                  return <Icon size={16} color={colors.textMuted} style={{ marginRight: 10 }} />;
+                })()}
+                <Text className="text-base text-text-base">{KIND_LABELS[newKind]}</Text>
               </View>
-            );
-          })}
-        </View>
-      )}
+              <ChevronDown size={14} color={colors.placeholder} />
+            </Pressable>
+          </View>
 
-      {/* Форма добавления */}
-      <View
-        style={{
-          gap: 8,
-          padding: 12,
-          borderRadius: 10,
-          borderWidth: 1,
-          borderColor: colors.border,
-          borderStyle: "dashed",
-          backgroundColor: colors.white,
-        }}
-      >
-        <Text style={{ fontSize: 12, fontWeight: "600", color: colors.textSecondary }}>
-          Добавить контакт
-        </Text>
-        <View className="flex-row flex-wrap" style={{ gap: 6 }}>
-          {KIND_OPTIONS.map((opt) => {
-            const active = newKind === opt.value;
-            return (
-              <Pressable
-                key={opt.value}
-                accessibilityRole="button"
-                accessibilityLabel={opt.label}
-                onPress={() => setNewKind(opt.value)}
-                style={({ pressed }) => [
-                  {
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 999,
-                    borderWidth: 1,
-                    borderColor: active ? colors.primary : colors.border,
-                    backgroundColor: active ? colors.primary : colors.white,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 4,
-                  },
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Text style={{ fontSize: 12 }}>{opt.icon}</Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: active ? "600" : "400",
-                    color: active ? colors.white : colors.textSecondary,
-                  }}
-                >
-                  {opt.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <View className="flex-row" style={{ gap: 8 }}>
-          <TextInput
-            value={newValue}
-            onChangeText={setNewValue}
-            placeholder={KIND_BY[newKind]?.placeholder ?? ""}
-            placeholderTextColor={colors.placeholder}
-            autoCapitalize="none"
-            keyboardType={newKind === "phone" || newKind === "whatsapp" ? "phone-pad" : "default"}
-            editable={!adding}
-            style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: 10,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              fontSize: 14,
-              color: colors.text,
-              backgroundColor: colors.white,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              outlineWidth: 0 as any,
-            }}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Добавить"
-            onPress={handleAdd}
-            disabled={!newValue.trim() || adding}
-            style={({ pressed }) => [
-              {
-                paddingHorizontal: 14,
-                borderRadius: 10,
-                backgroundColor: colors.primary,
+          <Modal
+            transparent
+            animationType="fade"
+            visible={showTypePicker}
+            onRequestClose={() => setShowTypePicker(false)}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Закрыть"
+              onPress={() => setShowTypePicker(false)}
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(15, 23, 42, 0.45)",
                 alignItems: "center",
                 justifyContent: "center",
-                flexDirection: "row",
-                gap: 4,
-              },
-              pressed && { opacity: 0.85 },
-              (!newValue.trim() || adding) && { opacity: 0.5 },
-            ]}
-          >
-            <Plus size={14} color={colors.white} />
-            <Text style={{ color: colors.white, fontSize: 13, fontWeight: "600" }}>
-              Добавить
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+                padding: 16,
+              }}
+            >
+              <Pressable
+                onPress={() => {}}
+                style={{
+                  backgroundColor: colors.white,
+                  borderRadius: 16,
+                  width: "100%",
+                  maxWidth: 360,
+                  paddingVertical: 8,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 12 },
+                  shadowOpacity: 0.18,
+                  shadowRadius: 32,
+                }}
+              >
+                <Text
+                  className="text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    color: colors.textMuted,
+                    paddingHorizontal: 16,
+                    paddingTop: 8,
+                    paddingBottom: 8,
+                  }}
+                >
+                  Тип контакта
+                </Text>
+                {KINDS.map((t) => {
+                  const Icon = KIND_ICONS[t] ?? Globe;
+                  const active = newKind === t;
+                  return (
+                    <Pressable
+                      key={t}
+                      accessibilityRole="button"
+                      accessibilityLabel={KIND_LABELS[t]}
+                      onPress={() => {
+                        setNewKind(t);
+                        setShowTypePicker(false);
+                      }}
+                      className={`flex-row items-center px-4 py-3 ${active ? "bg-surface2" : ""}`}
+                    >
+                      <Icon
+                        size={18}
+                        color={active ? colors.accent : colors.textMuted}
+                        style={{ marginRight: 12 }}
+                      />
+                      <Text
+                        className={`text-base ${active ? "text-accent font-medium" : "text-text-base"}`}
+                      >
+                        {KIND_LABELS[t]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </Pressable>
+            </Pressable>
+          </Modal>
 
-      {error && (
-        <Text style={{ fontSize: 12, color: colors.error, marginTop: 8 }}>{error}</Text>
+          <View className="mb-3">
+            <Input
+              variant="bordered"
+              label="Значение"
+              value={newValue}
+              onChangeText={setNewValue}
+              placeholder={placeholderFor(newKind)}
+              autoCapitalize="none"
+              keyboardType={keyboardFor(newKind)}
+            />
+          </View>
+          <View className="flex-row gap-2">
+            <View className="flex-1">
+              <Button
+                variant="secondary"
+                label="Отмена"
+                onPress={() => {
+                  setAdding(false);
+                  setNewValue("");
+                  setNewKind("phone");
+                  setShowTypePicker(false);
+                }}
+              />
+            </View>
+            <View className="flex-1">
+              <Button label="Добавить" onPress={handleAdd} disabled={saving} loading={saving} />
+            </View>
+          </View>
+        </View>
+      ) : contacts.length < 6 ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Добавить контакт"
+          onPress={() => setAdding(true)}
+          className="flex-row items-center justify-center py-3 border border-dashed border-border rounded-xl mb-2"
+        >
+          <Plus size={14} color={colors.primary} />
+          <Text className="text-sm text-accent ml-2 font-medium">Добавить контакт</Text>
+        </Pressable>
+      ) : (
+        <Text className="text-xs text-text-mute text-center mb-2">Максимум 6 контактов</Text>
       )}
     </View>
   );

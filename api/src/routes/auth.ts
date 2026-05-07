@@ -74,12 +74,6 @@ router.post("/request-otp", otpRequestLimiter, async (req: Request, res: Respons
       user = await prisma.user.create({
         data: { email: email.toLowerCase() },
       });
-      // Email сразу добавляем в публичные контакты пользователя.
-      // Если потом не захочет публиковать — удалит в профиле или
-      // выключит тумблер «Показывать мои контакты» на запросе.
-      await prisma.userContact.create({
-        data: { userId: user.id, kind: "email", value: user.email, sortOrder: 0 },
-      });
     }
 
     if (user.isBanned) {

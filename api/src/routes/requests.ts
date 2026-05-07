@@ -1071,8 +1071,8 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     const id = req.params.id as string;
 
-    // Whitelist: title, description, isPublic are editable
-    const ALLOWED_KEYS = ["title", "description", "isPublic"];
+    // Whitelist: title, description, isPublic, showContacts are editable
+    const ALLOWED_KEYS = ["title", "description", "isPublic", "showContacts"];
     const bodyKeys = Object.keys(req.body);
     const unknownKeys = bodyKeys.filter((k) => !ALLOWED_KEYS.includes(k));
     if (unknownKeys.length > 0) {
@@ -1080,11 +1080,11 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    const { title, description, isPublic } = req.body;
+    const { title, description, isPublic, showContacts } = req.body;
 
     // At least one field must be provided
-    if (title === undefined && description === undefined && isPublic === undefined) {
-      res.status(400).json({ error: "At least one field (title, description, or isPublic) is required" });
+    if (title === undefined && description === undefined && isPublic === undefined && showContacts === undefined) {
+      res.status(400).json({ error: "At least one field is required" });
       return;
     }
 
@@ -1109,6 +1109,10 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
       res.status(400).json({ error: "isPublic must be a boolean" });
       return;
     }
+    if (showContacts !== undefined && typeof showContacts !== "boolean") {
+      res.status(400).json({ error: "showContacts must be a boolean" });
+      return;
+    }
 
     const request = await prisma.request.findUnique({ where: { id } });
 
@@ -1131,11 +1135,12 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
     if (title !== undefined) data.title = stripHtml(title);
     if (description !== undefined) data.description = stripHtml(description);
     if (isPublic !== undefined) data.isPublic = isPublic;
+    if (showContacts !== undefined) data.showContacts = showContacts;
 
     const updated = await prisma.request.update({
       where: { id },
       data,
-      select: { id: true, title: true, description: true, status: true, isPublic: true },
+      select: { id: true, title: true, description: true, status: true, isPublic: true, showContacts: true },
     });
 
     res.json(updated);

@@ -639,7 +639,7 @@ export default function CreateRequest() {
 
               {showContacts && isAuthenticated && (
                 <View className="mt-3">
-                  <MyContactsEditor compact />
+                  <MyContactsEditor />
                 </View>
               )}
               {showContacts && !isAuthenticated && (

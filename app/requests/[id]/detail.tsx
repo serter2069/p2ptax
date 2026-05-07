@@ -19,6 +19,7 @@ import { dialog } from "@/lib/dialog";
 import { File, FileImage, Download, ChevronLeft, MessageSquare, Search, XCircle, RefreshCw } from "lucide-react-native";
 import LandingHeader from "@/components/landing/LandingHeader";
 import StatusBadge from "@/components/StatusBadge";
+import StyledSwitch from "@/components/ui/StyledSwitch";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -265,6 +266,7 @@ function OwnerView({
   onFilePress,
   onClose,
   onReopen,
+  onToggleShowContacts,
   isDesktop,
 }: {
   request: RequestDetailData;
@@ -272,10 +274,12 @@ function OwnerView({
   onFilePress: (f: FileItem) => void;
   onClose: () => void;
   onReopen: () => void;
+  onToggleShowContacts: (next: boolean) => void;
   isDesktop: boolean;
 }) {
   const nav = useTypedRouter();
   const isClosed = request.status === "CLOSED";
+  const showContacts = !!request.showContacts;
 
   const ActionPanel = () => (
     <View>
@@ -297,6 +301,37 @@ function OwnerView({
           </Text>
         </Pressable>
       )}
+
+      {/* Тумблер «Показывать мои контакты» — действует на этот
+          конкретный запрос. Сами контакты редактируются в профиле
+          (или инлайн при создании). Если контакт-список пустой —
+          специалист увидит «нет контактов»; пользователь может
+          добавить их по ссылке ниже. */}
+      <View className="bg-white border border-border rounded-xl px-4 py-3 mb-3">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1 mr-3">
+            <Text className="text-sm font-medium text-text-base">
+              Показывать мои контакты
+            </Text>
+            <Text className="text-xs text-text-mute mt-0.5 leading-4">
+              Только авторизованным специалистам по этому запросу.
+            </Text>
+          </View>
+          <StyledSwitch
+            value={showContacts}
+            onValueChange={onToggleShowContacts}
+            disabled={isClosed}
+          />
+        </View>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Изменить мои контакты в профиле"
+          onPress={() => nav.any("/profile")}
+          style={({ pressed }) => [{ marginTop: 8 }, pressed && { opacity: 0.6 }]}
+        >
+          <Text className="text-xs text-accent font-medium">Изменить мои контакты в профиле →</Text>
+        </Pressable>
+      </View>
 
       {/* Close / Reopen button */}
       {isClosed ? (
@@ -990,6 +1025,19 @@ export default function RequestDetail() {
               onFilePress={handleFilePress}
               onClose={handleClose}
               onReopen={handleReopen}
+              onToggleShowContacts={async (next) => {
+                // Оптимистичное обновление состояния, на ошибке откатим.
+                setRequest((prev) =>
+                  prev ? { ...prev, showContacts: next } : prev,
+                );
+                try {
+                  await apiPatch(`/api/requests/${request.id}`, { showContacts: next });
+                } catch {
+                  setRequest((prev) =>
+                    prev ? { ...prev, showContacts: !next } : prev,
+                  );
+                }
+              }}
               isDesktop={isDesktop}
             />
           ) : (
