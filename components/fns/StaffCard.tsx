@@ -1,4 +1,4 @@
-import { createElement, useState } from "react";
+import { useState } from "react";
 import { Pressable, View, Text, Platform } from "react-native";
 import { ArrowRight, Crown, Mail } from "lucide-react-native";
 import { useRouter } from "expo-router";
@@ -12,11 +12,13 @@ interface ChiefBadgeProps {
 }
 
 /**
- * Иконка-корона с tooltip. На web рендерим в `<div title="…">` —
- * React Native View не пробрасывает `title`, и нативный браузерный
- * tooltip работает только через настоящий DOM-элемент.
+ * Корона с быстрым кастомным tooltip-ом. Раньше использовали нативный
+ * атрибут `title` — у браузера встроенная задержка ~700ms, пользователь
+ * жаловался что tooltip появляется очень долго. Здесь — наш собственный
+ * View, появляется мгновенно по hover/focus.
  */
 export function ChiefBadge({ size, title }: ChiefBadgeProps) {
+  const [hovered, setHovered] = useState(false);
   const icon = (
     <Crown
       size={size}
@@ -24,21 +26,62 @@ export function ChiefBadge({ size, title }: ChiefBadgeProps) {
       fill={colors.warning ?? "#f5a623"}
     />
   );
-  if (Platform.OS === "web") {
-    return createElement(
-      "div",
-      {
-        title,
-        style: {
-          display: "inline-flex",
-          alignItems: "center",
-          cursor: "help",
-        },
-      },
-      icon,
-    );
+  if (Platform.OS !== "web") {
+    return <View accessibilityLabel={title}>{icon}</View>;
   }
-  return <View accessibilityLabel={title}>{icon}</View>;
+  const hoverProps = {
+    onMouseEnter: () => setHovered(true),
+    onMouseLeave: () => setHovered(false),
+    onFocus: () => setHovered(true),
+    onBlur: () => setHovered(false),
+  };
+  return (
+    <View
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      style={{ position: "relative", alignSelf: "flex-start", cursor: "help" as any }}
+      {...(hoverProps as object)}
+      accessibilityLabel={title}
+    >
+      {icon}
+      {hovered && (
+        <View
+          // Tooltip-плашка над иконкой. zIndex большой, чтобы
+          // перекрывала соседние карточки в списках. whiteSpace на
+          // web нужен чтобы текст не переносился, на native свойство
+          // игнорируется — поэтому as any.
+          style={{
+            position: "absolute",
+            bottom: size + 6,
+            left: -4,
+            paddingHorizontal: 8,
+            paddingVertical: 5,
+            backgroundColor: "rgba(17, 17, 17, 0.92)",
+            borderRadius: 6,
+            zIndex: 1000,
+            shadowColor: "#000",
+            shadowOpacity: 0.15,
+            shadowRadius: 6,
+            shadowOffset: { width: 0, height: 2 },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ...({ whiteSpace: "nowrap", pointerEvents: "none" } as any),
+          }}
+        >
+          <Text
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            style={{
+              color: "#fff",
+              fontSize: 11,
+              fontWeight: "600",
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ...({ whiteSpace: "nowrap" } as any),
+            }}
+          >
+            {title}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
 }
 
 export interface StaffCardData {
@@ -72,9 +115,10 @@ export default function StaffCard({ staff, compact }: StaffCardProps) {
 
   const fullName = `${staff.lastName} ${staff.firstName} ${staff.middleName ?? ""}`.trim();
   const isChief = /начальник/i.test(staff.position);
-  // На web (десктоп) — корона вместо текста должности (с tooltip).
-  // На native/мобильном — оставляем текст, иначе непонятно.
-  const showPositionText = !(Platform.OS === "web" && isChief);
+  // У начальников должность дублирует корону + отдел («Начальник
+  // правового отдела» = корона + «правовой отдел»). Текст должности
+  // показываем только не-начальникам, у них корона не рендерится.
+  const showPositionText = !isChief;
 
   const hoverProps =
     Platform.OS === "web"
@@ -132,7 +176,7 @@ export default function StaffCard({ staff, compact }: StaffCardProps) {
             {isChief && (
               <ChiefBadge
                 size={compact ? 12 : 15}
-                title={`Начальник: ${staff.position.toLowerCase()}${staff.department ? ` · ${staff.department}` : ""}`}
+                title={staff.position}
               />
             )}
           </View>

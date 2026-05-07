@@ -14,11 +14,9 @@ import {
   ArrowLeft,
   Mail,
   Phone,
-  Briefcase,
   Clock,
-  ArrowRight,
+  MapPin,
   Share2,
-  Copy,
   Check,
 } from "lucide-react-native";
 import Avatar from "@/components/ui/Avatar";
@@ -27,7 +25,6 @@ import CopyableValue from "@/components/ui/CopyableValue";
 import ErrorState from "@/components/ui/ErrorState";
 import LandingHeader from "@/components/landing/LandingHeader";
 import FooterSection from "@/components/landing/FooterSection";
-import FnsLogo from "@/components/fns/FnsLogo";
 import StaffCard, { type StaffCardData, ChiefBadge } from "@/components/fns/StaffCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTypedRouter } from "@/lib/navigation";
@@ -48,8 +45,13 @@ interface StaffDetail {
     id: string;
     name: string;
     code: string;
+    address: string | null;
     workingHours: string | null;
     officialPhone: string | null;
+    officialEmail: string | null;
+    officialWebsite: string | null;
+    latitude: number | null;
+    longitude: number | null;
     city: { id: string; name: string; slug: string };
   };
   colleagues: StaffCardData[];
@@ -225,13 +227,13 @@ export default function FnsStaffPage() {
                 К {staff.fns.name}
               </Text>
             </Pressable>
+            {/* Кнопка всегда «Поделиться» — на мобиле подхватит Web
+                Share API (нативное окно), на десктопе скопирует ссылку
+                и кратко покажет «Скопировано». Раньше десктоп говорил
+                «Копировать ссылку» — путало, теперь всё единообразно. */}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={
-                isDesktop && Platform.OS === "web"
-                  ? "Скопировать ссылку"
-                  : "Поделиться ссылкой на профиль сотрудника"
-              }
+              accessibilityLabel="Поделиться ссылкой на профиль сотрудника"
               onPress={handleShare}
               style={({ pressed }) => [
                 {
@@ -258,23 +260,20 @@ export default function FnsStaffPage() {
                 </>
               ) : (
                 <>
-                  {isDesktop && Platform.OS === "web" ? (
-                    <Copy size={14} color={colors.textSecondary} />
-                  ) : (
-                    <Share2 size={14} color={colors.textSecondary} />
-                  )}
-                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                    {isDesktop && Platform.OS === "web" ? "Копировать ссылку" : "Поделиться"}
-                  </Text>
+                  <Share2 size={14} color={colors.textSecondary} />
+                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Поделиться</Text>
                 </>
               )}
             </Pressable>
           </View>
 
-          {/* Hero — следует тому же паттерну, что StaffCard на странице
-              ИФНС, только в большем размере: фото, ФИО + корона у
-              начальника, ОТДЕЛ крупным заголовком (главное про
-              сотрудника), должность вторым уровнем, рейтинг. */}
+          {/* Hero. Сжали в один блок: фото + ФИО + корона у начальника
+              (с быстрым tooltip-ом «Начальник отдела» на ПК), а сразу
+              под именем — место работы и отдел одной строкой:
+              «Управление ФНС России по Республике Хакасия, правовой
+              отдел». Кликабельно → /fns/{id}. Отдельную строку
+              «Начальник отдела» убрали — корона достаточно. Иконку
+              рюкзачка убрали тоже. */}
           <Card>
             <View
               style={{
@@ -289,7 +288,6 @@ export default function FnsStaffPage() {
                 size="xl"
               />
               <View style={{ flex: 1, minWidth: 0, alignItems: isDesktop ? "flex-start" : "center" }}>
-                {/* ФИО + корона рядом */}
                 <View
                   className="flex-row items-center"
                   style={{
@@ -311,41 +309,33 @@ export default function FnsStaffPage() {
                   {/^начальник/i.test(staff.position) && (
                     <ChiefBadge
                       size={isDesktop ? 22 : 18}
-                      title={`Начальник: ${staff.position.toLowerCase()}${staff.department ? ` · ${staff.department}` : ""}`}
+                      title={staff.position}
                     />
                   )}
                 </View>
-                {/* Отдел — крупный заголовок (главное про сотрудника
-                    после имени). */}
-                {staff.department && (
+                {/* Место работы + отдел одной кликабельной строкой. */}
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel={`Открыть ${staff.fns.name}`}
+                  onPress={() => router.push(`/fns/${staff.fns.id}` as never)}
+                  style={({ pressed }) => [
+                    { marginTop: 8, paddingVertical: 4 },
+                    pressed && { opacity: 0.65 },
+                  ]}
+                >
                   <Text
                     style={{
-                      fontSize: isDesktop ? 18 : 16,
+                      fontSize: isDesktop ? 16 : 14,
                       color: colors.primary,
                       fontWeight: "700",
-                      marginTop: 8,
                       textAlign: isDesktop ? "left" : "center",
-                      lineHeight: isDesktop ? 24 : 22,
+                      lineHeight: isDesktop ? 22 : 20,
                     }}
                   >
-                    {staff.department}
+                    {staff.fns.name}
+                    {staff.department ? `, ${staff.department.toLowerCase()}` : ""}
                   </Text>
-                )}
-                {/* Должность — мелче и сером */}
-                <View
-                  className="flex-row items-center"
-                  style={{
-                    gap: 6,
-                    marginTop: 4,
-                    flexWrap: "wrap",
-                    justifyContent: isDesktop ? "flex-start" : "center",
-                  }}
-                >
-                  <Briefcase size={14} color={colors.textMuted} />
-                  <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-                    {staff.position}
-                  </Text>
-                </View>
+                </Pressable>
               </View>
             </View>
           </Card>
@@ -374,7 +364,11 @@ export default function FnsStaffPage() {
             </Text>
           </Card>
 
-          {/* Контакты */}
+          {/* Контакты — личные сотрудника + контакты ИФНС (адрес,
+              телефон приёмной, режим работы). Адрес кликается →
+              открывает Яндекс.Карты в новом окне. Email и телефон
+              копируются. Дублируем то же что на странице ИФНС, чтобы
+              пользователь не возвращался назад. */}
           <Card>
             <Text
               style={{
@@ -403,6 +397,46 @@ export default function FnsStaffPage() {
                   icon={<Mail size={14} color={colors.textMuted} />}
                 />
               )}
+              {/* Контакты ИФНС: телефон приёмной (если у сотрудника
+                  личного нет), адрес с ссылкой на карту, часы. */}
+              {!staff.phone && staff.fns.officialPhone && (
+                <CopyableValue
+                  value={staff.fns.officialPhone}
+                  icon={<Phone size={14} color={colors.textMuted} />}
+                />
+              )}
+              {staff.fns.address && (
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel="Открыть адрес на Яндекс.Картах"
+                  onPress={() => {
+                    const q = encodeURIComponent(`${staff.fns.name} ${staff.fns.address ?? ""}`.trim());
+                    const url = staff.fns.latitude && staff.fns.longitude
+                      ? `https://yandex.ru/maps/?ll=${staff.fns.longitude},${staff.fns.latitude}&z=17&pt=${staff.fns.longitude},${staff.fns.latitude},pm2rdm`
+                      : `https://yandex.ru/maps/?text=${q}`;
+                    if (typeof window !== "undefined") {
+                      window.open(url, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                  style={({ pressed }) => [
+                    { flexDirection: "row", alignItems: "flex-start", gap: 8, paddingVertical: 4 },
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <MapPin size={14} color={colors.textMuted} style={{ marginTop: 2 }} />
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontSize: 13,
+                      color: colors.primary,
+                      fontWeight: "600",
+                      lineHeight: 18,
+                    }}
+                  >
+                    {staff.fns.address}
+                  </Text>
+                </Pressable>
+              )}
               {staff.fns.workingHours && (
                 <View className="flex-row items-start" style={{ gap: 8 }}>
                   <Clock size={14} color={colors.textMuted} style={{ marginTop: 2 }} />
@@ -420,52 +454,6 @@ export default function FnsStaffPage() {
               )}
             </View>
           </Card>
-
-          {/* Место работы — компактный баннер с гербом ФНС перед коллегами. */}
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={`Перейти на страницу ${staff.fns.name}`}
-            onPress={() => router.push(`/fns/${staff.fns.id}` as never)}
-            style={({ pressed }) => [
-              {
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 14,
-                paddingVertical: 14,
-                paddingHorizontal: 14,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: colors.surface,
-              },
-              pressed && { opacity: 0.85, borderColor: colors.primary },
-            ]}
-          >
-            <FnsLogo name={staff.fns.name} cityName={staff.fns.city.name} size="md" />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: colors.textMuted,
-                  fontWeight: "700",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                }}
-              >
-                Место работы · код {staff.fns.code}
-              </Text>
-              <Text
-                style={{ fontSize: 14, color: colors.text, fontWeight: "700", marginTop: 2, lineHeight: 19 }}
-                numberOfLines={2}
-              >
-                {staff.fns.name}
-              </Text>
-              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                {staff.fns.city.name}
-              </Text>
-            </View>
-            <ArrowRight size={16} color={colors.textMuted} />
-          </Pressable>
 
           {/* Коллеги по отделу */}
           {staff.colleagues.length > 0 && (
