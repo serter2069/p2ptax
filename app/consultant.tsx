@@ -44,7 +44,7 @@ import {
   Bug,
 } from "lucide-react-native";
 import { colors, spacing } from "@/lib/theme";
-import { apiGet, apiPost, ApiError } from "@/lib/api";
+import { apiGet, apiPost, ApiError, API_URL, getAccessToken } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Source = {
@@ -180,37 +180,129 @@ export default function ConsultantScreen() {
     if (!message || sending) return;
     setInput("");
     setSuggestedActions([]);
-    const optimistic: Message = {
+    const userMsg: Message = {
       id: `tmp-${Date.now()}`,
       role: "user",
       content: message,
       createdAt: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, optimistic]);
+    const assistantPlaceholderId = `streaming-${Date.now()}`;
+    const assistantPlaceholder: Message = {
+      id: assistantPlaceholderId,
+      role: "assistant",
+      content: "",
+      createdAt: new Date().toISOString(),
+      sources: [],
+    };
+    setMessages((prev) => [...prev, userMsg, assistantPlaceholder]);
     setSending(true);
-    pushLog({ event: "chat.request", message, threadId });
+    pushLog({ event: "chat.request", message, threadId, mode: "stream" });
+
+    const updateAssistant = (patch: Partial<Message>) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === assistantPlaceholderId ? { ...m, ...patch } : m)),
+      );
+    };
+    const appendToken = (text: string) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantPlaceholderId ? { ...m, content: m.content + text } : m,
+        ),
+      );
+    };
+
     try {
-      const r = await apiPost<{
-        threadId: string;
-        autoRolled: boolean;
-        message: Message;
-        suggestedActions?: SuggestedAction[];
-      }>("/api/consultant/chat", { message, threadId });
-      pushLog({
-        event: "chat.response",
-        threadId: r.threadId,
-        autoRolled: r.autoRolled,
-        suggestedActions: r.suggestedActions ?? [],
-        answerLen: r.message?.content?.length ?? 0,
-        sources: r.message?.sources?.length ?? 0,
+      const token = await getAccessToken();
+      const resp = await fetch(`${API_URL}/api/consultant/chat/stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ message, threadId }),
       });
-      if (threadId && r.threadId !== threadId && r.autoRolled) {
-        setMessages([optimistic, r.message]);
-      } else {
-        setMessages((prev) => [...prev, r.message]);
+      if (!resp.ok) {
+        throw new ApiError(resp.status, `stream HTTP ${resp.status}`);
       }
-      setThreadId(r.threadId);
-      setSuggestedActions(r.suggestedActions ?? []);
+      if (!resp.body) {
+        throw new Error("no_stream_body");
+      }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let intent = "tax";
+      let serverMessageId: string | null = null;
+      let serverThreadId = threadId;
+      let receivedMeta = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let nl = buf.indexOf("\n");
+        while (nl !== -1) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          nl = buf.indexOf("\n");
+          if (!line) continue;
+          let evt: {
+            type?: string;
+            text?: string;
+            sources?: Source[];
+            intent?: string;
+            threadId?: string;
+            tempId?: string;
+            autoRolled?: boolean;
+            messageId?: string;
+            createdAt?: string;
+            usage?: Message["usage"];
+            suggestedActions?: SuggestedAction[];
+            message?: string;
+          };
+          try {
+            evt = JSON.parse(line);
+          } catch {
+            continue;
+          }
+          if (evt.type === "start") {
+            if (evt.threadId) serverThreadId = evt.threadId;
+            if (evt.threadId && threadId && evt.threadId !== threadId && evt.autoRolled) {
+              // backend autoRolled — старая переписка ушла в архив, в UI оставляем только текущий ход
+              setMessages([userMsg, assistantPlaceholder]);
+            }
+          } else if (evt.type === "meta") {
+            receivedMeta = true;
+            if (evt.intent) intent = evt.intent;
+            updateAssistant({ sources: evt.sources ?? [] });
+          } else if (evt.type === "token" && evt.text) {
+            appendToken(evt.text);
+          } else if (evt.type === "done") {
+            serverMessageId = evt.messageId ?? null;
+            updateAssistant({
+              id: evt.messageId ?? assistantPlaceholderId,
+              createdAt: evt.createdAt ?? new Date().toISOString(),
+              usage: evt.usage,
+            });
+            setSuggestedActions(evt.suggestedActions ?? []);
+          } else if (evt.type === "error") {
+            updateAssistant({
+              content:
+                evt.message === "taxllm_unavailable"
+                  ? "Сервис консультанта временно недоступен. Попробуйте через минуту."
+                  : "Не удалось получить ответ. Попробуйте ещё раз.",
+            });
+          }
+        }
+      }
+
+      if (serverThreadId) setThreadId(serverThreadId);
+      pushLog({
+        event: "chat.response.stream",
+        threadId: serverThreadId,
+        intent,
+        messageId: serverMessageId,
+        receivedMeta,
+      });
     } catch (e) {
       pushLog({
         event: "chat.error",
@@ -223,15 +315,7 @@ export default function ConsultantScreen() {
           : e instanceof ApiError && e.status === 429
           ? "Слишком много запросов — подождите немного."
           : "Не удалось получить ответ. Попробуйте ещё раз.";
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `err-${Date.now()}`,
-          role: "assistant",
-          content: errMsg,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      updateAssistant({ content: errMsg });
     } finally {
       setSending(false);
     }

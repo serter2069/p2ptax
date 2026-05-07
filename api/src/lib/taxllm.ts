@@ -40,13 +40,35 @@ export interface TaxLLMResponse {
   sources: TaxLLMSource[];
   usage: TaxLLMUsage;
   debug?: TaxLLMDebug;
+  intent?: "tax" | "casual" | "clarify";
 }
 
-export async function askTaxLLM(message: string, conversationId?: string): Promise<TaxLLMResponse> {
+export interface TaxLLMHistoryItem {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AskTaxLLMOptions {
+  conversationId?: string;
+  history?: TaxLLMHistoryItem[];
+  // Если нужно гарантированно пойти в RAG, минуя intent-классификатор —
+  // используется в /generate (там промпт уже строго налоговый).
+  forceRag?: boolean;
+}
+
+export async function askTaxLLM(
+  message: string,
+  options: AskTaxLLMOptions = {},
+): Promise<TaxLLMResponse> {
   const r = await fetch(`${TAXLLM_URL}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, conversation_id: conversationId }),
+    body: JSON.stringify({
+      message,
+      conversation_id: options.conversationId,
+      history: options.history,
+      force_rag: options.forceRag ?? false,
+    }),
     signal: AbortSignal.timeout(180_000),
   });
   if (!r.ok) {
@@ -54,4 +76,31 @@ export async function askTaxLLM(message: string, conversationId?: string): Promi
     throw new Error(`TaxLLM ${r.status}: ${text.slice(0, 300)}`);
   }
   return (await r.json()) as TaxLLMResponse;
+}
+
+/**
+ * Стрим от TaxLLM. Открывает POST /chat/stream и возвращает body
+ * (ReadableStream | null) — caller сам парсит NDJSON и проксирует
+ * клиенту. На стороне p2ptax-api это делает routes/consultant.ts.
+ */
+export async function streamTaxLLM(
+  message: string,
+  options: AskTaxLLMOptions = {},
+): Promise<Response> {
+  const r = await fetch(`${TAXLLM_URL}/chat/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
+    body: JSON.stringify({
+      message,
+      conversation_id: options.conversationId,
+      history: options.history,
+      force_rag: options.forceRag ?? false,
+    }),
+    signal: AbortSignal.timeout(180_000),
+  });
+  if (!r.ok) {
+    const text = await r.text().catch(() => "");
+    throw new Error(`TaxLLM ${r.status}: ${text.slice(0, 300)}`);
+  }
+  return r;
 }
