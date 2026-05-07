@@ -60,7 +60,7 @@ model User {
   // gets only the regular 5-min-delayed notifications). Daily cron
   // charges plan.monthlyPriceKopeks / 30 once per user.
   subscriptionPlanId           String?   @map("subscription_plan_id")
-  subscriptionPlan             SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id], onDelete: SetNull)
+  subscriptionPlan             SubscriptionPlan? @relation("UserCurrentPlan", fields: [subscriptionPlanId], references: [id], onDelete: SetNull)
   // When the current plan was activated. Used for the "тариф с ..."
   // line on the PRO tab. Cleared along with subscriptionPlanId on
   // failed-charge or explicit cancel.
@@ -69,6 +69,15 @@ model User {
   // платеже (startedAt + 30 дней) и сдвигается +30 дней после
   // каждого успешного автосписания. NULL = подписки нет.
   subscriptionNextChargeAt     DateTime? @map("subscription_next_charge_at")
+  // Запланированная смена тарифа на следующее продление.
+  // Используется ТОЛЬКО для downgrade — апгрейд применяется сразу
+  // (с пропорциональной перезагрузкой цикла). При наступлении
+  // subscriptionNextChargeAt cron подменяет subscriptionPlanId на
+  // pendingPlanId, обрезает VIP-слоты до нового лимита и списывает
+  // по новой цене.
+  pendingPlanId                String?   @map("pending_plan_id")
+  pendingPlan                  SubscriptionPlan? @relation("UserPendingPlan", fields: [pendingPlanId], references: [id], onDelete: SetNull)
+  pendingPlanScheduledAt       DateTime? @map("pending_plan_scheduled_at")
   createdAt                    DateTime  @default(now()) @map("created_at")
   updatedAt                    DateTime  @updatedAt @map("updated_at")
 
@@ -94,6 +103,7 @@ model User {
   savedByUsers            SavedSpecialist[]        @relation("SavedByUser_specialist")
   vipFns                  SpecialistVipFns[]
   billingTxs              BillingTx[]
+  consultantThreads       ConsultantThread[]       @relation("ConsultantThreadUser")
 
   @@map("users")
 }
@@ -352,7 +362,8 @@ model SubscriptionPlan {
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  users              User[]
+  users              User[] @relation("UserCurrentPlan")
+  pendingFor         User[] @relation("UserPendingPlan")
 
   @@map("subscription_plans")
 }
@@ -667,4 +678,44 @@ model SavedSpecialist {
 
   @@unique([userId, specialistId])
   @@map("saved_specialists")
+}
+
+// ============== TaxLLM consultant ==============
+// Persistent chat history with the налоговый ассистент. We store every Q+A
+// so admins can audit conversations and we can later add quotas.
+
+model ConsultantThread {
+  id                  String   @id @default(uuid())
+  userId              String   @map("user_id")
+  title               String?
+  // Soft-delete from the user's view. Admin still sees archived threads.
+  archivedFromUser    Boolean  @default(false) @map("archived_from_user")
+  // Auto-archived because context window was about to overflow. The
+  // frontend silently rolls the user into a fresh thread.
+  contextOverflowedAt DateTime? @map("context_overflowed_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt      @map("updated_at")
+
+  user     User                  @relation("ConsultantThreadUser", fields: [userId], references: [id], onDelete: Cascade)
+  messages ConsultantMessage[]
+
+  @@index([userId, createdAt])
+  @@map("consultant_threads")
+}
+
+model ConsultantMessage {
+  id          String   @id @default(uuid())
+  threadId    String   @map("thread_id")
+  role        String   // "user" | "assistant"
+  content     String   // plain text — markdown for assistant
+  // Source citations and usage stats for assistant messages, JSON-as-text.
+  sourcesJson String?  @map("sources_json")
+  usageJson   String?  @map("usage_json")
+  debugJson   String?  @map("debug_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  thread ConsultantThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+  @@map("consultant_messages")
 }

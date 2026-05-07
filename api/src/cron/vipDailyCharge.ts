@@ -46,7 +46,10 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
       yookassaPaymentMethodId: true,
       subscriptionNextChargeAt: true,
       subscriptionPlan: {
-        select: { id: true, name: true, monthlyPriceKopeks: true },
+        select: { id: true, name: true, monthlyPriceKopeks: true, fnsLimit: true },
+      },
+      pendingPlan: {
+        select: { id: true, name: true, monthlyPriceKopeks: true, fnsLimit: true },
       },
     },
   });
@@ -56,8 +59,53 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
   let skipped = 0;
 
   for (const user of subscribers) {
-    const plan = user.subscriptionPlan;
-    if (!plan || !user.subscriptionNextChargeAt) continue;
+    if (!user.subscriptionPlan || !user.subscriptionNextChargeAt) continue;
+
+    // Применяем запланированную смену тарифа ПЕРЕД списанием. Юзер
+    // оплатил полный цикл предыдущего тарифа — он работал до сегодня.
+    // На сегодняшнем продлении переключаемся на pending: подменяем
+    // план, обрезаем VIP-слоты до нового лимита (oldest first), и
+    // дальнейшее списание идёт уже по новой цене.
+    let plan = user.subscriptionPlan;
+    if (user.pendingPlan && user.pendingPlan.id !== plan.id) {
+      const newPlan = user.pendingPlan;
+      const overflow = await prisma.specialistVipFns.count({
+        where: { specialistId: user.id },
+      }) - newPlan.fnsLimit;
+      await prisma.$transaction(async (tx) => {
+        if (overflow > 0) {
+          // Дропаем самые старые VIP-слоты (oldest activatedAt). Юзер
+          // мог отменить лишние сам в течение цикла, но если не успел —
+          // система оставляет «последние подписанные».
+          const toRemove = await tx.specialistVipFns.findMany({
+            where: { specialistId: user.id },
+            orderBy: { activatedAt: "asc" },
+            take: overflow,
+            select: { id: true },
+          });
+          await tx.specialistVipFns.deleteMany({
+            where: { id: { in: toRemove.map((r) => r.id) } },
+          });
+        }
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            subscriptionPlanId: newPlan.id,
+            pendingPlanId: null,
+            pendingPlanScheduledAt: null,
+          },
+        });
+        await tx.billingTx.create({
+          data: {
+            userId: user.id,
+            amountKopeks: 0,
+            kind: "plan_applied",
+            description: `Применён запланированный переход на тариф «${newPlan.name}»`,
+          },
+        });
+      });
+      plan = newPlan; // дальше списываем по новой цене
+    }
 
     const dueDay = ymd(user.subscriptionNextChargeAt);
     const duePrefix = `pro-mon:${dueDay}:`;
