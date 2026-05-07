@@ -64,12 +64,34 @@ interface RequestDetailData {
   } | null;
 }
 
+interface RevealedContact {
+  id: string;
+  kind: "email" | "phone" | "telegram" | "whatsapp" | "other" | string;
+  value: string;
+  label: string | null;
+}
+
 interface RevealedContacts {
   firstName: string | null;
   lastName: string | null;
-  email: string | null;
-  phone: string | null;
+  contacts: RevealedContact[];
 }
+
+const CONTACT_ICON: Record<string, string> = {
+  email: "✉️",
+  phone: "📞",
+  telegram: "✈️",
+  whatsapp: "💬",
+  other: "🔗",
+};
+
+const CONTACT_LABEL: Record<string, string> = {
+  email: "Email",
+  phone: "Телефон",
+  telegram: "Telegram",
+  whatsapp: "WhatsApp",
+  other: "Другое",
+};
 
 // ─── Shared file list ─────────────────────────────────────────────────────────
 
@@ -424,23 +446,29 @@ function SpecialistView({
             <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wider">
               Контакты клиента
             </Text>
-            <View style={{ gap: 8 }}>
-              {revealed.email && (
-                <Text style={{ fontSize: 14, color: colors.text }}>
-                  ✉️ {revealed.email}
-                </Text>
-              )}
-              {revealed.phone && (
-                <Text style={{ fontSize: 14, color: colors.text }}>
-                  📞 {revealed.phone}
-                </Text>
-              )}
-              {!revealed.email && !revealed.phone && (
-                <Text style={{ fontSize: 13, color: colors.textMuted }}>
-                  Клиент не указал контактных данных.
-                </Text>
-              )}
-            </View>
+            {revealed.contacts.length === 0 ? (
+              <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                Клиент пока не указал контактов в профиле.
+              </Text>
+            ) : (
+              <View style={{ gap: 8 }}>
+                {revealed.contacts.map((c) => (
+                  <View key={c.id} className="flex-row items-baseline" style={{ gap: 8 }}>
+                    <Text style={{ fontSize: 14 }}>{CONTACT_ICON[c.kind] ?? "•"}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, color: colors.text }} selectable>
+                        {c.value}
+                      </Text>
+                      {(c.label || CONTACT_LABEL[c.kind]) && (
+                        <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 1 }}>
+                          {c.label ?? CONTACT_LABEL[c.kind]}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
           </Card>
         ) : (
           <Pressable

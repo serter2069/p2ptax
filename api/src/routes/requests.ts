@@ -498,8 +498,7 @@ router.post(
           userId: true,
           isPublic: true,
           showContacts: true,
-          contactPhone: true,
-          user: { select: { firstName: true, lastName: true, email: true } },
+          user: { select: { firstName: true, lastName: true } },
         },
       });
       if (!r) {
@@ -519,11 +518,15 @@ router.post(
           return;
         }
       }
+      const contacts = await prisma.userContact.findMany({
+        where: { userId: r.userId },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, kind: true, value: true, label: true },
+      });
       res.json({
         firstName: r.user.firstName,
         lastName: r.user.lastName,
-        email: r.user.email,
-        phone: r.contactPhone,
+        contacts,
       });
     } catch (error) {
       console.error("requests/:id/reveal-contacts error:", error);
@@ -535,7 +538,7 @@ router.post(
 // POST /api/requests/public — quick request from landing (auth required)
 router.post("/public", authMiddleware, createRequestRateLimiter, async (req: Request, res: Response) => {
   try {
-    const { title, cityId, fnsId, description, isPublic, showContacts, contactPhone } = req.body;
+    const { title, cityId, fnsId, description, isPublic, showContacts } = req.body;
     const userId = req.user!.userId;
 
     if (!title || !cityId || !fnsId || !description) {
@@ -564,10 +567,6 @@ router.post("/public", authMiddleware, createRequestRateLimiter, async (req: Req
         userId,
         isPublic: typeof isPublic === "boolean" ? isPublic : true,
         showContacts: typeof showContacts === "boolean" ? showContacts : false,
-        contactPhone:
-          typeof contactPhone === "string" && contactPhone.trim().length > 0
-            ? stripHtml(contactPhone.trim()).slice(0, 50)
-            : null,
       },
       select: {
         id: true,
@@ -647,7 +646,7 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { title, cityId, fnsId, serviceId, description, fileIds, pendingFileSessionId, isPublic, showContacts, contactPhone } = req.body;
+    const { title, cityId, fnsId, serviceId, description, fileIds, pendingFileSessionId, isPublic, showContacts } = req.body;
 
     // Validate
     if (!title || title.length < 3 || title.length > 100) {
@@ -709,9 +708,6 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
         userId,
         isPublic: typeof isPublic === "boolean" ? isPublic : true,
         showContacts: typeof showContacts === "boolean" ? showContacts : false,
-        contactPhone: typeof contactPhone === "string" && contactPhone.trim().length > 0
-          ? stripHtml(contactPhone.trim()).slice(0, 50)
-          : null,
       },
       include: {
         city: true,

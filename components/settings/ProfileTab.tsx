@@ -3,6 +3,7 @@ import Input from "@/components/ui/Input";
 import StyledSwitch from "@/components/ui/StyledSwitch";
 import AvatarUploader from "@/components/settings/AvatarUploader";
 import RoleBadge from "@/components/layout/RoleBadge";
+import MyContactsEditor from "@/components/contacts/MyContactsEditor";
 import type { UserRole } from "@/contexts/AuthContext";
 
 /**
@@ -99,6 +100,13 @@ export default function ProfileTab({
         <Text className="text-xs text-text-mute mt-1">
           Необязательно. Можете указать только первую букву
         </Text>
+      </View>
+
+      {/* Мои контакты — общий список (email/phone/telegram/...). Эти
+          же контакты подтягиваются при создании запроса, когда клиент
+          включает «Опубликовать мои контакты для специалистов». */}
+      <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
+        <MyContactsEditor />
       </View>
 
       {/* Тумблер 'Я специалист' — открывает секцию специалиста ниже */}

@@ -77,6 +77,7 @@ model User {
   specialistServices      SpecialistService[]
   specialistCases         SpecialistCase[]
   specialistReviews       SpecialistReview[]
+  contacts                UserContact[]
   requests                Request[]
   clientThreads           Thread[]                 @relation("ClientThreads")
   specialistThreads       Thread[]                 @relation("SpecialistThreads")
@@ -302,6 +303,30 @@ model FnsStaff {
   @@map("fns_staff")
 }
 
+// Контакты пользователя для публичного показа в запросах. Клиент
+// при создании запроса включает тумблер «Показывать мои контакты
+// специалистам» — авторизованный специалист на детальной странице
+// видит весь список UserContact этого пользователя. Email
+// автоматически создаётся при регистрации, остальные клиент
+// добавляет сам в /profile.
+model UserContact {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  // email | phone | telegram | whatsapp | other
+  kind      String
+  value     String
+  // Опциональная пометка («рабочий», «личный», «по будням»).
+  label     String?
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_contacts")
+}
+
 // PRO plan tier — three of these are seeded (Lite/Pro/Premium) and
 // editable by admins on /admin/plans. Each plan has a fixed monthly
 // price and a max number of FNS slots a specialist can flip into
@@ -403,12 +428,11 @@ model Request {
   description     String
   status          RequestStatus @default(ACTIVE)
   isPublic        Boolean       @default(true) @map("is_public")
-  // Клиент может разрешить показ контактов авторизованным
-  // специалистам по кнопке «Показать контакты». Если false —
-  // связь только через внутренний DM. Email берём из user.email,
-  // телефон — из contactPhone (клиент вводит при создании запроса).
+  // Клиент разрешил показ своих контактов авторизованным
+  // специалистам по кнопке «Показать контакты»? Сами контакты
+  // живут на уровне пользователя (UserContact), редактируются в
+  // профиле и переиспользуются между запросами.
   showContacts    Boolean       @default(false) @map("show_contacts")
-  contactPhone    String?       @map("contact_phone")
   lastActivityAt  DateTime      @default(now()) @map("last_activity_at")
   extensionsCount Int           @default(0) @map("extensions_count")
   createdAt       DateTime      @default(now()) @map("created_at")

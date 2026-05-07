@@ -6,12 +6,12 @@ import {
   ActivityIndicator,
   Platform,
   Pressable,
-  TextInput,
   useWindowDimensions,
 } from "react-native";
 import StyledSwitch from "@/components/ui/StyledSwitch";
 import { dialog } from "@/lib/dialog";
 import LandingHeader from "@/components/landing/LandingHeader";
+import MyContactsEditor from "@/components/contacts/MyContactsEditor";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTypedRouter } from "@/lib/navigation";
@@ -86,12 +86,12 @@ export default function CreateRequest() {
   const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
 
   const [isPublic, setIsPublic] = useState(true);
-  // Контакты клиента: показывать ли их авторизованным специалистам
-  // (по кнопке «Показать контакты» на детальной странице запроса).
-  // По умолчанию off — клиент явно соглашается. Плюс отдельное поле
-  // для телефона (email берём из user.email).
+  // Тумблер «Показывать мои контакты специалистам» — управляет
+  // флагом на запросе. Сами контакты (email/phone/telegram/…) живут
+  // на уровне пользователя в UserContact, редактируются инлайн через
+  // MyContactsEditor — те же контакты используются на любом другом
+  // запросе и видны в /profile.
   const [showContacts, setShowContacts] = useState(false);
-  const [contactPhone, setContactPhone] = useState("");
   // Terms acceptance — only enforced for anonymous visitors (authed
   // users accepted at /login). Pre-checked so a returning user with
   // a fresh tab isn't blocked by a stray uncheck.
@@ -291,7 +291,6 @@ export default function CreateRequest() {
         ...(anonSessionId ? { pendingFileSessionId: anonSessionId } : {}),
         isPublic,
         showContacts,
-        ...(showContacts && contactPhone.trim() ? { contactPhone: contactPhone.trim() } : {}),
         ...(targetSpecialistId ? { targetSpecialistId } : {}),
       });
       track("intake_submit", {
@@ -353,7 +352,7 @@ export default function CreateRequest() {
       // already cleared it before opening the dialog.
       setSubmitting(false);
     }
-  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles, anonSessionId, isPublic, showContacts, contactPhone, targetSpecialistId]);
+  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles, anonSessionId, isPublic, showContacts, targetSpecialistId]);
 
   const handleSubmit = useCallback(async () => {
     setSubmitted(true);
@@ -615,18 +614,20 @@ export default function CreateRequest() {
             </View>
 
             {/* Контакты клиента: разрешить/запретить показ автори-
-                зованным специалистам по кнопке «Показать контакты»
-                на детальной странице. По умолчанию off — клиент
-                явно соглашается. Если on — раскрывается поле
-                телефона (email берём из аккаунта). */}
+                зованным специалистам. Когда тумблер включён — рендерим
+                MyContactsEditor (тот же что в профиле): пользователь
+                видит свои контакты и может прямо здесь добавить или
+                удалить. Email уже в списке по умолчанию (его создаём
+                при регистрации) — клиент может удалить, если не хочет
+                публиковать. */}
             <View className="py-3 border-t border-border">
               <View className="flex-row items-center justify-between">
                 <View className="flex-1 mr-4">
                   <Text className="text-sm font-medium text-text-base mb-0.5">
-                    Показывать мои контакты специалистам
+                    Опубликовать мои контакты для специалистов
                   </Text>
                   <Text className="text-xs text-text-mute leading-4">
-                    Только авторизованные специалисты увидят кнопку «Показать контакты» — нажмут и получат ваш email и телефон. Неавторизованным контакты не показываются никогда.
+                    Только авторизованные специалисты увидят кнопку «Показать контакты». В открытой ленте и неавторизованным — не виднo.
                   </Text>
                 </View>
                 <StyledSwitch
@@ -636,34 +637,23 @@ export default function CreateRequest() {
                 />
               </View>
 
-              {showContacts && (
-                <View className="mt-3" style={{ gap: 6 }}>
-                  <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: "600" }}>
-                    Телефон для связи (необязательно)
-                  </Text>
-                  <TextInput
-                    value={contactPhone}
-                    onChangeText={setContactPhone}
-                    placeholder="+7 (___) ___-__-__"
-                    placeholderTextColor={colors.placeholder}
-                    keyboardType="phone-pad"
-                    editable={!submitting}
-                    maxLength={50}
-                    style={{
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                      borderRadius: 10,
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      fontSize: 14,
-                      color: colors.text,
-                      backgroundColor: colors.white,
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      outlineWidth: 0 as any,
-                    }}
-                  />
-                  <Text style={{ fontSize: 11, color: colors.textMuted, lineHeight: 15 }}>
-                    Email возьмём из вашего аккаунта. Если хотите указать другой — поменяйте его в профиле.
+              {showContacts && isAuthenticated && (
+                <View className="mt-3">
+                  <MyContactsEditor compact />
+                </View>
+              )}
+              {showContacts && !isAuthenticated && (
+                <View
+                  className="mt-3"
+                  style={{
+                    backgroundColor: colors.surface,
+                    borderRadius: 10,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 16 }}>
+                    Контакты можно будет указать после входа — после OTP подтянется ваш email, потом сможете добавить телефон, Telegram и др.
                   </Text>
                 </View>
               )}

@@ -433,4 +433,139 @@ router.delete("/me", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// ─── /api/user/contacts ─────────────────────────────────────────────
+// CRUD контактов пользователя для поля «Мои контакты» в профиле и
+// выдачи специалисту через «Показать контакты» на запросе. Это
+// контакты ОТ КЛИЕНТА (UserContact), не путать с контактами
+// специалиста-эксперта (SpecialistContact в contacts.ts).
+
+const ALLOWED_KINDS = new Set(["email", "phone", "telegram", "whatsapp", "other"]);
+
+function normalizeContactValue(kind: string, raw: string): string {
+  const v = raw.trim();
+  if (kind === "phone") {
+    // Оставляем плюс, цифры и пробелы/скобки/тире — никаких хитрых
+    // нормализаций (страна Россия, пользователь видит то, что ввёл).
+    return v.replace(/[^\d+\s()\-]/g, "").slice(0, 50);
+  }
+  if (kind === "email") return v.toLowerCase().slice(0, 200);
+  return v.slice(0, 200);
+}
+
+router.get("/contacts", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const items = await prisma.userContact.findMany({
+      where: { userId },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      select: { id: true, kind: true, value: true, label: true, sortOrder: true },
+    });
+    res.json({ items });
+  } catch (error) {
+    console.error("user/contacts get error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/contacts", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { kind, value, label } = req.body as { kind?: string; value?: string; label?: string };
+    if (!kind || !ALLOWED_KINDS.has(kind)) {
+      res.status(400).json({ error: "Invalid kind" });
+      return;
+    }
+    if (!value || typeof value !== "string" || value.trim().length < 2) {
+      res.status(400).json({ error: "Value is required" });
+      return;
+    }
+    const normalized = normalizeContactValue(kind, value);
+    if (!normalized) {
+      res.status(400).json({ error: "Value is required" });
+      return;
+    }
+    // Дедуп: один и тот же (kind, value) у пользователя не повторяем.
+    const existing = await prisma.userContact.findFirst({
+      where: { userId, kind, value: normalized },
+      select: { id: true },
+    });
+    if (existing) {
+      res.status(409).json({ error: "Этот контакт уже добавлен" });
+      return;
+    }
+    // sortOrder = max+1, новые в конце.
+    const last = await prisma.userContact.findFirst({
+      where: { userId },
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
+    const created = await prisma.userContact.create({
+      data: {
+        userId,
+        kind,
+        value: normalized,
+        label: typeof label === "string" && label.trim() ? label.trim().slice(0, 60) : null,
+        sortOrder: (last?.sortOrder ?? -1) + 1,
+      },
+      select: { id: true, kind: true, value: true, label: true, sortOrder: true },
+    });
+    res.status(201).json(created);
+  } catch (error) {
+    console.error("user/contacts create error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.patch("/contacts/:id", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const id = req.params.id as string;
+    const own = await prisma.userContact.findFirst({
+      where: { id, userId },
+      select: { id: true, kind: true },
+    });
+    if (!own) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const { value, label } = req.body as { value?: string; label?: string | null };
+    const data: { value?: string; label?: string | null } = {};
+    if (typeof value === "string" && value.trim()) {
+      data.value = normalizeContactValue(own.kind, value);
+    }
+    if (label !== undefined) {
+      data.label = typeof label === "string" && label.trim() ? label.trim().slice(0, 60) : null;
+    }
+    const updated = await prisma.userContact.update({
+      where: { id },
+      data,
+      select: { id: true, kind: true, value: true, label: true, sortOrder: true },
+    });
+    res.json(updated);
+  } catch (error) {
+    console.error("user/contacts patch error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/contacts/:id", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const id = req.params.id as string;
+    const own = await prisma.userContact.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    if (!own) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    await prisma.userContact.delete({ where: { id } });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("user/contacts delete error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
