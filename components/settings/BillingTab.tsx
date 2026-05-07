@@ -23,6 +23,7 @@ import {
   Zap,
 } from "lucide-react-native";
 import Card from "@/components/ui/Card";
+import FnsLogo from "@/components/fns/FnsLogo";
 import { dialog } from "@/lib/dialog";
 import { apiGet, apiPost, apiDelete } from "@/lib/api";
 import { colors } from "@/lib/theme";
@@ -421,8 +422,8 @@ export default function BillingTab({
                   {
                     flexDirection: "row",
                     alignItems: "center",
-                    gap: 10,
-                    paddingVertical: 10,
+                    gap: 12,
+                    paddingVertical: 12,
                     borderTopWidth: idx === 0 ? 0 : 1,
                     borderTopColor: colors.border,
                   },
@@ -443,8 +444,9 @@ export default function BillingTab({
                 >
                   {drop && <Check size={12} color={colors.white} strokeWidth={3} />}
                 </View>
+                <FnsLogo name={sub.fnsName} cityName={sub.cityName} size="sm" />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, color: colors.text }} numberOfLines={1}>
+                  <Text style={{ fontSize: 14, color: colors.text }} numberOfLines={2}>
                     {sub.fnsName}
                   </Text>
                   <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
@@ -851,18 +853,18 @@ export default function BillingTab({
                   key={sub.fnsId}
                   className="flex-row items-center"
                   style={{
-                    gap: 10,
-                    paddingTop: idx === 0 ? 4 : 10,
-                    paddingBottom: idx === data.activeVipFns.length - 1 ? 0 : 10,
+                    gap: 12,
+                    paddingTop: idx === 0 ? 4 : 12,
+                    paddingBottom: idx === data.activeVipFns.length - 1 ? 0 : 12,
                     borderTopWidth: idx === 0 ? 0 : 1,
                     borderTopColor: colors.border,
                   }}
                 >
-                  <CheckCircle2 size={16} color={colors.success} style={{ flexShrink: 0 }} />
+                  <FnsLogo name={sub.fnsName} cityName={sub.cityName} size="sm" />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text
                       style={{ fontSize: 13, fontWeight: "600", color: colors.text }}
-                      numberOfLines={1}
+                      numberOfLines={2}
                     >
                       {sub.fnsName}
                     </Text>
@@ -1043,17 +1045,18 @@ export default function BillingTab({
                       key={item.fnsId}
                       className="flex-row items-center"
                       style={{
-                        gap: 10,
-                        paddingTop: idx === 0 ? 4 : 10,
-                        paddingBottom: 10,
+                        gap: 12,
+                        paddingTop: idx === 0 ? 4 : 12,
+                        paddingBottom: 12,
                         borderTopWidth: idx === 0 ? 0 : 1,
                         borderTopColor: colors.border,
                       }}
                     >
+                      <FnsLogo name={item.fnsName} cityName={item.cityName} size="sm" />
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text
                           style={{ fontSize: 13, fontWeight: "600", color: colors.text }}
-                          numberOfLines={1}
+                          numberOfLines={2}
                         >
                           {item.fnsName}
                         </Text>
@@ -1361,16 +1364,10 @@ function PlanCardsRow({
                 borderTopColor: colors.border,
               }}
             >
-              <View className="flex-row items-center" style={{ gap: 6 }}>
-                <Check size={14} color={colors.success} />
-                <Text style={{ fontSize: 13, color: colors.text }}>
-                  До <Text style={{ fontWeight: "700" }}>{p.fnsLimit}</Text> ИФНС с приоритетом
-                </Text>
-              </View>
-              <View className="flex-row items-center" style={{ gap: 6, marginTop: 6 }}>
-                <Check size={14} color={colors.success} />
-                <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-                  Email о новом запросе мгновенно
+              <View className="flex-row items-start" style={{ gap: 6 }}>
+                <Check size={14} color={colors.success} style={{ marginTop: 3 }} />
+                <Text style={{ fontSize: 13, color: colors.text, flex: 1, lineHeight: 18 }}>
+                  До <Text style={{ fontWeight: "700" }}>{p.fnsLimit}</Text> ИФНС с мгновенным доступом к новым запросам
                 </Text>
               </View>
             </View>
