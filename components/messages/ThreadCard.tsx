@@ -7,6 +7,10 @@ import { API_URL } from "@/lib/api";
 export interface LastMessageAttachment {
   id: string;
   url: string;
+  /** Server-generated WebP preview (≤800px). Used in the 40×40 thread
+   *  preview slot — без него браузер тянул бы полный multi-MB оригинал
+   *  для 40-пиксельного превью. Null для legacy / non-image. */
+  thumbUrl?: string | null;
   filename: string;
   mimeType: string;
 }
@@ -197,9 +201,12 @@ export default function ThreadCard({
               (a) => a.mimeType.startsWith("image/")
             );
             if (firstImage) {
-              const imageUri = firstImage.url.startsWith("http")
-                ? firstImage.url
-                : `${API_URL}${firstImage.url}`;
+              // Превью 40×40 — берём WebP-thumb когда он есть, иначе
+              // fallback на оригинал (legacy без thumb).
+              const previewUrl = firstImage.thumbUrl ?? firstImage.url;
+              const imageUri = previewUrl.startsWith("http")
+                ? previewUrl
+                : `${API_URL}${previewUrl}`;
               return (
                 <View className="flex-row items-center mt-1" style={{ gap: 6 }}>
                   <Image

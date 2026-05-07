@@ -39,7 +39,11 @@ interface FeaturedSpecialistsResponse {
     avatarUrl?: string | null;
     cities: Array<{ id: string; name: string }>;
     services: Array<{ id: string; name: string }>;
-    specialistFns?: Array<{ fnsId: string; fnsName: string }>;
+    specialistFns?: Array<{
+      fnsId: string;
+      fnsName: string;
+      city?: { id: string; name: string } | null;
+    }>;
     createdAt?: string | null;
   }>;
 }
@@ -84,6 +88,12 @@ export default function LandingScreen() {
 
   const [counts, setCounts] = useState<LandingCounts | null>(null);
   const [specialists, setSpecialists] = useState<HeroSpecialistPreview[]>([]);
+  // Уникальные ФНС из featured-специалистов — для визуальных «гербов»
+  // под подзаголовком Hero. Без них новый посетитель видит только
+  // абстрактный текст, а тут сразу — реальные ИФНС с реальными спецами.
+  const [heroFns, setHeroFns] = useState<
+    Array<{ fnsId: string; fnsName: string; cityName: string | null }>
+  >([]);
   const [cases, setCases] = useState<CaseCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -121,8 +131,32 @@ export default function LandingScreen() {
           };
         });
         setSpecialists(mapped);
+
+        // Собираем уникальные ИФНС со всех featured-спецов (берём всех,
+        // не только первых 3) — источник для логотипной плашки на Hero.
+        const seen = new Set<string>();
+        const fnsList: Array<{
+          fnsId: string;
+          fnsName: string;
+          cityName: string | null;
+        }> = [];
+        for (const s of sp.items ?? []) {
+          for (const f of s.specialistFns ?? []) {
+            if (seen.has(f.fnsId)) continue;
+            seen.add(f.fnsId);
+            fnsList.push({
+              fnsId: f.fnsId,
+              fnsName: f.fnsName,
+              cityName: f.city?.name ?? null,
+            });
+            if (fnsList.length >= 6) break;
+          }
+          if (fnsList.length >= 6) break;
+        }
+        setHeroFns(fnsList);
       } catch {
         setSpecialists([]);
+        setHeroFns([]);
       }
 
       try {
@@ -234,6 +268,7 @@ export default function LandingScreen() {
         <HeroBlock
           isDesktop={isDesktop}
           specialists={specialists}
+          featuredFns={heroFns}
           loading={loading}
           onPrimaryCta={goCreateRequest}
           onSecondaryCta={goCatalog}

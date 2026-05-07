@@ -204,7 +204,7 @@ router.get("/", async (req: Request, res: Response) => {
     const lastMessageFiles = lastMessageIds.length > 0
       ? await prisma.file.findMany({
           where: { entityType: "message", entityId: { in: lastMessageIds } },
-          select: { id: true, entityId: true, url: true, filename: true, mimeType: true },
+          select: { id: true, entityId: true, url: true, thumbUrl: true, filename: true, mimeType: true },
         })
       : [];
     const filesByLastMessageId = new Map<string, typeof lastMessageFiles>();
@@ -239,6 +239,7 @@ router.get("/", async (req: Request, res: Response) => {
         rawAttachments.map(async (f) => ({
           id: f.id,
           url: await presignAttachmentUrl(f.url),
+          thumbUrl: f.thumbUrl ? await presignAttachmentUrl(f.thumbUrl) : null,
           filename: f.filename,
           mimeType: f.mimeType,
         }))
@@ -373,7 +374,7 @@ router.get("/my", async (req: Request, res: Response) => {
     const myLastMessageFiles = myLastMessageIds.length > 0
       ? await prisma.file.findMany({
           where: { entityType: "message", entityId: { in: myLastMessageIds } },
-          select: { id: true, entityId: true, url: true, filename: true, mimeType: true },
+          select: { id: true, entityId: true, url: true, thumbUrl: true, filename: true, mimeType: true },
         })
       : [];
     const myFilesByLastMessageId = new Map<string, typeof myLastMessageFiles>();
@@ -442,6 +443,7 @@ router.get("/my", async (req: Request, res: Response) => {
         rawAttachments.map(async (f) => ({
           id: f.id,
           url: await presignAttachmentUrl(f.url),
+          thumbUrl: f.thumbUrl ? await presignAttachmentUrl(f.thumbUrl) : null,
           filename: f.filename,
           mimeType: f.mimeType,
         }))

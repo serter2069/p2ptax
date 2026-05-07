@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { View, Text, Pressable, Image } from "react-native";
+import FnsLogo from "@/components/fns/FnsLogo";
 import { colors, gray, AVATAR_COLORS, shadowColor } from "@/lib/theme";
 
 export interface HeroSpecialistPreview {
@@ -42,9 +43,19 @@ function shortFnsName(name: string): string {
     .trim();
 }
 
+export interface HeroFnsBadge {
+  fnsId: string;
+  fnsName: string;
+  cityName: string | null;
+}
+
 interface HeroBlockProps {
   isDesktop: boolean;
   specialists: HeroSpecialistPreview[];
+  /** Уникальные ИФНС со специалистами — рендерятся гербами под
+   *  подзаголовком, чтобы посетитель сразу видел, что у нас покрыты
+   *  реальные инспекции. */
+  featuredFns?: HeroFnsBadge[];
   loading: boolean;
   onPrimaryCta: () => void;
   onSecondaryCta: () => void;
@@ -58,11 +69,13 @@ interface HeroBlockProps {
 export default function HeroBlock({
   isDesktop,
   specialists,
+  featuredFns = [],
   loading,
   onPrimaryCta,
   onSecondaryCta,
 }: HeroBlockProps) {
   const visible = useMemo(() => specialists.slice(0, 3), [specialists]);
+  const fnsBadges = useMemo(() => featuredFns.slice(0, 6), [featuredFns]);
   const placeholderCount = Math.max(0, 3 - visible.length);
 
   return (
@@ -176,6 +189,40 @@ export default function HeroBlock({
             Не юрист общей практики — практик, который ведёт дела
             в этой инспекции каждый день. Опишите ситуацию — он напишет первым.
           </Text>
+
+          {/* «Гербы» ИФНС со специалистами — визуальное доказательство
+              что текст про «знает вашу ИФНС» имеет за собой реальные
+              инспекции, а не маркетинг. Рендерим только когда данные
+              есть (анонимам — публичный featured-эндпоинт). */}
+          {fnsBadges.length > 0 && (
+            <View style={{ marginTop: 24 }}>
+              <Text
+                style={{
+                  color: colors.textMuted,
+                  fontSize: 11,
+                  fontWeight: "700",
+                  letterSpacing: 1.2,
+                  textTransform: "uppercase",
+                  marginBottom: 10,
+                }}
+              >
+                Специалисты работают в этих инспекциях
+              </Text>
+              <View
+                className="flex-row flex-wrap"
+                style={{ gap: 8, maxWidth: 540 }}
+              >
+                {fnsBadges.map((f) => (
+                  <FnsLogo
+                    key={f.fnsId}
+                    name={f.fnsName}
+                    cityName={f.cityName}
+                    size="sm"
+                  />
+                ))}
+              </View>
+            </View>
+          )}
 
           <View
             style={{
