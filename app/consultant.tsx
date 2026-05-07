@@ -38,6 +38,9 @@ import {
   FileText,
   X,
   Sparkles,
+  Copy,
+  Check,
+  RefreshCw,
 } from "lucide-react-native";
 import { colors, spacing } from "@/lib/theme";
 import { apiGet, apiPost, ApiError } from "@/lib/api";
@@ -59,6 +62,9 @@ type Message = {
   createdAt: string;
   sources?: Source[];
   usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; cost?: number };
+  // Backend кладёт сюда { generation: { templateId, userInput } } для document-сообщений,
+  // чтобы FE мог восстановить исходный ввод при «Перегенерировать».
+  debug?: Record<string, unknown> | null;
 };
 
 type SuggestedAction = { id: string; label: string };
@@ -269,11 +275,32 @@ export default function ConsultantScreen() {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } else {
-      // Native: fall back to system share via mailto-ish — out of scope for MVP.
+      // На native — пробуем data-url; если не подхватит, у юзера остаётся
+      // selectable-текст и кнопка «Копировать».
       Linking.openURL(
         `data:text/plain;charset=utf-8,${encodeURIComponent(m.content)}`,
       ).catch(() => {});
     }
+  }
+
+  async function copyDocument(m: Message) {
+    try {
+      if (Platform.OS === "web" && typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(m.content);
+      }
+      // На native — текст внутри карточки selectable, юзер копирует
+      // длинным тапом. Отдельный clipboard-пакет ради этого не тащим.
+    } catch {
+      // best-effort
+    }
+  }
+
+  function regenerate(m: Message) {
+    const gen = (m.debug as { generation?: { templateId?: string; userInput?: string } } | undefined)?.generation;
+    if (!gen?.templateId) return;
+    const tpl = templates.find((t) => t.id === gen.templateId);
+    if (!tpl) return;
+    setGenModal({ template: tpl, userInput: gen.userInput ?? "", submitting: false });
   }
 
   if (!isAuthenticated) {
@@ -364,6 +391,8 @@ export default function ConsultantScreen() {
                 m={m}
                 onSourcePress={openSource}
                 onDownload={downloadDocument}
+                onCopy={copyDocument}
+                onRegenerate={regenerate}
               />
             ))
           )}
@@ -569,13 +598,21 @@ function MessageBubble({
   m,
   onSourcePress,
   onDownload,
+  onCopy,
+  onRegenerate,
 }: {
   m: Message;
   onSourcePress: (s: Source) => void;
   onDownload: (m: Message) => void;
+  onCopy: (m: Message) => Promise<void> | void;
+  onRegenerate: (m: Message) => void;
 }) {
   const isUser = m.role === "user";
   const isDocument = m.kind === "document";
+  const [copied, setCopied] = useState(false);
+  const canRegenerate =
+    isDocument &&
+    !!(m.debug as { generation?: { templateId?: string } } | undefined)?.generation?.templateId;
   return (
     <View style={{ alignItems: isUser ? "flex-end" : "flex-start" }}>
       {isDocument ? (
@@ -595,6 +632,7 @@ function MessageBubble({
             style={{
               flexDirection: "row",
               alignItems: "center",
+              flexWrap: "wrap",
               gap: 8,
               marginBottom: 8,
               paddingBottom: 8,
@@ -603,9 +641,49 @@ function MessageBubble({
             }}
           >
             <FileText size={18} color={colors.primary} />
-            <Text style={{ flex: 1, fontSize: 14, fontWeight: "700", color: colors.text }}>
+            <Text style={{ flex: 1, fontSize: 14, fontWeight: "700", color: colors.text }} numberOfLines={1}>
               {m.attachmentFilename || "Сгенерированный документ"}
             </Text>
+            {canRegenerate && (
+              <Pressable
+                onPress={() => onRegenerate(m)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 6,
+                  backgroundColor: colors.surface2,
+                  gap: 4,
+                }}
+              >
+                <RefreshCw size={13} color={colors.text} />
+                <Text style={{ fontSize: 12, color: colors.text, fontWeight: "600" }}>
+                  Перегенерировать
+                </Text>
+              </Pressable>
+            )}
+            <Pressable
+              onPress={async () => {
+                await onCopy(m);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 6,
+                backgroundColor: colors.surface2,
+                gap: 4,
+              }}
+            >
+              {copied ? <Check size={13} color={colors.success} /> : <Copy size={13} color={colors.text} />}
+              <Text style={{ fontSize: 12, color: copied ? colors.success : colors.text, fontWeight: "600" }}>
+                {copied ? "Скопировано" : "Копировать"}
+              </Text>
+            </Pressable>
             <Pressable
               onPress={() => onDownload(m)}
               style={{

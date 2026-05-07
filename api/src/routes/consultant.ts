@@ -299,6 +299,12 @@ router.post("/generate", genLimiter, async (req: Request, res: Response) => {
   }
 
   const filename = tpl.filename({ templateId, userInput });
+  // Сохраняем templateId+userInput в debugJson, чтобы FE при «перегенерировать»
+  // мог восстановить состояние модалки и юзер мог поправить ввод.
+  const debugPayload = {
+    ...(llm.debug ?? {}),
+    generation: { templateId, userInput },
+  };
   const docMessage = await prisma.consultantMessage.create({
     data: {
       threadId: thread.id,
@@ -308,7 +314,7 @@ router.post("/generate", genLimiter, async (req: Request, res: Response) => {
       content: llm.answer,
       sourcesJson: JSON.stringify(llm.sources ?? []),
       usageJson: JSON.stringify(llm.usage ?? {}),
-      debugJson: llm.debug ? JSON.stringify(llm.debug) : null,
+      debugJson: JSON.stringify(debugPayload),
     },
   });
 
@@ -331,7 +337,7 @@ router.post("/generate", genLimiter, async (req: Request, res: Response) => {
       createdAt: docMessage.createdAt,
       sources: llm.sources ?? [],
       usage: llm.usage ?? {},
-      debug: llm.debug,
+      debug: debugPayload,
     },
   });
 });
