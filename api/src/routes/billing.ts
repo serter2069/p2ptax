@@ -128,6 +128,17 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
               sortOrder: true,
             },
           },
+          pendingPlanScheduledAt: true,
+          pendingPlan: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              monthlyPriceKopeks: true,
+              fnsLimit: true,
+              sortOrder: true,
+            },
+          },
         },
       }),
       prisma.specialistVipFns.findMany({
@@ -171,6 +182,10 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
       plan,
       planStartedAt: user.subscriptionStartedAt ?? null,
       planNextChargeAt: user.subscriptionNextChargeAt ?? null,
+      // Запланированная смена на следующее продление (downgrade или
+      // равноценный план). null когда смены не запланировано.
+      pendingPlan: user.pendingPlan ? planBrief(user.pendingPlan) : null,
+      pendingPlanScheduledAt: user.pendingPlanScheduledAt ?? null,
       activeVipFns,
       slotsUsed: activeVipFns.length,
       slotsLimit: plan?.fnsLimit ?? 0,
@@ -251,16 +266,27 @@ router.get("/fns-search", authMiddleware, async (req: Request, res: Response) =>
 
 interface PlanRequestBody {
   planId?: string;
-  /** Optional list of FNS ids to drop in the same transaction so a
-   *  downgrade with too many active slots can succeed in one POST. */
-  removeFnsIds?: string[];
 }
 
+const RENEWAL_DAYS = 30;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 // POST /api/billing/plan — activate or switch plan.
+//
+// Три пути:
+//   1. Первое подключение (нет карты): ЮKassa redirect → bind + полный
+//      первый месяц. Без изменений с прежней реализации.
+//   2. UPGRADE (newPrice > currentPrice, карта привязана): автосписание
+//      полной суммы нового тарифа сейчас + сброс цикла (startedAt=now,
+//      nextChargeAt=now+30d). Защищает от эксплойта «Lite→Premium на
+//      день 1, downgrade на день 29, плати Lite за Premium-фичи».
+//   3. DOWNGRADE/SAME (newPrice ≤ currentPrice): расписать на следующий
+//      renewal через pendingPlanId. Текущий тариф работает до конца
+//      оплаченного цикла (юзер не теряет фичи, за которые заплатил).
 router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { planId, removeFnsIds = [] } = (req.body ?? {}) as PlanRequestBody;
+    const { planId } = (req.body ?? {}) as PlanRequestBody;
     if (!planId || typeof planId !== "string") {
       res.status(400).json({ error: "planId is required" });
       return;
@@ -285,7 +311,17 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
           isSpecialist: true,
           yookassaPaymentMethodId: true,
           subscriptionPlanId: true,
-          subscriptionPlan: { select: { fnsLimit: true } },
+          subscriptionNextChargeAt: true,
+          subscriptionPlan: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              monthlyPriceKopeks: true,
+              fnsLimit: true,
+              sortOrder: true,
+            },
+          },
         },
       }),
     ]);
@@ -298,46 +334,13 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    // Same plan, idempotent.
+    // Same plan, idempotent. Если есть pending — снимаем заодно.
     if (user.subscriptionPlanId === plan.id) {
-      res.json({ ok: true, alreadyActive: true });
-      return;
-    }
-
-    // Downgrade-trim handling. Count active VIP rows; if it would
-    // exceed the new plan's limit, ask FE to specify removeFnsIds.
-    const currentVip = await prisma.specialistVipFns.findMany({
-      where: { specialistId: userId },
-      select: {
-        fnsId: true,
-        activatedAt: true,
-        fns: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            city: { select: { id: true, name: true } },
-          },
-        },
-      },
-      orderBy: { activatedAt: "desc" },
-    });
-    const remaining = currentVip.filter((r) => !removeFnsIds.includes(r.fnsId));
-    if (remaining.length > plan.fnsLimit) {
-      res.status(409).json({
-        error: "Текущих VIP-ИФНС больше, чем разрешает выбранный тариф.",
-        needsTrim: true,
-        plan: planBrief(plan),
-        slotsLimit: plan.fnsLimit,
-        currentVipFns: currentVip.map((r) => ({
-          fnsId: r.fns.id,
-          fnsName: r.fns.name,
-          fnsCode: r.fns.code,
-          cityId: r.fns.city.id,
-          cityName: r.fns.city.name,
-          activatedAt: r.activatedAt,
-        })),
+      await prisma.user.update({
+        where: { id: userId },
+        data: { pendingPlanId: null, pendingPlanScheduledAt: null },
       });
+      res.json({ ok: true, alreadyActive: true });
       return;
     }
 
@@ -345,9 +348,8 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
     const returnBase =
       process.env.YK_RETURN_URL_BASE ?? "https://p2ptax.smartlaunchhub.com";
 
+    // ── Path 1: first-time activation ──────────────────────────────
     if (!user.yookassaPaymentMethodId) {
-      // Первое подключение PRO. ЮKassa-redirect: бинд карты +
-      // первый месячный платёж в одной транзакции.
       const payment = await createPayment({
         amountKopeks: monthPrice,
         description: `PRO «${plan.name}» — оплата за 30 дней + привязка карты`,
@@ -374,45 +376,159 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    // У пользователя уже есть карта = смена плана. НЕ списываем —
-    // тариф просто переключается, новая месячная сумма спишется
-    // на следующем продлении (subscriptionNextChargeAt).
-    await prisma.$transaction(async (tx) => {
-      if (removeFnsIds.length > 0) {
-        await tx.specialistVipFns.deleteMany({
-          where: { specialistId: userId, fnsId: { in: removeFnsIds } },
+    const currentMonthPrice = user.subscriptionPlan?.monthlyPriceKopeks ?? 0;
+    const isUpgrade = monthPrice > currentMonthPrice;
+
+    // ── Path 2: UPGRADE (charge full new month now, reset cycle) ───
+    if (isUpgrade) {
+      const idempotenceKey = `plan-upgrade-${userId}-${plan.id}-${Date.now()}`;
+      let charge: Awaited<ReturnType<typeof chargeWithSavedMethod>>;
+      try {
+        charge = await chargeWithSavedMethod({
+          amountKopeks: monthPrice,
+          description: `Апгрейд на тариф «${plan.name}» — оплата за 30 дней`,
+          paymentMethodId: user.yookassaPaymentMethodId,
+          idempotenceKey,
+          metadata: {
+            userId,
+            planId: plan.id,
+            kind: "plan_upgrade",
+            previousPlanId: user.subscriptionPlanId ?? "",
+          },
         });
+      } catch (err) {
+        console.error("plan upgrade charge error:", err);
+        res.status(402).json({
+          error:
+            "Не удалось списать с привязанной карты. Проверьте карту в банке или отвяжите её и подключитесь заново.",
+        });
+        return;
       }
+      if (!(charge.status === "succeeded" && charge.paid)) {
+        res.status(402).json({
+          error:
+            "Платёж не прошёл. Возможно, на карте недостаточно средств — попробуйте позже или замените карту.",
+        });
+        return;
+      }
+
+      const now = new Date();
+      const nextDue = new Date(now.getTime() + RENEWAL_DAYS * MS_PER_DAY);
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            subscriptionPlanId: plan.id,
+            subscriptionStartedAt: now,
+            subscriptionNextChargeAt: nextDue,
+            lastChargeFailedAt: null,
+            // Любой pending снимается — он мог стоять с прошлой scheduled
+            // смены, теперь юзер явно решил перейти прямо сейчас.
+            pendingPlanId: null,
+            pendingPlanScheduledAt: null,
+          },
+        });
+        await tx.billingTx.create({
+          data: {
+            userId,
+            amountKopeks: -monthPrice,
+            kind: "plan_upgrade",
+            externalRef: charge.paymentId,
+            description: `Апгрейд на «${plan.name}» — списание ${(monthPrice / 100).toFixed(0)} ₽, цикл стартовал заново`,
+          },
+        });
+      });
+
+      res.json({
+        ok: true,
+        charged: monthPrice,
+        plan: planBrief(plan),
+        nextChargeAt: nextDue,
+        message: `Тариф «${plan.name}» подключён сразу. Списано ${(monthPrice / 100).toFixed(0)} ₽, следующее списание ${nextDue.toLocaleDateString("ru-RU")}.`,
+      });
+      return;
+    }
+
+    // ── Path 3: DOWNGRADE / equal price → schedule for next renewal ─
+    // Юзер уже оплатил текущий цикл, поэтому его текущий тариф (с
+    // полным набором VIP-слотов) работает до subscriptionNextChargeAt.
+    // На renewal cron подменит план на pendingPlanId и обрежет VIP
+    // (oldest first) до нового лимита.
+    await prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: userId },
         data: {
-          subscriptionPlanId: plan.id,
-          lastChargeFailedAt: null,
-          // subscriptionStartedAt и subscriptionNextChargeAt не трогаем —
-          // продление по графику, по новой цене.
+          pendingPlanId: plan.id,
+          pendingPlanScheduledAt: new Date(),
         },
       });
       await tx.billingTx.create({
         data: {
           userId,
           amountKopeks: 0,
-          kind: "plan_switch",
-          description: `Смена тарифа на «${plan.name}» (списание со следующего продления)`,
+          kind: "plan_scheduled",
+          description: `Запланирован переход на «${plan.name}» на следующее продление`,
         },
       });
     });
 
     res.json({
       ok: true,
-      charged: 0,
-      plan: planBrief(plan),
-      message: `Тариф изменён на «${plan.name}». Новая стоимость спишется на следующем продлении.`,
+      scheduled: true,
+      pendingPlan: planBrief(plan),
+      currentPlan: user.subscriptionPlan ? planBrief(user.subscriptionPlan) : null,
+      applyAt: user.subscriptionNextChargeAt,
+      message: user.subscriptionNextChargeAt
+        ? `Текущий тариф работает до ${user.subscriptionNextChargeAt.toLocaleDateString("ru-RU")}, затем включится «${plan.name}». Деньги сейчас не списываются.`
+        : `Тариф изменится на «${plan.name}» при следующем продлении.`,
     });
   } catch (error) {
     console.error("billing/plan POST error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// POST /api/billing/plan/cancel-pending — снять запланированную смену
+// тарифа. Идемпотентно: если pending'а нет, отвечаем ok.
+router.post(
+  "/plan/cancel-pending",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.userId;
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          pendingPlanId: true,
+          pendingPlan: { select: { name: true } },
+        },
+      });
+      if (!user || !user.pendingPlanId) {
+        res.json({ ok: true, alreadyCleared: true });
+        return;
+      }
+      const cancelledName = user.pendingPlan?.name ?? "(удалённый)";
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: userId },
+          data: { pendingPlanId: null, pendingPlanScheduledAt: null },
+        });
+        await tx.billingTx.create({
+          data: {
+            userId,
+            amountKopeks: 0,
+            kind: "plan_pending_cancelled",
+            description: `Отменена запланированная смена тарифа на «${cancelledName}»`,
+          },
+        });
+      });
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("billing/plan/cancel-pending error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
 
 // DELETE /api/billing/plan — cancel plan + remove all VIP rows.
 // Idempotent. Card stays bound (separate /payment-method endpoint
@@ -428,6 +544,10 @@ router.delete("/plan", authMiddleware, async (req: Request, res: Response) => {
           subscriptionPlanId: null,
           subscriptionStartedAt: null,
           subscriptionNextChargeAt: null,
+          // Отмена тарифа гасит и pending — иначе он висел бы без
+          // активного подключения, что бессмысленно.
+          pendingPlanId: null,
+          pendingPlanScheduledAt: null,
         },
       });
       await tx.billingTx.create({

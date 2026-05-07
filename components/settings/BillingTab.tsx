@@ -57,6 +57,10 @@ interface MePayload {
   plan: PlanRow | null;
   planStartedAt: string | null;
   planNextChargeAt: string | null;
+  /** Запланированная смена на следующее продление (downgrade или
+   *  равноценный план). null когда смены не запланировано. */
+  pendingPlan: PlanRow | null;
+  pendingPlanScheduledAt: string | null;
   activeVipFns: ActiveVipFns[];
   slotsUsed: number;
   slotsLimit: number;
@@ -78,22 +82,22 @@ interface CityRow {
 
 interface PlanResponse {
   ok: boolean;
+  // Первое подключение → ЮKassa redirect.
   needsRedirect?: boolean;
   confirmationUrl?: string;
+  // Same plan idempotent.
   alreadyActive?: boolean;
+  // Upgrade: списано прямо сейчас, цикл сброшен.
   charged?: number;
   plan?: PlanRow;
-  // Бэкенд при смене тарифа на привязанной карте возвращает
-  // объяснение «спишется на следующем продлении» — показываем юзеру.
+  nextChargeAt?: string;
+  // Downgrade/equal: смена запланирована на следующее продление.
+  scheduled?: boolean;
+  pendingPlan?: PlanRow;
+  currentPlan?: PlanRow | null;
+  applyAt?: string | null;
+  // Описание для UI.
   message?: string;
-}
-
-interface PlanTrimResponse {
-  error: string;
-  needsTrim: true;
-  plan: PlanRow;
-  slotsLimit: number;
-  currentVipFns: ActiveVipFns[];
 }
 
 interface VipFnsResponse {
@@ -126,6 +130,14 @@ function txKindLabel(kind: string): string {
   switch (kind) {
     case "bind_plan":
       return "Подключение тарифа";
+    case "plan_upgrade":
+      return "Апгрейд тарифа";
+    case "plan_scheduled":
+      return "Смена тарифа запланирована";
+    case "plan_pending_cancelled":
+      return "Смена тарифа отменена";
+    case "plan_applied":
+      return "Применён новый тариф";
     case "plan_switch":
       return "Смена тарифа";
     case "plan_cancelled":
@@ -170,11 +182,7 @@ export default function BillingTab({
   const [unbindBusy, setUnbindBusy] = useState(false);
   const [showPlanSwitcher, setShowPlanSwitcher] = useState(false);
   const [showAddSearch, setShowAddSearch] = useState(false);
-  const [trimDialog, setTrimDialog] = useState<{
-    plan: PlanRow;
-    keep: ActiveVipFns[];
-    drop: ActiveVipFns[];
-  } | null>(null);
+  const [cancelPendingBusy, setCancelPendingBusy] = useState(false);
 
   // Catalog search — city-first: typeahead по городу, после выбора
   // показываем все ИФНС в нём (как на /fns).
@@ -286,46 +294,40 @@ export default function BillingTab({
   }, []);
 
   const submitPlan = useCallback(
-    async (planId: string, removeFnsIds?: string[]) => {
+    async (planId: string) => {
       setBusyPlanId(planId);
       try {
-        const res = await apiPost<PlanResponse | PlanTrimResponse>(
-          "/api/billing/plan",
-          { planId, removeFnsIds }
-        );
-        if ((res as PlanTrimResponse).needsTrim) {
-          const tr = res as PlanTrimResponse;
-          // Auto-pre-select newest rows to drop.
-          const overflow = tr.currentVipFns.length - tr.slotsLimit;
-          const drop = tr.currentVipFns.slice(0, overflow);
-          const keep = tr.currentVipFns.slice(overflow);
-          setTrimDialog({ plan: tr.plan, keep, drop });
-          return;
-        }
-        const ok = res as PlanResponse;
+        const ok = await apiPost<PlanResponse>("/api/billing/plan", { planId });
+        // ── Path 1: первое подключение → ЮKassa redirect ──
         if (ok.needsRedirect && ok.confirmationUrl) {
           redirect(ok.confirmationUrl);
           return;
         }
         setShowPlanSwitcher(false);
-        setTrimDialog(null);
         await refresh();
-        // Бэкенд при смене тарифа на привязанной карте денег прямо
-        // сейчас не списывает — возвращает message «спишется на
-        // следующем продлении». Показываем юзеру, чтобы он понимал
-        // что произошло (раньше было молча — путало).
-        if (ok.message) {
+
+        // ── Path 2: апгрейд → списано прямо сейчас, цикл сброшен ──
+        if (typeof ok.charged === "number" && ok.charged > 0 && ok.plan) {
           void dialog.alert({
             tone: "success",
-            title: "Тариф изменён",
-            message: ok.message,
+            title: "Тариф апгрейднут",
+            message:
+              ok.message ??
+              `«${ok.plan.name}» подключён сразу. Списано ${(ok.charged / 100).toFixed(0)} ₽.`,
           });
-        } else if (ok.charged === 0 && ok.plan) {
+          return;
+        }
+
+        // ── Path 3: даунгрейд/равноценный → запланировано ──
+        if (ok.scheduled) {
           void dialog.alert({
             tone: "success",
-            title: "Тариф изменён",
-            message: `Тариф изменён на «${ok.plan.name}». Новая стоимость спишется на следующем продлении.`,
+            title: "Смена тарифа запланирована",
+            message:
+              ok.message ??
+              "Текущий тариф работает до конца оплаченного цикла, затем включится новый. Деньги сейчас не списываются.",
           });
+          return;
         }
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Не удалось сменить тариф";
@@ -336,6 +338,25 @@ export default function BillingTab({
     },
     [redirect, refresh]
   );
+
+  const handleCancelPending = useCallback(async () => {
+    const ok = await dialog.confirm({
+      title: "Отменить смену тарифа?",
+      message: "Текущий тариф продолжит действовать без изменений.",
+      confirmLabel: "Отменить смену",
+    });
+    if (!ok) return;
+    setCancelPendingBusy(true);
+    try {
+      await apiPost("/api/billing/plan/cancel-pending", {});
+      await refresh();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Не удалось отменить";
+      await dialog.alert({ title: "Ошибка", message: msg });
+    } finally {
+      setCancelPendingBusy(false);
+    }
+  }, [refresh]);
 
   const handleSubscribeFns = useCallback(
     async (fnsId: string) => {
@@ -455,140 +476,7 @@ export default function BillingTab({
   }
 
   const hasPlan = !!data.plan;
-
-  // ─── trim dialog (downgrade) ─────────────────────────────────────
-  if (trimDialog) {
-    const overflow = trimDialog.drop.length;
-    const allFns = [...trimDialog.keep, ...trimDialog.drop];
-    const dropIds = new Set(trimDialog.drop.map((f) => f.fnsId));
-    const toggleDrop = (sub: ActiveVipFns) => {
-      const newDrop = new Set(dropIds);
-      if (newDrop.has(sub.fnsId)) newDrop.delete(sub.fnsId);
-      else newDrop.add(sub.fnsId);
-      const drop = allFns.filter((f) => newDrop.has(f.fnsId));
-      const keep = allFns.filter((f) => !newDrop.has(f.fnsId));
-      setTrimDialog({ ...trimDialog, drop, keep });
-    };
-    const canSwitch = trimDialog.drop.length === overflow;
-    return (
-      <Card>
-        <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
-          Перейти на тариф {trimDialog.plan.name}
-        </Text>
-        <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 6, lineHeight: 18 }}>
-          Лимит тарифа — {trimDialog.plan.fnsLimit} ИФНС. У вас сейчас{" "}
-          {allFns.length}, нужно убрать {overflow}. Отметьте, какие исключить:
-        </Text>
-        <View style={{ marginTop: 12 }}>
-          {allFns.map((sub, idx) => {
-            const drop = dropIds.has(sub.fnsId);
-            return (
-              <Pressable
-                key={sub.fnsId}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: drop }}
-                onPress={() => toggleDrop(sub)}
-                style={({ pressed }) => [
-                  {
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 12,
-                    paddingVertical: 12,
-                    borderTopWidth: idx === 0 ? 0 : 1,
-                    borderTopColor: colors.border,
-                  },
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <View
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 4,
-                    borderWidth: 1.5,
-                    borderColor: drop ? colors.error : colors.border,
-                    backgroundColor: drop ? colors.error : colors.white,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {drop && <Check size={12} color={colors.white} strokeWidth={3} />}
-                </View>
-                <FnsLogo name={sub.fnsName} cityName={sub.cityName} size="sm" />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, color: colors.text }} numberOfLines={2}>
-                    {sub.fnsName}
-                  </Text>
-                  <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
-                    {sub.cityName} · код {sub.fnsCode}
-                  </Text>
-                </View>
-                {drop && (
-                  <Text style={{ fontSize: 11, color: colors.error, fontWeight: "600" }}>
-                    Убрать
-                  </Text>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-        <View className="flex-row" style={{ gap: 8, marginTop: 16 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Отменить смену тарифа"
-            onPress={() => setTrimDialog(null)}
-            style={({ pressed }) => [
-              {
-                flex: 1,
-                paddingVertical: 11,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: colors.white,
-                alignItems: "center",
-              },
-              pressed && { opacity: 0.7 },
-            ]}
-          >
-            <Text style={{ color: colors.textSecondary, fontWeight: "600" }}>
-              Отмена
-            </Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Перейти на тариф ${trimDialog.plan.name}`}
-            disabled={!canSwitch || busyPlanId === trimDialog.plan.id}
-            onPress={() =>
-              submitPlan(
-                trimDialog.plan.id,
-                trimDialog.drop.map((d) => d.fnsId)
-              )
-            }
-            style={({ pressed }) => [
-              {
-                flex: 2,
-                paddingVertical: 11,
-                borderRadius: 10,
-                backgroundColor: colors.primary,
-                alignItems: "center",
-                flexDirection: "row",
-                justifyContent: "center",
-                gap: 6,
-              },
-              (!canSwitch || busyPlanId === trimDialog.plan.id) && { opacity: 0.5 },
-              pressed && { opacity: 0.85 },
-            ]}
-          >
-            <Text style={{ color: colors.white, fontWeight: "600" }}>
-              {busyPlanId === trimDialog.plan.id
-                ? "..."
-                : `Перейти на ${trimDialog.plan.name}`}
-            </Text>
-          </Pressable>
-        </View>
-      </Card>
-    );
-  }
+  const pendingPlan = data.pendingPlan;
 
   // ─── no plan: upsell screen ─────────────────────────────────────
   if (!hasPlan) {
@@ -893,6 +781,77 @@ export default function BillingTab({
             />
           </View>
         </View>
+
+        {/* Pending plan banner — запланированная смена тарифа на
+            следующее продление. Показываем дату применения, новый
+            тариф и кнопку отмены. */}
+        {pendingPlan && (
+          <View
+            style={{
+              marginTop: 16,
+              paddingTop: 12,
+              paddingBottom: 4,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "flex-start",
+                gap: 10,
+                backgroundColor: colors.accentSoft,
+                borderRadius: 10,
+                padding: 12,
+              }}
+            >
+              <Clock size={16} color={colors.primary} style={{ marginTop: 1 }} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text }}>
+                  Запланирована смена на «{pendingPlan.name}»
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 17 }}>
+                  Текущий тариф «{plan.name}» работает до{" "}
+                  {data.planNextChargeAt
+                    ? formatActivatedAt(data.planNextChargeAt)
+                    : "следующего продления"}
+                  . После этой даты включится «{pendingPlan.name}» ({formatRub(pendingPlan.monthlyPriceKopeks)}/мес,
+                  до {pendingPlan.fnsLimit} ИФНС). Деньги сейчас не списываются.
+                </Text>
+                {pendingPlan.fnsLimit < data.slotsUsed && (
+                  <Text style={{ fontSize: 11, color: colors.warning ?? colors.error, marginTop: 6, lineHeight: 16 }}>
+                    У вас сейчас {data.slotsUsed} ИФНС, новый лимит {pendingPlan.fnsLimit}.
+                    {" "}Самые старые подключения отключатся автоматически — отвяжите ненужные сами, чтобы оставить нужные.
+                  </Text>
+                )}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Отменить смену тарифа"
+                  onPress={handleCancelPending}
+                  disabled={cancelPendingBusy}
+                  style={({ pressed }) => [
+                    {
+                      alignSelf: "flex-start",
+                      marginTop: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: colors.primary,
+                      backgroundColor: colors.white,
+                    },
+                    pressed && { opacity: 0.7 },
+                    cancelPendingBusy && { opacity: 0.5 },
+                  ]}
+                >
+                  <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600" }}>
+                    {cancelPendingBusy ? "..." : "Отменить смену"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Active priority FNS — встроены в карточку тарифа. */}
         {data.activeVipFns.length > 0 && (
