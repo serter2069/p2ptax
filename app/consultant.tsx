@@ -45,6 +45,9 @@ import {
   Bug,
   Users,
   MapPin,
+  Paperclip,
+  Image as ImageIcon,
+  FileSearch,
 } from "lucide-react-native";
 import { colors, spacing } from "@/lib/theme";
 import { apiGet, apiPost, ApiError, API_URL, getAccessToken } from "@/lib/api";
@@ -60,7 +63,7 @@ type Source = {
 type Message = {
   id: string;
   role: "user" | "assistant";
-  kind?: "text" | "document";
+  kind?: "text" | "document" | "upload";
   attachmentFilename?: string | null;
   content: string;
   createdAt: string;
@@ -144,6 +147,8 @@ export default function ConsultantScreen() {
   const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
   const [actions, setActions] = useState<ConsultantAction[]>([]);
   const [savedFns, setSavedFns] = useState<SavedFns | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [fnsModal, setFnsModal] = useState<{
     cityQuery: string;
     cities: CityRow[];
@@ -561,6 +566,122 @@ export default function ConsultantScreen() {
     setGenModal({ template: tpl, userInput: gen.userInput ?? "", submitting: false });
   }
 
+  async function uploadDocument(file: File) {
+    if (uploading) return;
+    setUploading(true);
+    setSuggestedActions([]);
+    setActions([]);
+    pushLog({ event: "upload.request", filename: file.name, size: file.size, mime: file.type });
+
+    // Optimistic upload-card в чате — пользователь сразу видит файл
+    // и индикатор «распознаю». После ответа сервера заменим content.
+    const tempId = `upload-${Date.now()}`;
+    const optimistic: Message = {
+      id: tempId,
+      role: "user",
+      kind: "upload",
+      attachmentFilename: file.name,
+      content: `📎 ${file.name}`,
+      createdAt: new Date().toISOString(),
+    };
+    const placeholderId = `upload-analyzing-${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      optimistic,
+      {
+        id: placeholderId,
+        role: "assistant",
+        content: "",
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+
+    try {
+      const token = await getAccessToken();
+      const form = new FormData();
+      form.append("file", file);
+      if (threadId) form.append("threadId", threadId);
+      const resp = await fetch(`${API_URL}/api/consultant/upload-document`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+      if (!resp.ok) {
+        const errData = (await resp.json().catch(() => ({}))) as { error?: string };
+        throw new ApiError(resp.status, errData.error ?? `upload HTTP ${resp.status}`);
+      }
+      const data = (await resp.json()) as {
+        threadId: string;
+        userMessage: Message;
+        assistantMessage: Message;
+        analysis: unknown;
+        suggestedActions?: SuggestedAction[];
+        suggestedTemplate?: { templateId: string; prefilledInput: string } | null;
+        ocrFailed?: boolean;
+      };
+      pushLog({
+        event: "upload.response",
+        threadId: data.threadId,
+        ocrFailed: data.ocrFailed,
+        suggestedTemplate: data.suggestedTemplate?.templateId ?? null,
+      });
+      // Заменяем optimistic-сообщения реальными из БД (с серверными id и
+      // OCR-результатами).
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id === tempId) return data.userMessage;
+          if (m.id === placeholderId) return data.assistantMessage;
+          return m;
+        }),
+      );
+      setThreadId(data.threadId);
+      setSuggestedActions(data.suggestedActions ?? []);
+
+      // Если классификатор уверенно определил тип документа — сразу
+      // открываем модалку генерации с предзаполненным OCR-текстом
+      // (опционально, юзер может закрыть). Это ключевая UX-фишка:
+      // фотка → через минуту готовый драфт документа.
+      if (data.suggestedTemplate?.templateId) {
+        const tpl = templates.find((t) => t.id === data.suggestedTemplate?.templateId);
+        if (tpl) {
+          setGenModal({
+            template: tpl,
+            userInput: data.suggestedTemplate.prefilledInput ?? "",
+            submitting: false,
+          });
+        }
+      }
+    } catch (e) {
+      pushLog({
+        event: "upload.error",
+        status: e instanceof ApiError ? e.status : 0,
+        message: e instanceof Error ? e.message : String(e),
+      });
+      const errMsg =
+        e instanceof ApiError && e.status === 413
+          ? "Файл слишком большой (максимум 25 МБ)."
+          : e instanceof ApiError && e.status === 429
+          ? "Слишком много загрузок — подождите минуту."
+          : "Не удалось загрузить документ. Попробуйте ещё раз или введите текст вручную.";
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === placeholderId
+            ? { ...m, content: errMsg }
+            : m,
+        ),
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function pickAndUpload() {
+    if (Platform.OS !== "web") return; // native pickers — отдельная задача
+    if (!fileInputRef.current) return;
+    fileInputRef.current.value = "";
+    fileInputRef.current.click();
+  }
+
   async function copyDebugLog() {
     const dump = {
       ts: new Date().toISOString(),
@@ -823,10 +944,34 @@ export default function ConsultantScreen() {
               overflow: "hidden",
             }}
           >
+            {/* 📎 Прикрепить документ от ИФНС — фото/скан/PDF.
+                Сервер ocr-im OCR + классифицирует, и если узнаёт тип
+                (требование/акт/решение) — сразу открывает модалку
+                генерации с предзаполненным текстом. */}
+            <Pressable
+              onPress={pickAndUpload}
+              disabled={uploading || sending || Platform.OS !== "web"}
+              accessibilityLabel="Прикрепить документ от ИФНС"
+              style={{
+                width: 44,
+                height: 44,
+                margin: 4,
+                borderRadius: 8,
+                backgroundColor: colors.surface2,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {uploading ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Paperclip size={18} color={colors.textSecondary} />
+              )}
+            </Pressable>
             <TextInput
               value={input}
               onChangeText={setInput}
-              placeholder="Спросите про налог, ставку, льготу или порядок отчётности…"
+              placeholder="Спросите про налог, или прикрепите фото/скан документа от ИФНС…"
               placeholderTextColor={colors.textMuted}
               multiline
               style={{
@@ -873,6 +1018,21 @@ export default function ConsultantScreen() {
               />
             </Pressable>
           </View>
+          {Platform.OS === "web" && (
+            // Скрытый input для file picker — настоящий <input> в DOM,
+            // ради него и держим fileInputRef. RN-подход с DocumentPicker
+            // оставим на следующую итерацию для native.
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+              style={{ display: "none" }}
+              onChange={(e: any) => {
+                const f: File | undefined = e?.target?.files?.[0];
+                if (f) uploadDocument(f);
+              }}
+            />
+          )}
           <Text style={{ marginTop: 6, fontSize: 11, color: colors.textMuted }}>
             ⌘/Ctrl + Enter — отправить
           </Text>
@@ -1000,13 +1160,87 @@ function MessageBubble({
 }) {
   const isUser = m.role === "user";
   const isDocument = m.kind === "document";
+  const isUpload = m.kind === "upload";
   const [copied, setCopied] = useState(false);
   const canRegenerate =
     isDocument &&
     !!(m.debug as { generation?: { templateId?: string } } | undefined)?.generation?.templateId;
+  const uploadInfo = isUpload
+    ? ((m.debug as { upload?: { presigned?: string; mimeType?: string } } | undefined)?.upload ?? null)
+    : null;
   return (
     <View style={{ alignItems: isUser ? "flex-end" : "flex-start" }}>
-      {isDocument ? (
+      {isUpload ? (
+        // Карточка прикреплённого файла (фото/скан/PDF). Если есть
+        // presigned-url и это картинка — показываем превью.
+        <View
+          style={{
+            maxWidth: "100%",
+            width: "100%",
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            borderRadius: 12,
+            backgroundColor: colors.accentSoft,
+            borderWidth: 1,
+            borderColor: colors.border,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          {uploadInfo?.presigned && (uploadInfo?.mimeType ?? "").startsWith("image/") ? (
+            <img
+              src={uploadInfo.presigned}
+              alt={m.attachmentFilename ?? "документ"}
+              style={{
+                width: 56,
+                height: 56,
+                objectFit: "cover",
+                borderRadius: 6,
+                border: `1px solid ${colors.border}`,
+              }}
+            />
+          ) : (
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 6,
+                backgroundColor: colors.surface,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <FileSearch size={24} color={colors.primary} />
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text }} numberOfLines={2}>
+              {m.attachmentFilename ?? "Документ"}
+            </Text>
+            <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+              {(uploadInfo?.mimeType ?? "").startsWith("image/")
+                ? "Изображение, распознано через OCR"
+                : "PDF, распознано постранично"}
+            </Text>
+          </View>
+          {uploadInfo?.presigned && Platform.OS === "web" && (
+            <a
+              href={uploadInfo.presigned}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: 12,
+                color: colors.primary,
+                fontWeight: 600,
+                textDecoration: "underline",
+              }}
+            >
+              Открыть
+            </a>
+          )}
+        </View>
+      ) : isDocument ? (
         <View
           style={{
             maxWidth: "100%",
