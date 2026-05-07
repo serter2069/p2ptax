@@ -16,7 +16,6 @@
  *     kind="document", FE рисует его как блок с кнопкой «Скачать».
  */
 import { useEffect, useRef, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
   Text,
@@ -44,9 +43,7 @@ import {
   RefreshCw,
   Bug,
   Users,
-  MapPin,
   Paperclip,
-  Image as ImageIcon,
   FileSearch,
 } from "lucide-react-native";
 import { colors, spacing } from "@/lib/theme";
@@ -79,23 +76,6 @@ type SuggestedAction = { id: string; label: string };
 // CTA, которые backend отдаёт в done-event для tax-режима.
 // type определяет иконку и href, label — что написано на пилюле.
 type ConsultantAction = { type: string; label: string; href: string };
-
-// Сохранённая ФНС юзера — подмешивается в каждый chat/stream-запрос
-// как контекст. Значительно улучшает релевантность ответов про
-// территориальные особенности (адрес инспекции, региональные ставки).
-type SavedFns = {
-  cityId: string;
-  citySlug: string;
-  cityName: string;
-  fnsId: string;
-  fnsName: string;
-  fnsCode?: string | null;
-  fnsAddress?: string | null;
-};
-const FNS_STORAGE_KEY = "p2ptax_consultant_fns";
-
-type CityRow = { id: string; slug: string; name: string; officesCount: number };
-type IfnsRow = { id: string; name: string; code?: string | null; address?: string | null };
 
 type TemplateMeta = {
   id: string;
@@ -136,8 +116,48 @@ function splitParagraphs(text: string): string[] {
     .filter(Boolean);
 }
 
+// ─────────────────────── inline markdown
+//
+// Простой парсер только для **bold**, *italic* и `code`.
+// TaxLLM не пишет таблиц и code-блоков, поэтому полный markdown-движок не
+// нужен. Возвращает массив React-нод (Text-сегментов), готовых к встраиванию
+// в обычный <Text>.
+
+type InlineSegment = { text: string; bold?: boolean; italic?: boolean; code?: boolean };
+
+function parseInlineMarkdown(input: string): InlineSegment[] {
+  const segments: InlineSegment[] = [];
+  // Регэкс на (в порядке приоритета): **bold**, *italic*, `code`, plain.
+  const re = /\*\*([^*\n]+?)\*\*|`([^`\n]+?)`|\*([^*\n]+?)\*/g;
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(input)) !== null) {
+    if (m.index > lastIndex) {
+      segments.push({ text: input.slice(lastIndex, m.index) });
+    }
+    if (m[1] !== undefined) segments.push({ text: m[1], bold: true });
+    else if (m[2] !== undefined) segments.push({ text: m[2], code: true });
+    else if (m[3] !== undefined) segments.push({ text: m[3], italic: true });
+    lastIndex = m.index + m[0].length;
+  }
+  if (lastIndex < input.length) segments.push({ text: input.slice(lastIndex) });
+  return segments.length > 0 ? segments : [{ text: input }];
+}
+
+// Определяем тип строки: bullet (— / -/ * / •), numbered (1. ...), plain.
+function classifyLine(line: string): { kind: "bullet" | "numbered" | "plain"; body: string; marker?: string } {
+  const trimmed = line.trimStart();
+  const indent = line.length - trimmed.length;
+  void indent;
+  const bullet = trimmed.match(/^([-—•*])\s+(.+)$/);
+  if (bullet) return { kind: "bullet", body: bullet[2], marker: "•" };
+  const numbered = trimmed.match(/^(\d+[.)])\s+(.+)$/);
+  if (numbered) return { kind: "numbered", body: numbered[2], marker: numbered[1] };
+  return { kind: "plain", body: trimmed };
+}
+
 export default function ConsultantScreen() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -146,22 +166,20 @@ export default function ConsultantScreen() {
   const [loading, setLoading] = useState(true);
   const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
   const [actions, setActions] = useState<ConsultantAction[]>([]);
-  const [savedFns, setSavedFns] = useState<SavedFns | null>(null);
   const [uploading, setUploading] = useState(false);
+  // streaming-статус для UI-индикатора в плейсхолдере: какая стадия
+  // сейчас выполняется на сервере (analyzing / searching / drafting).
+  const [streamStatus, setStreamStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [fnsModal, setFnsModal] = useState<{
-    cityQuery: string;
-    cities: CityRow[];
-    selectedCity: CityRow | null;
-    ifnsQuery: string;
-    ifnsList: IfnsRow[];
-    loading: boolean;
-  } | null>(null);
   const [templates, setTemplates] = useState<TemplateMeta[]>([]);
   const [genModal, setGenModal] = useState<{
     template: TemplateMeta;
     userInput: string;
     submitting: boolean;
+    // Если модалка открылась после OCR-загрузки, FE кладёт сюда
+    // presigned URL и mime — модалка покажет миниатюру оригинального
+    // файла рядом с полем ввода чтобы юзер видел и фото, и текст.
+    attachment?: { url: string; mimeType: string; filename: string } | null;
   } | null>(null);
   // Дебаг-лог для repro: каждое сетевое событие складывается сюда (макс 30),
   // юзер копирует одной кнопкой и вставляет в чат с разрабом.
@@ -183,19 +201,15 @@ export default function ConsultantScreen() {
     }
     (async () => {
       try {
-        const [threadsR, templatesR, savedFnsRaw] = await Promise.all([
+        const [threadsR, templatesR] = await Promise.all([
           apiGet<{ threads: Array<{ id: string; messageCount: number }> }>(
             "/api/consultant/threads",
           ),
           apiGet<{ templates: TemplateMeta[] }>("/api/consultant/templates").catch(
             () => ({ templates: [] as TemplateMeta[] }),
           ),
-          AsyncStorage.getItem(FNS_STORAGE_KEY).catch(() => null),
         ]);
         setTemplates(templatesR.templates ?? []);
-        if (savedFnsRaw) {
-          try { setSavedFns(JSON.parse(savedFnsRaw) as SavedFns); } catch {}
-        }
         if (threadsR.threads.length > 0) {
           const active = threadsR.threads[0];
           setThreadId(active.id);
@@ -214,58 +228,6 @@ export default function ConsultantScreen() {
     })();
   }, [isAuthenticated]);
 
-  async function persistFns(fns: SavedFns | null) {
-    setSavedFns(fns);
-    try {
-      if (fns) await AsyncStorage.setItem(FNS_STORAGE_KEY, JSON.stringify(fns));
-      else await AsyncStorage.removeItem(FNS_STORAGE_KEY);
-    } catch {}
-  }
-
-  async function openFnsModal() {
-    setFnsModal({
-      cityQuery: "",
-      cities: [],
-      selectedCity: null,
-      ifnsQuery: "",
-      ifnsList: [],
-      loading: true,
-    });
-    try {
-      const r = await apiGet<{ items: CityRow[] }>("/api/cities?limit=1000");
-      setFnsModal((prev) => prev ? { ...prev, cities: r.items, loading: false } : prev);
-    } catch {
-      setFnsModal((prev) => prev ? { ...prev, loading: false } : prev);
-    }
-  }
-
-  async function selectCityInFnsModal(city: CityRow) {
-    if (!fnsModal) return;
-    setFnsModal({ ...fnsModal, selectedCity: city, ifnsQuery: "", ifnsList: [], loading: true });
-    try {
-      const r = await apiGet<{ items: IfnsRow[] }>(`/api/cities/${city.slug}/ifns?limit=100`);
-      setFnsModal((prev) =>
-        prev ? { ...prev, selectedCity: city, ifnsList: r.items, loading: false } : prev,
-      );
-    } catch {
-      setFnsModal((prev) => prev ? { ...prev, loading: false } : prev);
-    }
-  }
-
-  function selectIfnsInFnsModal(office: IfnsRow) {
-    if (!fnsModal?.selectedCity) return;
-    persistFns({
-      cityId: fnsModal.selectedCity.id,
-      citySlug: fnsModal.selectedCity.slug,
-      cityName: fnsModal.selectedCity.name,
-      fnsId: office.id,
-      fnsName: office.name,
-      fnsCode: office.code ?? null,
-      fnsAddress: office.address ?? null,
-    });
-    setFnsModal(null);
-  }
-
   // Auto-scroll on new messages
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
@@ -277,6 +239,7 @@ export default function ConsultantScreen() {
     setInput("");
     setSuggestedActions([]);
     setActions([]);
+    setStreamStatus(null);
     const userMsg: Message = {
       id: `tmp-${Date.now()}`,
       role: "user",
@@ -308,17 +271,6 @@ export default function ConsultantScreen() {
       );
     };
 
-    // Если у юзера сохранена ФНС — шлём как отдельное поле userContext.
-    // Backend сохраняет в БД оригинальный message (без контекста), а
-    // TaxLLM получает склейку. Так в истории чата юзер видит чистый
-    // свой вопрос, а бот всё равно отвечает с учётом региона.
-    const userContext = savedFns
-      ? `Моя ИФНС: ${savedFns.fnsName}` +
-        (savedFns.fnsCode ? ` (код ${savedFns.fnsCode})` : "") +
-        `, г. ${savedFns.cityName}` +
-        (savedFns.fnsAddress ? `, адрес: ${savedFns.fnsAddress}` : "")
-      : null;
-
     try {
       const token = await getAccessToken();
       const resp = await fetch(`${API_URL}/api/consultant/chat/stream`, {
@@ -327,7 +279,7 @@ export default function ConsultantScreen() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ message, threadId, userContext }),
+        body: JSON.stringify({ message, threadId }),
       });
       if (!resp.ok) {
         throw new ApiError(resp.status, `stream HTTP ${resp.status}`);
@@ -367,6 +319,7 @@ export default function ConsultantScreen() {
             suggestedActions?: SuggestedAction[];
             actions?: ConsultantAction[];
             message?: string;
+            stage?: string;
           };
           try {
             evt = JSON.parse(line);
@@ -379,11 +332,15 @@ export default function ConsultantScreen() {
               // backend autoRolled — старая переписка ушла в архив, в UI оставляем только текущий ход
               setMessages([userMsg, assistantPlaceholder]);
             }
+          } else if (evt.type === "status") {
+            setStreamStatus(evt.text ?? null);
           } else if (evt.type === "meta") {
             receivedMeta = true;
             if (evt.intent) intent = evt.intent;
             updateAssistant({ sources: evt.sources ?? [] });
           } else if (evt.type === "token" && evt.text) {
+            // первый токен — сбрасываем статусную линию (ответ пошёл)
+            setStreamStatus(null);
             appendToken(evt.text);
           } else if (evt.type === "done") {
             serverMessageId = evt.messageId ?? null;
@@ -644,10 +601,23 @@ export default function ConsultantScreen() {
       if (data.suggestedTemplate?.templateId) {
         const tpl = templates.find((t) => t.id === data.suggestedTemplate?.templateId);
         if (tpl) {
+          // Достаём presigned URL из user-сообщения для превью.
+          const uploadDebug = data.userMessage?.debug as
+            | { upload?: { presigned?: string; mimeType?: string } }
+            | undefined;
+          const presigned = uploadDebug?.upload?.presigned ?? null;
+          const mimeType = uploadDebug?.upload?.mimeType ?? "";
           setGenModal({
             template: tpl,
             userInput: data.suggestedTemplate.prefilledInput ?? "",
             submitting: false,
+            attachment: presigned
+              ? {
+                  url: presigned,
+                  mimeType,
+                  filename: data.userMessage?.attachmentFilename ?? "документ",
+                }
+              : null,
           });
         }
       }
@@ -675,11 +645,33 @@ export default function ConsultantScreen() {
     }
   }
 
-  function pickAndUpload() {
-    if (Platform.OS !== "web") return; // native pickers — отдельная задача
-    if (!fileInputRef.current) return;
-    fileInputRef.current.value = "";
-    fileInputRef.current.click();
+  async function pickAndUpload() {
+    if (Platform.OS === "web") {
+      if (!fileInputRef.current) return;
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+      return;
+    }
+    // iOS/Android — нативный picker через expo-document-picker.
+    try {
+      const Picker = await import("expo-document-picker");
+      const result = await Picker.getDocumentAsync({
+        type: ["image/*", "application/pdf"],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+      const asset = result.assets[0];
+      // RN-fetch принимает {uri,name,type} как Blob-substitute.
+      const file = {
+        uri: asset.uri,
+        name: asset.name ?? "document",
+        type: asset.mimeType ?? "application/octet-stream",
+      } as unknown as File;
+      await uploadDocument(file);
+    } catch (e) {
+      pushLog({ event: "upload.picker_error", message: e instanceof Error ? e.message : String(e) });
+    }
   }
 
   async function copyDebugLog() {
@@ -739,35 +731,9 @@ export default function ConsultantScreen() {
               На базе НК РФ и писем ФНС. Бесплатно для всех пользователей.
             </Text>
           </View>
-          <Pressable
-            onPress={openFnsModal}
-            accessibilityLabel="Указать мою ФНС"
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: spacing.sm,
-              paddingVertical: 6,
-              borderRadius: 6,
-              backgroundColor: savedFns ? colors.accentSoft : colors.surface2,
-              gap: 4,
-              maxWidth: 240,
-            }}
-          >
-            <MapPin
-              size={14}
-              color={savedFns ? colors.accentSoftInk : colors.textSecondary}
-            />
-            <Text
-              numberOfLines={1}
-              style={{
-                fontSize: 12,
-                color: savedFns ? colors.accentSoftInk : colors.textSecondary,
-                flexShrink: 1,
-              }}
-            >
-              {savedFns ? savedFns.fnsName : "Указать мою ИФНС"}
-            </Text>
-          </Pressable>
+          {/* ФНС теперь хранится в /profile (User.consultantFnsId).
+              Backend подмешивает контекст автоматически. Если у юзера
+              не указана — внутри чата отрисуется баннер-подсказка. */}
           <Pressable
             onPress={startNewThread}
             style={{
@@ -820,6 +786,31 @@ export default function ConsultantScreen() {
           </Pressable>
         </View>
 
+        {/* Подсказка-баннер: укажите ИФНС в профиле для точных ответов.
+            Показываем только если у юзера ещё не выбрана инспекция. */}
+        {isAuthenticated && !user?.consultantFns && (
+          <Pressable
+            onPress={() => router.push("/profile")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              paddingVertical: 8,
+              paddingHorizontal: spacing.lg,
+              backgroundColor: colors.accentSoft,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+            }}
+          >
+            <Text style={{ flex: 1, fontSize: 12, color: colors.accentSoftInk }}>
+              Для более точных ответов укажите вашу налоговую инспекцию в профиле — бот будет учитывать регион и реквизиты.
+            </Text>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>
+              Указать →
+            </Text>
+          </Pressable>
+        )}
+
         {/* Messages */}
         <ScrollView
           ref={scrollRef}
@@ -843,6 +834,11 @@ export default function ConsultantScreen() {
                 onDownload={downloadDocument}
                 onCopy={copyDocument}
                 onRegenerate={regenerate}
+                streamStatus={
+                  m.id.startsWith("streaming-") && m.content === ""
+                    ? streamStatus
+                    : null
+                }
               />
             ))
           )}
@@ -950,7 +946,7 @@ export default function ConsultantScreen() {
                 генерации с предзаполненным текстом. */}
             <Pressable
               onPress={pickAndUpload}
-              disabled={uploading || sending || Platform.OS !== "web"}
+              disabled={uploading || sending}
               accessibilityLabel="Прикрепить документ от ИФНС"
               style={{
                 width: 44,
@@ -1048,21 +1044,6 @@ export default function ConsultantScreen() {
         />
       )}
 
-      {fnsModal && (
-        <FnsPickerModal
-          state={fnsModal}
-          savedFns={savedFns}
-          onCityQuery={(q) => setFnsModal((prev) => prev ? { ...prev, cityQuery: q } : prev)}
-          onIfnsQuery={(q) => setFnsModal((prev) => prev ? { ...prev, ifnsQuery: q } : prev)}
-          onPickCity={selectCityInFnsModal}
-          onPickIfns={selectIfnsInFnsModal}
-          onClear={() => { persistFns(null); setFnsModal(null); }}
-          onCancel={() => setFnsModal(null)}
-          onBack={() => setFnsModal((prev) => prev
-            ? { ...prev, selectedCity: null, ifnsList: [], ifnsQuery: "" }
-            : prev)}
-        />
-      )}
     </>
   );
 }
@@ -1151,12 +1132,15 @@ function MessageBubble({
   onDownload,
   onCopy,
   onRegenerate,
+  streamStatus,
 }: {
   m: Message;
   onSourcePress: (s: Source) => void;
   onDownload: (m: Message) => void;
   onCopy: (m: Message) => Promise<void> | void;
   onRegenerate: (m: Message) => void;
+  /** Текст текущей стадии стрима, если это streaming-плейсхолдер. */
+  streamStatus?: string | null;
 }) {
   const isUser = m.role === "user";
   const isDocument = m.kind === "document";
@@ -1357,35 +1341,23 @@ function MessageBubble({
             </Text>
           ) : m.content === "" ? (
             // Стрим начался, но первый токен ещё не пришёл — показываем
-            // тонкий индикатор внутри самого бабла, а не отдельным пустым
-            // плейсхолдером. После meta-пакета у нас уже есть sources,
-            // которые рисуются ниже — юзер видит «бот пошёл в Ст. 88».
+            // тонкий индикатор + текст текущей стадии («Анализирую вопрос»,
+            // «Ищу в Налоговом кодексе», «Расширенный поиск», «Готовлю
+            // ответ»). Если stream-статуса нет — fallback на старый текст.
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <ActivityIndicator size="small" color={colors.primary} />
               <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                {m.sources && m.sources.length > 0
-                  ? "Готовлю ответ по источникам…"
-                  : "Ищу в источниках…"}
+                {streamStatus ??
+                  (m.sources && m.sources.length > 0
+                    ? "Готовлю ответ по источникам…"
+                    : "Ищу в источниках…")}
               </Text>
             </View>
           ) : (
-            // Ответ ассистента: режем на абзацы, чистим инлайн [Источник:…]
-            // (пилюли с источниками рендерятся ниже отдельно, дублирование
-            // в самом тексте раздражает читателя).
-            splitParagraphs(stripInlineSources(m.content)).map((p, i, arr) => (
-              <Text
-                key={i}
-                style={{
-                  fontSize: 14,
-                  lineHeight: 22,
-                  color: colors.text,
-                  marginBottom: i < arr.length - 1 ? 10 : 0,
-                }}
-                selectable
-              >
-                {p}
-              </Text>
-            ))
+            // Ответ ассистента: вырезаем инлайн [Источник:…], режем на
+            // абзацы, в каждом параграфе разбираем строки на bullet/
+            // numbered/plain и рендерим **bold**/*italic*/`code`.
+            <AssistantContent text={stripInlineSources(m.content)} />
           )}
         </View>
       )}
@@ -1430,7 +1402,12 @@ function GenerateModal({
   onCancel,
   onSubmit,
 }: {
-  state: { template: TemplateMeta; userInput: string; submitting: boolean };
+  state: {
+    template: TemplateMeta;
+    userInput: string;
+    submitting: boolean;
+    attachment?: { url: string; mimeType: string; filename: string } | null;
+  };
   onChangeInput: (v: string) => void;
   onCancel: () => void;
   onSubmit: () => void;
@@ -1475,6 +1452,76 @@ function GenerateModal({
           <Text style={{ fontSize: 13, color: colors.textSecondary }}>
             {state.template.description}
           </Text>
+
+          {/* Превью прикреплённого документа (после OCR-загрузки) — фото-
+              миниатюра рядом с информацией о файле + ссылка «Открыть».
+              Юзер видит и оригинал, и распознанный текст одновременно. */}
+          {state.attachment && Platform.OS === "web" && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                paddingVertical: 8,
+                paddingHorizontal: 10,
+                borderRadius: 8,
+                backgroundColor: colors.accentSoft,
+              }}
+            >
+              {state.attachment.mimeType.startsWith("image/") ? (
+                <img
+                  src={state.attachment.url}
+                  alt={state.attachment.filename}
+                  style={{
+                    width: 80,
+                    height: 80,
+                    objectFit: "cover",
+                    borderRadius: 6,
+                    border: `1px solid ${colors.border}`,
+                  }}
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 6,
+                    backgroundColor: colors.surface,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <FileText size={32} color={colors.primary} />
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{ fontSize: 13, fontWeight: "700", color: colors.accentSoftInk }}
+                  numberOfLines={2}
+                >
+                  {state.attachment.filename}
+                </Text>
+                <Text style={{ fontSize: 11, color: colors.accentSoftInk, marginTop: 2 }}>
+                  Распознан и подставлен в поле ниже. Можете править перед генерацией.
+                </Text>
+                <a
+                  href={state.attachment.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    marginTop: 4,
+                    fontSize: 12,
+                    color: colors.primary,
+                    fontWeight: 600,
+                    textDecoration: "underline",
+                  }}
+                >
+                  Открыть оригинал →
+                </a>
+              </View>
+            </View>
+          )}
+
           <View style={{ gap: 6 }}>
             <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text }}>
               {state.template.userInputLabel}
@@ -1550,236 +1597,107 @@ function GenerateModal({
   );
 }
 
-function FnsPickerModal({
-  state,
-  savedFns,
-  onCityQuery,
-  onIfnsQuery,
-  onPickCity,
-  onPickIfns,
-  onClear,
-  onCancel,
-  onBack,
-}: {
-  state: {
-    cityQuery: string;
-    cities: CityRow[];
-    selectedCity: CityRow | null;
-    ifnsQuery: string;
-    ifnsList: IfnsRow[];
-    loading: boolean;
-  };
-  savedFns: SavedFns | null;
-  onCityQuery: (q: string) => void;
-  onIfnsQuery: (q: string) => void;
-  onPickCity: (c: CityRow) => void;
-  onPickIfns: (i: IfnsRow) => void;
-  onClear: () => void;
-  onCancel: () => void;
-  onBack: () => void;
-}) {
-  const lcCityQ = state.cityQuery.trim().toLowerCase();
-  const filteredCities = lcCityQ
-    ? state.cities.filter((c) => c.name.toLowerCase().includes(lcCityQ))
-    : state.cities;
-  const lcIfnsQ = state.ifnsQuery.trim().toLowerCase();
-  const filteredIfns = lcIfnsQ
-    ? state.ifnsList.filter(
-        (o) =>
-          o.name.toLowerCase().includes(lcIfnsQ) ||
-          (o.code ?? "").toLowerCase().includes(lcIfnsQ),
-      )
-    : state.ifnsList;
-
+/**
+ * Рендерит ответ ассистента с поддержкой минимального markdown:
+ * — параграфы (отступ между ними)
+ * — bullet-списки (— / - / * / •)
+ * — numbered-списки (1. / 2) ...)
+ * — inline **bold**, *italic*, `code`
+ *
+ * Без таблиц, заголовков, code-блоков (TaxLLM их не пишет).
+ */
+function AssistantContent({ text }: { text: string }) {
+  const paragraphs = splitParagraphs(text);
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onCancel}>
-      <View
+    <>
+      {paragraphs.map((p, pi) => (
+        <Paragraph key={pi} text={p} isLast={pi === paragraphs.length - 1} />
+      ))}
+    </>
+  );
+}
+
+function Paragraph({ text, isLast }: { text: string; isLast: boolean }) {
+  const lines = text.split(/\n/);
+  // Если в параграфе только plain-строки без списков — рендерим как один
+  // Text (так лучше работает selection и переносы).
+  const hasListItems = lines.some((l) => {
+    const c = classifyLine(l);
+    return c.kind === "bullet" || c.kind === "numbered";
+  });
+  if (!hasListItems) {
+    return (
+      <Text
+        selectable
         style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: spacing.lg,
+          fontSize: 14,
+          lineHeight: 22,
+          color: colors.text,
+          marginBottom: isLast ? 0 : 10,
         }}
       >
-        <View
-          style={{
-            width: "100%",
-            maxWidth: 560,
-            maxHeight: "85%",
-            backgroundColor: colors.background,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: spacing.lg,
-            gap: spacing.md,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
-            <MapPin size={20} color={colors.primary} />
-            <Text style={{ flex: 1, fontSize: 16, fontWeight: "700", color: colors.text }}>
-              {state.selectedCity
-                ? `Инспекция в г. ${state.selectedCity.name}`
-                : "Выберите ваш город"}
-            </Text>
-            <Pressable onPress={onCancel} hitSlop={8}>
-              <X size={18} color={colors.textSecondary} />
-            </Pressable>
-          </View>
-
-          {savedFns && !state.selectedCity && (
-            <View
+        {parseInlineMarkdown(text).map((seg, si) => (
+          <InlineSegmentText key={si} seg={seg} />
+        ))}
+      </Text>
+    );
+  }
+  // Со списком — рендерим строки одна под другой.
+  return (
+    <View style={{ marginBottom: isLast ? 0 : 10, gap: 4 }}>
+      {lines.map((line, li) => {
+        const cls = classifyLine(line);
+        if (cls.kind === "plain" && cls.body === "") return null;
+        return (
+          <View
+            key={li}
+            style={{
+              flexDirection: "row",
+              alignItems: "flex-start",
+              gap: 6,
+              paddingLeft: cls.kind !== "plain" ? 4 : 0,
+            }}
+          >
+            {cls.kind !== "plain" && (
+              <Text
+                style={{
+                  fontSize: 14,
+                  lineHeight: 22,
+                  color: colors.textSecondary,
+                  minWidth: cls.kind === "numbered" ? 22 : 14,
+                }}
+              >
+                {cls.marker}
+              </Text>
+            )}
+            <Text
+              selectable
               style={{
-                paddingVertical: 8,
-                paddingHorizontal: 10,
-                borderRadius: 8,
-                backgroundColor: colors.accentSoft,
+                flex: 1,
+                fontSize: 14,
+                lineHeight: 22,
+                color: colors.text,
               }}
             >
-              <Text style={{ fontSize: 12, color: colors.accentSoftInk }}>
-                Сейчас сохранено: {savedFns.fnsName}, г. {savedFns.cityName}
-              </Text>
-            </View>
-          )}
-
-          {!state.selectedCity ? (
-            <>
-              <TextInput
-                value={state.cityQuery}
-                onChangeText={onCityQuery}
-                placeholder="Начните вводить название города…"
-                placeholderTextColor={colors.textMuted}
-                style={{
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 10,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  fontSize: 14,
-                  color: colors.text,
-                  backgroundColor: colors.surface,
-                  ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : {}),
-                }}
-              />
-              <ScrollView style={{ maxHeight: 360 }}>
-                {state.loading ? (
-                  <ActivityIndicator color={colors.primary} />
-                ) : filteredCities.length === 0 ? (
-                  <Text style={{ fontSize: 13, color: colors.textSecondary, padding: 8 }}>
-                    Ничего не найдено
-                  </Text>
-                ) : (
-                  filteredCities.slice(0, 200).map((c) => (
-                    <Pressable
-                      key={c.id}
-                      onPress={() => onPickCity(c)}
-                      style={{
-                        paddingVertical: 10,
-                        paddingHorizontal: 10,
-                        borderBottomWidth: 1,
-                        borderBottomColor: colors.border,
-                      }}
-                    >
-                      <Text style={{ fontSize: 14, color: colors.text }}>{c.name}</Text>
-                      <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                        {c.officesCount}{" "}
-                        {c.officesCount === 1
-                          ? "инспекция"
-                          : c.officesCount < 5
-                          ? "инспекции"
-                          : "инспекций"}
-                      </Text>
-                    </Pressable>
-                  ))
-                )}
-              </ScrollView>
-            </>
-          ) : (
-            <>
-              <TextInput
-                value={state.ifnsQuery}
-                onChangeText={onIfnsQuery}
-                placeholder="Поиск по номеру или названию…"
-                placeholderTextColor={colors.textMuted}
-                style={{
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 10,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  fontSize: 14,
-                  color: colors.text,
-                  backgroundColor: colors.surface,
-                  ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : {}),
-                }}
-              />
-              <ScrollView style={{ maxHeight: 360 }}>
-                {state.loading ? (
-                  <ActivityIndicator color={colors.primary} />
-                ) : filteredIfns.length === 0 ? (
-                  <Text style={{ fontSize: 13, color: colors.textSecondary, padding: 8 }}>
-                    Инспекций не найдено
-                  </Text>
-                ) : (
-                  filteredIfns.map((o) => (
-                    <Pressable
-                      key={o.id}
-                      onPress={() => onPickIfns(o)}
-                      style={{
-                        paddingVertical: 10,
-                        paddingHorizontal: 10,
-                        borderBottomWidth: 1,
-                        borderBottomColor: colors.border,
-                      }}
-                    >
-                      <Text style={{ fontSize: 14, color: colors.text, fontWeight: "600" }}>
-                        {o.name}
-                        {o.code ? ` (код ${o.code})` : ""}
-                      </Text>
-                      {o.address ? (
-                        <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
-                          {o.address}
-                        </Text>
-                      ) : null}
-                    </Pressable>
-                  ))
-                )}
-              </ScrollView>
-            </>
-          )}
-
-          <View style={{ flexDirection: "row", justifyContent: "space-between", gap: spacing.sm }}>
-            {state.selectedCity ? (
-              <Pressable
-                onPress={onBack}
-                style={{
-                  paddingHorizontal: spacing.md,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  backgroundColor: colors.surface2,
-                }}
-              >
-                <Text style={{ color: colors.text, fontWeight: "600" }}>← Город</Text>
-              </Pressable>
-            ) : <View />}
-            {savedFns ? (
-              <Pressable
-                onPress={onClear}
-                style={{
-                  paddingHorizontal: spacing.md,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  backgroundColor: colors.surface2,
-                }}
-              >
-                <Text style={{ color: colors.danger, fontWeight: "600" }}>
-                  Сбросить
-                </Text>
-              </Pressable>
-            ) : <View />}
+              {parseInlineMarkdown(cls.body).map((seg, si) => (
+                <InlineSegmentText key={si} seg={seg} />
+              ))}
+            </Text>
           </View>
-        </View>
-      </View>
-    </Modal>
+        );
+      })}
+    </View>
   );
+}
+
+function InlineSegmentText({ seg }: { seg: InlineSegment }) {
+  const style: Record<string, unknown> = {};
+  if (seg.bold) style.fontWeight = "700";
+  if (seg.italic) style.fontStyle = "italic";
+  if (seg.code) {
+    style.fontFamily = Platform.OS === "web" ? "ui-monospace, monospace" : "Courier";
+    style.backgroundColor = colors.surface2;
+    style.fontSize = 13;
+  }
+  return <Text style={style}>{seg.text}</Text>;
 }

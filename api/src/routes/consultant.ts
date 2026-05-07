@@ -143,11 +143,6 @@ router.post("/threads/:id/archive", async (req: Request, res: Response) => {
 interface ChatBody {
   message?: string;
   threadId?: string;
-  // FE-only: если юзер выбрал свою ИФНС в шапке консультанта, она шлётся
-  // как отдельное поле. В БД сохраняем оригинал message, а в TaxLLM
-  // отправляем склейку — чтобы в истории чата юзер видел свой чистый
-  // вопрос, а бот всё равно учитывал регион.
-  userContext?: string | null;
 }
 
 router.post("/chat", chatLimiter, async (req: Request, res: Response) => {
@@ -275,9 +270,32 @@ router.post("/chat/stream", chatLimiter, async (req: Request, res: Response) => 
   const userId = req.user!.userId;
   const body = req.body as ChatBody;
   const message = (body.message ?? "").trim();
-  const userContext = (body.userContext ?? "").trim();
   if (!message) return res.status(400).json({ error: "message_required" });
   if (message.length > 4000) return res.status(400).json({ error: "message_too_long" });
+
+  // Подтягиваем сохранённую ИФНС юзера из БД (раньше FE слал в userContext,
+  // теперь источник истины — профиль). Это означает что если бот в чате
+  // спросит «Уточните ИФНС» и юзер сохранит её в /profile — следующий
+  // запрос автоматически уже знает.
+  const userRow = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      consultantFns: {
+        select: {
+          name: true,
+          code: true,
+          address: true,
+          city: { select: { name: true } },
+        },
+      },
+    },
+  });
+  const userContext = userRow?.consultantFns
+    ? `Моя ИФНС: ${userRow.consultantFns.name}` +
+      (userRow.consultantFns.code ? ` (код ${userRow.consultantFns.code})` : "") +
+      `, г. ${userRow.consultantFns.city.name}` +
+      (userRow.consultantFns.address ? `, адрес: ${userRow.consultantFns.address}` : "")
+    : "";
 
   let thread = body.threadId
     ? await prisma.consultantThread.findUnique({ where: { id: body.threadId } })
@@ -379,7 +397,7 @@ router.post("/chat/stream", chatLimiter, async (req: Request, res: Response) => 
         buf = buf.slice(nl + 1);
         nl = buf.indexOf("\n");
         if (!line) continue;
-        let chunk: { type?: string; text?: string; sources?: TaxLLMSource[]; usage?: Record<string, unknown>; debug?: Record<string, unknown>; intent?: string; message?: string; answer?: string };
+        let chunk: { type?: string; text?: string; sources?: TaxLLMSource[]; usage?: Record<string, unknown>; debug?: Record<string, unknown>; intent?: string; message?: string; answer?: string; stage?: string };
         try {
           chunk = JSON.parse(line);
         } catch {
@@ -390,6 +408,12 @@ router.post("/chat/stream", chatLimiter, async (req: Request, res: Response) => 
           if (chunk.debug) debug = chunk.debug;
           if (chunk.intent) intent = chunk.intent;
           send({ type: "meta", sources, intent });
+        } else if (chunk.type === "status") {
+          // Прозрачно прокидываем статус-чанки от TaxLLM (analyzing /
+          // searching / deepsearch / drafting). FE рисует их в
+          // streaming-плейсхолдере чтобы пользователь видел что бот
+          // не висит, а активно работает в нескольких стадиях.
+          send({ type: "status", stage: chunk.stage, text: chunk.text });
         } else if (chunk.type === "token" && chunk.text) {
           answer += chunk.text;
           send({ type: "token", text: chunk.text });
@@ -595,10 +619,13 @@ const docUpload = multer({
   fileFilter: (_req, file, cb) => {
     const allowed = [
       "image/jpeg", "image/png", "image/webp", "image/gif",
+      // HEIC/HEIF от iPhone — backend конвертирует в JPEG через sharp
+      // прямо перед OCR. Multer пускает оригинал, нормализация в ocrImage.
+      "image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence",
       "application/pdf",
     ];
     if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Поддерживаются JPEG/PNG/WebP/GIF/PDF"));
+    else cb(new Error("Поддерживаются JPEG/PNG/WebP/GIF/HEIC/PDF"));
   },
 });
 
@@ -637,6 +664,10 @@ router.post(
         "image/png": ".png",
         "image/webp": ".webp",
         "image/gif": ".gif",
+        "image/heic": ".heic",
+        "image/heif": ".heif",
+        "image/heic-sequence": ".heic",
+        "image/heif-sequence": ".heif",
         "application/pdf": ".pdf",
       };
       return map[file.mimetype] ?? path.extname(file.originalname).toLowerCase();
@@ -681,40 +712,57 @@ router.post(
         ocrModel = ocr.model;
         ocrElapsed = ocr.elapsedSec;
       } else if (file.mimetype === "application/pdf") {
-        // PDF: конвертируем первые 3 страницы в PNG через ImageMagick
-        // (`convert -density 150 input.pdf[0-2] out-%d.png`) и OCR-ним
-        // каждую. node-poppler/pdf-parse не установлены, ставить
-        // отдельно сейчас не можем (apt-lock), а ImageMagick + ghostscript
-        // уже на сервере и поддерживают PDF.
+        // PDF: конвертируем до 10 страниц в PNG через ImageMagick
+        // (`convert -density 150 input.pdf[N] out.png`) и OCR-ним
+        // каждую параллельно. ImageMagick + ghostscript уже на
+        // сервере и поддерживают PDF (poppler-utils недоступен).
         const { execFile } = await import("node:child_process");
         const fs = await import("node:fs/promises");
+        const MAX_PAGES = 10;
         const tmpDir = await fs.mkdtemp("/tmp/p2ptax-ocr-");
         const pdfPath = `${tmpDir}/input.pdf`;
         await fs.writeFile(pdfPath, file.buffer);
-        const pageTexts: string[] = [];
-        for (let p = 0; p < 3; p++) {
+
+        // Сначала рендерим все страницы (последовательно, дёшево),
+        // потом OCR-ним параллельно (дорогая операция, ~30 сек/стр).
+        const renderedPages: { idx: number; png: Buffer }[] = [];
+        for (let p = 0; p < MAX_PAGES; p++) {
           const pngPath = `${tmpDir}/page-${p}.png`;
-          await new Promise<void>((resolve, reject) => {
+          const ok = await new Promise<boolean>((resolve) => {
             execFile(
               "convert",
               ["-density", "150", `${pdfPath}[${p}]`, pngPath],
               { timeout: 60_000 },
-              (err) => (err ? reject(err) : resolve()),
+              (err) => resolve(!err),
             );
-          }).catch(() => {
-            // Страница не существует или конвертация упала — пропускаем.
           });
+          if (!ok) break;
           try {
-            const png = await fs.readFile(pngPath);
-            const ocr = await ocrImage(png, `page-${p}.png`, "image/png");
-            pageTexts.push(ocr.text);
-            ocrModel = ocr.model;
-            ocrElapsed += ocr.elapsedSec;
-          } catch {
-            break;
-          }
+            renderedPages.push({ idx: p, png: await fs.readFile(pngPath) });
+          } catch { break; }
         }
-        ocrText = pageTexts.join("\n\n— страница —\n\n");
+
+        // OCR параллельно — pool до 3 одновременных вызовов чтобы
+        // не уложить ollama на 7B-модели. Используем Promise.all с
+        // chunking.
+        const CONCURRENCY = 3;
+        const results: { idx: number; text: string; model: string; elapsed: number }[] = [];
+        for (let i = 0; i < renderedPages.length; i += CONCURRENCY) {
+          const batch = renderedPages.slice(i, i + CONCURRENCY);
+          const batchResults = await Promise.all(
+            batch.map(async ({ idx, png }) => {
+              const ocr = await ocrImage(png, `page-${idx}.png`, "image/png");
+              return { idx, text: ocr.text, model: ocr.model, elapsed: ocr.elapsedSec };
+            }),
+          );
+          results.push(...batchResults);
+        }
+        results.sort((a, b) => a.idx - b.idx);
+        ocrText = results
+          .map((r) => `=== Страница ${r.idx + 1} ===\n${r.text}`)
+          .join("\n\n");
+        ocrModel = results[0]?.model ?? "qwen2.5vl";
+        ocrElapsed = results.reduce((acc, r) => acc + r.elapsed, 0);
         await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
       }
     } catch (e) {

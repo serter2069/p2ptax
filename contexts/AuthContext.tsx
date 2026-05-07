@@ -42,6 +42,18 @@ export interface UserData {
   isAvailable?: boolean;
   /** Iter13 — specialist catalog visibility toggle. Default false. */
   isPublicProfile?: boolean;
+  /**
+   * ИФНС юзера для контекста налогового консультанта.
+   * Подмешивается в каждый /chat/stream backend-ом. Меняется через
+   * /profile или вопрос бота в чате. null пока не указано.
+   */
+  consultantFns?: {
+    id: string;
+    name: string;
+    code?: string | null;
+    address?: string | null;
+    city: { id: string; name: string; slug: string };
+  } | null;
 }
 
 interface AuthContextType {
