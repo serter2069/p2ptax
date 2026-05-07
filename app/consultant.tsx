@@ -16,6 +16,7 @@
  *     kind="document", FE рисует его как блок с кнопкой «Скачать».
  */
 import { useEffect, useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
   Text,
@@ -27,7 +28,7 @@ import {
   Platform,
   Modal,
 } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import {
   Bot,
   Send,
@@ -42,6 +43,8 @@ import {
   Check,
   RefreshCw,
   Bug,
+  Users,
+  MapPin,
 } from "lucide-react-native";
 import { colors, spacing } from "@/lib/theme";
 import { apiGet, apiPost, ApiError, API_URL, getAccessToken } from "@/lib/api";
@@ -69,6 +72,27 @@ type Message = {
 };
 
 type SuggestedAction = { id: string; label: string };
+
+// CTA, которые backend отдаёт в done-event для tax-режима.
+// type определяет иконку и href, label — что написано на пилюле.
+type ConsultantAction = { type: string; label: string; href: string };
+
+// Сохранённая ФНС юзера — подмешивается в каждый chat/stream-запрос
+// как контекст. Значительно улучшает релевантность ответов про
+// территориальные особенности (адрес инспекции, региональные ставки).
+type SavedFns = {
+  cityId: string;
+  citySlug: string;
+  cityName: string;
+  fnsId: string;
+  fnsName: string;
+  fnsCode?: string | null;
+  fnsAddress?: string | null;
+};
+const FNS_STORAGE_KEY = "p2ptax_consultant_fns";
+
+type CityRow = { id: string; slug: string; name: string; officesCount: number };
+type IfnsRow = { id: string; name: string; code?: string | null; address?: string | null };
 
 type TemplateMeta = {
   id: string;
@@ -111,12 +135,23 @@ function splitParagraphs(text: string): string[] {
 
 export default function ConsultantScreen() {
   const { isAuthenticated } = useAuth();
+  const router = useRouter();
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
+  const [actions, setActions] = useState<ConsultantAction[]>([]);
+  const [savedFns, setSavedFns] = useState<SavedFns | null>(null);
+  const [fnsModal, setFnsModal] = useState<{
+    cityQuery: string;
+    cities: CityRow[];
+    selectedCity: CityRow | null;
+    ifnsQuery: string;
+    ifnsList: IfnsRow[];
+    loading: boolean;
+  } | null>(null);
   const [templates, setTemplates] = useState<TemplateMeta[]>([]);
   const [genModal, setGenModal] = useState<{
     template: TemplateMeta;
@@ -143,15 +178,19 @@ export default function ConsultantScreen() {
     }
     (async () => {
       try {
-        const [threadsR, templatesR] = await Promise.all([
+        const [threadsR, templatesR, savedFnsRaw] = await Promise.all([
           apiGet<{ threads: Array<{ id: string; messageCount: number }> }>(
             "/api/consultant/threads",
           ),
           apiGet<{ templates: TemplateMeta[] }>("/api/consultant/templates").catch(
             () => ({ templates: [] as TemplateMeta[] }),
           ),
+          AsyncStorage.getItem(FNS_STORAGE_KEY).catch(() => null),
         ]);
         setTemplates(templatesR.templates ?? []);
+        if (savedFnsRaw) {
+          try { setSavedFns(JSON.parse(savedFnsRaw) as SavedFns); } catch {}
+        }
         if (threadsR.threads.length > 0) {
           const active = threadsR.threads[0];
           setThreadId(active.id);
@@ -170,6 +209,58 @@ export default function ConsultantScreen() {
     })();
   }, [isAuthenticated]);
 
+  async function persistFns(fns: SavedFns | null) {
+    setSavedFns(fns);
+    try {
+      if (fns) await AsyncStorage.setItem(FNS_STORAGE_KEY, JSON.stringify(fns));
+      else await AsyncStorage.removeItem(FNS_STORAGE_KEY);
+    } catch {}
+  }
+
+  async function openFnsModal() {
+    setFnsModal({
+      cityQuery: "",
+      cities: [],
+      selectedCity: null,
+      ifnsQuery: "",
+      ifnsList: [],
+      loading: true,
+    });
+    try {
+      const r = await apiGet<{ items: CityRow[] }>("/api/cities?limit=1000");
+      setFnsModal((prev) => prev ? { ...prev, cities: r.items, loading: false } : prev);
+    } catch {
+      setFnsModal((prev) => prev ? { ...prev, loading: false } : prev);
+    }
+  }
+
+  async function selectCityInFnsModal(city: CityRow) {
+    if (!fnsModal) return;
+    setFnsModal({ ...fnsModal, selectedCity: city, ifnsQuery: "", ifnsList: [], loading: true });
+    try {
+      const r = await apiGet<{ items: IfnsRow[] }>(`/api/cities/${city.slug}/ifns?limit=100`);
+      setFnsModal((prev) =>
+        prev ? { ...prev, selectedCity: city, ifnsList: r.items, loading: false } : prev,
+      );
+    } catch {
+      setFnsModal((prev) => prev ? { ...prev, loading: false } : prev);
+    }
+  }
+
+  function selectIfnsInFnsModal(office: IfnsRow) {
+    if (!fnsModal?.selectedCity) return;
+    persistFns({
+      cityId: fnsModal.selectedCity.id,
+      citySlug: fnsModal.selectedCity.slug,
+      cityName: fnsModal.selectedCity.name,
+      fnsId: office.id,
+      fnsName: office.name,
+      fnsCode: office.code ?? null,
+      fnsAddress: office.address ?? null,
+    });
+    setFnsModal(null);
+  }
+
   // Auto-scroll on new messages
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
@@ -180,6 +271,7 @@ export default function ConsultantScreen() {
     if (!message || sending) return;
     setInput("");
     setSuggestedActions([]);
+    setActions([]);
     const userMsg: Message = {
       id: `tmp-${Date.now()}`,
       role: "user",
@@ -211,6 +303,17 @@ export default function ConsultantScreen() {
       );
     };
 
+    // Если у юзера сохранена ФНС — шлём как отдельное поле userContext.
+    // Backend сохраняет в БД оригинальный message (без контекста), а
+    // TaxLLM получает склейку. Так в истории чата юзер видит чистый
+    // свой вопрос, а бот всё равно отвечает с учётом региона.
+    const userContext = savedFns
+      ? `Моя ИФНС: ${savedFns.fnsName}` +
+        (savedFns.fnsCode ? ` (код ${savedFns.fnsCode})` : "") +
+        `, г. ${savedFns.cityName}` +
+        (savedFns.fnsAddress ? `, адрес: ${savedFns.fnsAddress}` : "")
+      : null;
+
     try {
       const token = await getAccessToken();
       const resp = await fetch(`${API_URL}/api/consultant/chat/stream`, {
@@ -219,7 +322,7 @@ export default function ConsultantScreen() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ message, threadId }),
+        body: JSON.stringify({ message, threadId, userContext }),
       });
       if (!resp.ok) {
         throw new ApiError(resp.status, `stream HTTP ${resp.status}`);
@@ -257,6 +360,7 @@ export default function ConsultantScreen() {
             createdAt?: string;
             usage?: Message["usage"];
             suggestedActions?: SuggestedAction[];
+            actions?: ConsultantAction[];
             message?: string;
           };
           try {
@@ -284,6 +388,7 @@ export default function ConsultantScreen() {
               usage: evt.usage,
             });
             setSuggestedActions(evt.suggestedActions ?? []);
+            setActions(evt.actions ?? []);
           } else if (evt.type === "error") {
             updateAssistant({
               content:
@@ -327,6 +432,7 @@ export default function ConsultantScreen() {
       setThreadId(r.threadId);
       setMessages([]);
       setSuggestedActions([]);
+      setActions([]);
     } catch {}
   }
 
@@ -337,6 +443,7 @@ export default function ConsultantScreen() {
       setThreadId(null);
       setMessages([]);
       setSuggestedActions([]);
+      setActions([]);
     } catch {}
   }
 
@@ -512,6 +619,35 @@ export default function ConsultantScreen() {
             </Text>
           </View>
           <Pressable
+            onPress={openFnsModal}
+            accessibilityLabel="Указать мою ФНС"
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: spacing.sm,
+              paddingVertical: 6,
+              borderRadius: 6,
+              backgroundColor: savedFns ? colors.accentSoft : colors.surface2,
+              gap: 4,
+              maxWidth: 240,
+            }}
+          >
+            <MapPin
+              size={14}
+              color={savedFns ? colors.accentSoftInk : colors.textSecondary}
+            />
+            <Text
+              numberOfLines={1}
+              style={{
+                fontSize: 12,
+                color: savedFns ? colors.accentSoftInk : colors.textSecondary,
+                flexShrink: 1,
+              }}
+            >
+              {savedFns ? savedFns.fnsName : "Указать мою ИФНС"}
+            </Text>
+          </Pressable>
+          <Pressable
             onPress={startNewThread}
             style={{
               flexDirection: "row",
@@ -619,24 +755,47 @@ export default function ConsultantScreen() {
               </View>
             </View>
           )}
-          {sending && (
-            <View style={{ alignItems: "flex-start" }}>
-              <View
-                style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 14,
-                  borderRadius: 12,
-                  backgroundColor: colors.surface2,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Ищу в источниках…</Text>
+          {/* CTA-пилюли: «Создать запрос на P2PTax», «Найти специалиста».
+              Бэкенд отдаёт их в done-event только для tax-режима. */}
+          {!sending && actions.length > 0 && (
+            <View style={{ marginTop: 8, gap: 6 }}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                Или поручить специалисту:
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                {actions.map((a) => {
+                  const Icon = a.type === "create_request" ? FileText : Users;
+                  return (
+                    <Pressable
+                      key={a.type}
+                      onPress={() => router.push(a.href as never)}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        paddingHorizontal: 10,
+                        paddingVertical: 8,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: colors.primary,
+                        backgroundColor: colors.surface,
+                        gap: 6,
+                      }}
+                    >
+                      <Icon size={14} color={colors.primary} />
+                      <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}>
+                        {a.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
           )}
+          {/* Старый пустой бабл "Ищу в источниках..." убран —
+              streaming placeholder показывает прогресс сам:
+              meta приходит с источниками, потом text растёт по чанкам.
+              Inline-индикатор "Ищу..." теперь живёт в MessageBubble
+              (когда content=="" и сообщение streaming). */}
         </ScrollView>
 
         {/* Composer — единая коробка с input + send-кнопкой,
@@ -726,6 +885,22 @@ export default function ConsultantScreen() {
           onChangeInput={(v) => setGenModal({ ...genModal, userInput: v })}
           onCancel={() => setGenModal(null)}
           onSubmit={submitGeneration}
+        />
+      )}
+
+      {fnsModal && (
+        <FnsPickerModal
+          state={fnsModal}
+          savedFns={savedFns}
+          onCityQuery={(q) => setFnsModal((prev) => prev ? { ...prev, cityQuery: q } : prev)}
+          onIfnsQuery={(q) => setFnsModal((prev) => prev ? { ...prev, ifnsQuery: q } : prev)}
+          onPickCity={selectCityInFnsModal}
+          onPickIfns={selectIfnsInFnsModal}
+          onClear={() => { persistFns(null); setFnsModal(null); }}
+          onCancel={() => setFnsModal(null)}
+          onBack={() => setFnsModal((prev) => prev
+            ? { ...prev, selectedCity: null, ifnsList: [], ifnsQuery: "" }
+            : prev)}
         />
       )}
     </>
@@ -946,6 +1121,19 @@ function MessageBubble({
             <Text style={{ fontSize: 14, lineHeight: 20, color: colors.white }} selectable>
               {m.content}
             </Text>
+          ) : m.content === "" ? (
+            // Стрим начался, но первый токен ещё не пришёл — показываем
+            // тонкий индикатор внутри самого бабла, а не отдельным пустым
+            // плейсхолдером. После meta-пакета у нас уже есть sources,
+            // которые рисуются ниже — юзер видит «бот пошёл в Ст. 88».
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                {m.sources && m.sources.length > 0
+                  ? "Готовлю ответ по источникам…"
+                  : "Ищу в источниках…"}
+              </Text>
+            </View>
           ) : (
             // Ответ ассистента: режем на абзацы, чистим инлайн [Источник:…]
             // (пилюли с источниками рендерятся ниже отдельно, дублирование
@@ -1121,6 +1309,240 @@ function GenerateModal({
                 {state.submitting ? "Генерирую…" : "Сгенерировать"}
               </Text>
             </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function FnsPickerModal({
+  state,
+  savedFns,
+  onCityQuery,
+  onIfnsQuery,
+  onPickCity,
+  onPickIfns,
+  onClear,
+  onCancel,
+  onBack,
+}: {
+  state: {
+    cityQuery: string;
+    cities: CityRow[];
+    selectedCity: CityRow | null;
+    ifnsQuery: string;
+    ifnsList: IfnsRow[];
+    loading: boolean;
+  };
+  savedFns: SavedFns | null;
+  onCityQuery: (q: string) => void;
+  onIfnsQuery: (q: string) => void;
+  onPickCity: (c: CityRow) => void;
+  onPickIfns: (i: IfnsRow) => void;
+  onClear: () => void;
+  onCancel: () => void;
+  onBack: () => void;
+}) {
+  const lcCityQ = state.cityQuery.trim().toLowerCase();
+  const filteredCities = lcCityQ
+    ? state.cities.filter((c) => c.name.toLowerCase().includes(lcCityQ))
+    : state.cities;
+  const lcIfnsQ = state.ifnsQuery.trim().toLowerCase();
+  const filteredIfns = lcIfnsQ
+    ? state.ifnsList.filter(
+        (o) =>
+          o.name.toLowerCase().includes(lcIfnsQ) ||
+          (o.code ?? "").toLowerCase().includes(lcIfnsQ),
+      )
+    : state.ifnsList;
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onCancel}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: spacing.lg,
+        }}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 560,
+            maxHeight: "85%",
+            backgroundColor: colors.background,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: colors.border,
+            padding: spacing.lg,
+            gap: spacing.md,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+            <MapPin size={20} color={colors.primary} />
+            <Text style={{ flex: 1, fontSize: 16, fontWeight: "700", color: colors.text }}>
+              {state.selectedCity
+                ? `Инспекция в г. ${state.selectedCity.name}`
+                : "Выберите ваш город"}
+            </Text>
+            <Pressable onPress={onCancel} hitSlop={8}>
+              <X size={18} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+
+          {savedFns && !state.selectedCity && (
+            <View
+              style={{
+                paddingVertical: 8,
+                paddingHorizontal: 10,
+                borderRadius: 8,
+                backgroundColor: colors.accentSoft,
+              }}
+            >
+              <Text style={{ fontSize: 12, color: colors.accentSoftInk }}>
+                Сейчас сохранено: {savedFns.fnsName}, г. {savedFns.cityName}
+              </Text>
+            </View>
+          )}
+
+          {!state.selectedCity ? (
+            <>
+              <TextInput
+                value={state.cityQuery}
+                onChangeText={onCityQuery}
+                placeholder="Начните вводить название города…"
+                placeholderTextColor={colors.textMuted}
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  fontSize: 14,
+                  color: colors.text,
+                  backgroundColor: colors.surface,
+                  ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : {}),
+                }}
+              />
+              <ScrollView style={{ maxHeight: 360 }}>
+                {state.loading ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : filteredCities.length === 0 ? (
+                  <Text style={{ fontSize: 13, color: colors.textSecondary, padding: 8 }}>
+                    Ничего не найдено
+                  </Text>
+                ) : (
+                  filteredCities.slice(0, 200).map((c) => (
+                    <Pressable
+                      key={c.id}
+                      onPress={() => onPickCity(c)}
+                      style={{
+                        paddingVertical: 10,
+                        paddingHorizontal: 10,
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.border,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, color: colors.text }}>{c.name}</Text>
+                      <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                        {c.officesCount}{" "}
+                        {c.officesCount === 1
+                          ? "инспекция"
+                          : c.officesCount < 5
+                          ? "инспекции"
+                          : "инспекций"}
+                      </Text>
+                    </Pressable>
+                  ))
+                )}
+              </ScrollView>
+            </>
+          ) : (
+            <>
+              <TextInput
+                value={state.ifnsQuery}
+                onChangeText={onIfnsQuery}
+                placeholder="Поиск по номеру или названию…"
+                placeholderTextColor={colors.textMuted}
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  fontSize: 14,
+                  color: colors.text,
+                  backgroundColor: colors.surface,
+                  ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : {}),
+                }}
+              />
+              <ScrollView style={{ maxHeight: 360 }}>
+                {state.loading ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : filteredIfns.length === 0 ? (
+                  <Text style={{ fontSize: 13, color: colors.textSecondary, padding: 8 }}>
+                    Инспекций не найдено
+                  </Text>
+                ) : (
+                  filteredIfns.map((o) => (
+                    <Pressable
+                      key={o.id}
+                      onPress={() => onPickIfns(o)}
+                      style={{
+                        paddingVertical: 10,
+                        paddingHorizontal: 10,
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.border,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, color: colors.text, fontWeight: "600" }}>
+                        {o.name}
+                        {o.code ? ` (код ${o.code})` : ""}
+                      </Text>
+                      {o.address ? (
+                        <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                          {o.address}
+                        </Text>
+                      ) : null}
+                    </Pressable>
+                  ))
+                )}
+              </ScrollView>
+            </>
+          )}
+
+          <View style={{ flexDirection: "row", justifyContent: "space-between", gap: spacing.sm }}>
+            {state.selectedCity ? (
+              <Pressable
+                onPress={onBack}
+                style={{
+                  paddingHorizontal: spacing.md,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: colors.surface2,
+                }}
+              >
+                <Text style={{ color: colors.text, fontWeight: "600" }}>← Город</Text>
+              </Pressable>
+            ) : <View />}
+            {savedFns ? (
+              <Pressable
+                onPress={onClear}
+                style={{
+                  paddingHorizontal: spacing.md,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: colors.surface2,
+                }}
+              >
+                <Text style={{ color: colors.danger, fontWeight: "600" }}>
+                  Сбросить
+                </Text>
+              </Pressable>
+            ) : <View />}
           </View>
         </View>
       </View>
