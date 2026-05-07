@@ -25,6 +25,39 @@ export async function getAccessToken(): Promise<string | null> {
   return AsyncStorage.getItem(TOKEN_KEY);
 }
 
+/**
+ * Обёртка над fetch, которая нормализует сетевые ошибки в ApiError.
+ *
+ * Без неё `fetch()` бросает сырой TypeError ("Failed to fetch") при:
+ *   — оффлайне или дропе соединения,
+ *   — блокировке запроса расширением браузера (AdBlock и т.п.),
+ *   — CORS-преграде / отказе DNS,
+ *   — abort'е по таймауту.
+ *
+ * Сырая ошибка дебоширит в dev-redbox Метро и в Sentry-ах,
+ * а каллеры не могут отличить «нет сети» от «500 на сервере».
+ * Нормализуем всё в ApiError(status=0, offline=true) — каллер
+ * показывает дружелюбное сообщение вместо стек-трейса.
+ */
+async function fetchOrThrow(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (err) {
+    // Браузер на оффлайне сообщает honestly через navigator.onLine.
+    const offline =
+      typeof navigator !== "undefined" && "onLine" in navigator && !navigator.onLine;
+    const message = offline
+      ? "Нет связи с интернетом. Проверьте сеть и попробуйте снова."
+      : "Не удалось связаться с сервером. Возможно, мешает блокировщик рекламы или отвалилась сеть.";
+    throw new ApiError(0, message, {
+      offline,
+      networkError: true,
+      // Сохраняем оригинальное сообщение fetch'а на случай отладки.
+      originalMessage: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 export async function api<T = unknown>(
   path: string,
   options: ApiOptions = {}
@@ -43,21 +76,22 @@ export async function api<T = unknown>(
     }
   }
 
-  let res = await fetch(`${API_URL}${path}`, {
+  const fetchInit: RequestInit = {
     method,
     headers: reqHeaders,
     body: body ? JSON.stringify(body) : undefined,
-  });
+  };
+
+  let res = await fetchOrThrow(`${API_URL}${path}`, fetchInit);
 
   // 401 interceptor: refresh once (single-flight via lib/auth-refresh)
   if (res.status === 401 && !noAuth) {
     const refresh = await refreshAuthSession();
     if (refresh.ok && refresh.accessToken) {
       reqHeaders["Authorization"] = `Bearer ${refresh.accessToken}`;
-      res = await fetch(`${API_URL}${path}`, {
-        method,
+      res = await fetchOrThrow(`${API_URL}${path}`, {
+        ...fetchInit,
         headers: reqHeaders,
-        body: body ? JSON.stringify(body) : undefined,
       });
     }
   }
@@ -79,6 +113,11 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+}
+
+/** True когда ошибка — сетевая (нет связи / расширение блокирует / etc). */
+export function isNetworkError(e: unknown): e is ApiError {
+  return e instanceof ApiError && e.status === 0;
 }
 
 // Convenience methods
