@@ -9,6 +9,11 @@
  *     скрываем у юзера, админ продолжает видеть).
  *   - Под каждым ответом — источники со ссылкой на /docs на TaxLLM сервере
  *     для просмотра полного текста статьи.
+ *   - Шаблоны: backend в ответе на /chat возвращает suggestedActions
+ *     (id+label). FE рендерит их как пилюли «Сгенерировать <…>» под
+ *     последним ответом ассистента — юзер тыкает, открывается модалка с
+ *     полем ввода, отправляет → /generate возвращает сообщение
+ *     kind="document", FE рисует его как блок с кнопкой «Скачать».
  */
 import { useEffect, useRef, useState } from "react";
 import {
@@ -20,9 +25,20 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
+  Modal,
 } from "react-native";
 import { Stack } from "expo-router";
-import { Bot, Send, RotateCcw, Trash2, ExternalLink } from "lucide-react-native";
+import {
+  Bot,
+  Send,
+  RotateCcw,
+  Trash2,
+  ExternalLink,
+  FileDown,
+  FileText,
+  X,
+  Sparkles,
+} from "lucide-react-native";
 import { colors, spacing } from "@/lib/theme";
 import { apiGet, apiPost, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,10 +53,22 @@ type Source = {
 type Message = {
   id: string;
   role: "user" | "assistant";
+  kind?: "text" | "document";
+  attachmentFilename?: string | null;
   content: string;
   createdAt: string;
   sources?: Source[];
   usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; cost?: number };
+};
+
+type SuggestedAction = { id: string; label: string };
+
+type TemplateMeta = {
+  id: string;
+  label: string;
+  description: string;
+  userInputLabel: string;
+  userInputPlaceholder: string;
 };
 
 const TAXLLM_DOCS_BASE = "https://taxllm.smartlaunchhub.com/docs";
@@ -52,9 +80,16 @@ export default function ConsultantScreen() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
+  const [templates, setTemplates] = useState<TemplateMeta[]>([]);
+  const [genModal, setGenModal] = useState<{
+    template: TemplateMeta;
+    userInput: string;
+    submitting: boolean;
+  } | null>(null);
   const scrollRef = useRef<ScrollView | null>(null);
 
-  // Load active thread + its messages on mount
+  // Load active thread + its messages on mount, and fetch template catalog.
   useEffect(() => {
     if (!isAuthenticated) {
       setLoading(false);
@@ -62,11 +97,17 @@ export default function ConsultantScreen() {
     }
     (async () => {
       try {
-        const r = await apiGet<{ threads: Array<{ id: string; messageCount: number }> }>(
-          "/api/consultant/threads",
-        );
-        if (r.threads.length > 0) {
-          const active = r.threads[0];
+        const [threadsR, templatesR] = await Promise.all([
+          apiGet<{ threads: Array<{ id: string; messageCount: number }> }>(
+            "/api/consultant/threads",
+          ),
+          apiGet<{ templates: TemplateMeta[] }>("/api/consultant/templates").catch(
+            () => ({ templates: [] as TemplateMeta[] }),
+          ),
+        ]);
+        setTemplates(templatesR.templates ?? []);
+        if (threadsR.threads.length > 0) {
+          const active = threadsR.threads[0];
           setThreadId(active.id);
           if (active.messageCount > 0) {
             const m = await apiGet<{ messages: Message[] }>(
@@ -92,6 +133,7 @@ export default function ConsultantScreen() {
     const message = input.trim();
     if (!message || sending) return;
     setInput("");
+    setSuggestedActions([]);
     const optimistic: Message = {
       id: `tmp-${Date.now()}`,
       role: "user",
@@ -105,15 +147,15 @@ export default function ConsultantScreen() {
         threadId: string;
         autoRolled: boolean;
         message: Message;
+        suggestedActions?: SuggestedAction[];
       }>("/api/consultant/chat", { message, threadId });
-      // If backend rolled to a new thread (context overflow), reflect it
       if (threadId && r.threadId !== threadId && r.autoRolled) {
-        // Drop old turns from the visible list — backend started fresh
         setMessages([optimistic, r.message]);
       } else {
         setMessages((prev) => [...prev, r.message]);
       }
       setThreadId(r.threadId);
+      setSuggestedActions(r.suggestedActions ?? []);
     } catch (e) {
       const errMsg =
         e instanceof ApiError && e.status === 502
@@ -140,6 +182,7 @@ export default function ConsultantScreen() {
       const r = await apiPost<{ threadId: string }>("/api/consultant/threads/new", {});
       setThreadId(r.threadId);
       setMessages([]);
+      setSuggestedActions([]);
     } catch {}
   }
 
@@ -149,6 +192,7 @@ export default function ConsultantScreen() {
       await apiPost(`/api/consultant/threads/${threadId}/archive`, {});
       setThreadId(null);
       setMessages([]);
+      setSuggestedActions([]);
     } catch {}
   }
 
@@ -156,6 +200,80 @@ export default function ConsultantScreen() {
     const url = `${TAXLLM_DOCS_BASE}/${encodeURIComponent(s.source)}`;
     if (Platform.OS === "web") window.open(url, "_blank");
     else Linking.openURL(url);
+  }
+
+  function openGenModal(action: SuggestedAction) {
+    const tpl = templates.find((t) => t.id === action.id);
+    if (!tpl) return;
+    setGenModal({ template: tpl, userInput: "", submitting: false });
+  }
+
+  async function submitGeneration() {
+    if (!genModal) return;
+    const userInput = genModal.userInput.trim();
+    if (!userInput) return;
+    setGenModal({ ...genModal, submitting: true });
+    try {
+      const r = await apiPost<{
+        threadId: string;
+        message: Message;
+      }>("/api/consultant/generate", {
+        threadId,
+        templateId: genModal.template.id,
+        userInput,
+      });
+      // Reflect both the user request and the generated document into chat history.
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `gen-req-${Date.now()}`,
+          role: "user",
+          content: `📄 Запрос на генерацию: ${genModal.template.label}\n\n${userInput}`,
+          createdAt: new Date().toISOString(),
+        },
+        r.message,
+      ]);
+      setThreadId(r.threadId);
+      setSuggestedActions([]);
+      setGenModal(null);
+    } catch (e) {
+      const errMsg =
+        e instanceof ApiError && e.status === 502
+          ? "Сервис временно недоступен. Попробуйте позже."
+          : e instanceof ApiError && e.status === 429
+          ? "Слишком много запросов на генерацию — подождите."
+          : "Не удалось сгенерировать документ.";
+      setGenModal((prev) => (prev ? { ...prev, submitting: false } : prev));
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `gen-err-${Date.now()}`,
+          role: "assistant",
+          content: errMsg,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    }
+  }
+
+  function downloadDocument(m: Message) {
+    const filename = m.attachmentFilename || "документ.txt";
+    if (Platform.OS === "web") {
+      const blob = new Blob([m.content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } else {
+      // Native: fall back to system share via mailto-ish — out of scope for MVP.
+      Linking.openURL(
+        `data:text/plain;charset=utf-8,${encodeURIComponent(m.content)}`,
+      ).catch(() => {});
+    }
   }
 
   if (!isAuthenticated) {
@@ -234,9 +352,50 @@ export default function ConsultantScreen() {
           {loading ? (
             <ActivityIndicator color={colors.primary} />
           ) : messages.length === 0 ? (
-            <EmptyState onPick={(q) => setInput(q)} />
+            <EmptyState
+              onPick={(q) => setInput(q)}
+              templates={templates}
+              onTemplate={(tpl) => setGenModal({ template: tpl, userInput: "", submitting: false })}
+            />
           ) : (
-            messages.map((m) => <MessageBubble key={m.id} m={m} onSourcePress={openSource} />)
+            messages.map((m) => (
+              <MessageBubble
+                key={m.id}
+                m={m}
+                onSourcePress={openSource}
+                onDownload={downloadDocument}
+              />
+            ))
+          )}
+          {/* Suggested actions — рендерим под последним ответом */}
+          {!sending && suggestedActions.length > 0 && (
+            <View style={{ marginTop: 4, gap: 6 }}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                Могу подготовить документ:
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                {suggestedActions.map((a) => (
+                  <Pressable
+                    key={a.id}
+                    onPress={() => openGenModal(a)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingHorizontal: 10,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                      backgroundColor: colors.primary,
+                      gap: 6,
+                    }}
+                  >
+                    <Sparkles size={14} color={colors.white} />
+                    <Text style={{ fontSize: 13, color: colors.white, fontWeight: "600" }}>
+                      Сгенерировать: {a.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
           )}
           {sending && (
             <View style={{ alignItems: "flex-start" }}>
@@ -315,11 +474,28 @@ export default function ConsultantScreen() {
           </Pressable>
         </View>
       </View>
+
+      {genModal && (
+        <GenerateModal
+          state={genModal}
+          onChangeInput={(v) => setGenModal({ ...genModal, userInput: v })}
+          onCancel={() => setGenModal(null)}
+          onSubmit={submitGeneration}
+        />
+      )}
     </>
   );
 }
 
-function EmptyState({ onPick }: { onPick: (q: string) => void }) {
+function EmptyState({
+  onPick,
+  templates,
+  onTemplate,
+}: {
+  onPick: (q: string) => void;
+  templates: TemplateMeta[];
+  onTemplate: (tpl: TemplateMeta) => void;
+}) {
   const samples = [
     "Какая ставка налога на прибыль организаций?",
     "Какие условия применения УСН доходы минус расходы?",
@@ -352,36 +528,138 @@ function EmptyState({ onPick }: { onPick: (q: string) => void }) {
           </Pressable>
         ))}
       </View>
+      {templates.length > 0 && (
+        <View style={{ marginTop: spacing.lg, gap: spacing.xs, alignSelf: "stretch" }}>
+          <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text }}>
+            Или сразу сгенерировать документ:
+          </Text>
+          {templates.map((t) => (
+            <Pressable
+              key={t.id}
+              onPress={() => onTemplate(t)}
+              style={{
+                padding: spacing.md,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: spacing.sm,
+              }}
+            >
+              <FileText size={18} color={colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text }}>
+                  {t.label}
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                  {t.description}
+                </Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
 
-function MessageBubble({ m, onSourcePress }: { m: Message; onSourcePress: (s: Source) => void }) {
+function MessageBubble({
+  m,
+  onSourcePress,
+  onDownload,
+}: {
+  m: Message;
+  onSourcePress: (s: Source) => void;
+  onDownload: (m: Message) => void;
+}) {
   const isUser = m.role === "user";
+  const isDocument = m.kind === "document";
   return (
     <View style={{ alignItems: isUser ? "flex-end" : "flex-start" }}>
-      <View
-        style={{
-          maxWidth: "92%",
-          paddingVertical: 10,
-          paddingHorizontal: 14,
-          borderRadius: 12,
-          backgroundColor: isUser ? colors.primary : colors.surface2,
-          borderWidth: isUser ? 0 : 1,
-          borderColor: colors.border,
-        }}
-      >
-        <Text
+      {isDocument ? (
+        <View
           style={{
-            fontSize: 14,
-            lineHeight: 20,
-            color: isUser ? colors.white : colors.text,
+            maxWidth: "100%",
+            width: "100%",
+            paddingVertical: 12,
+            paddingHorizontal: 14,
+            borderRadius: 12,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
           }}
-          selectable
         >
-          {m.content}
-        </Text>
-      </View>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 8,
+              paddingBottom: 8,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+            }}
+          >
+            <FileText size={18} color={colors.primary} />
+            <Text style={{ flex: 1, fontSize: 14, fontWeight: "700", color: colors.text }}>
+              {m.attachmentFilename || "Сгенерированный документ"}
+            </Text>
+            <Pressable
+              onPress={() => onDownload(m)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 6,
+                backgroundColor: colors.primary,
+                gap: 4,
+              }}
+            >
+              <FileDown size={14} color={colors.white} />
+              <Text style={{ fontSize: 12, color: colors.white, fontWeight: "600" }}>
+                Скачать
+              </Text>
+            </Pressable>
+          </View>
+          <Text
+            style={{
+              fontFamily: Platform.OS === "web" ? "ui-monospace, monospace" : "Courier",
+              fontSize: 12,
+              lineHeight: 18,
+              color: colors.text,
+            }}
+            selectable
+          >
+            {m.content}
+          </Text>
+        </View>
+      ) : (
+        <View
+          style={{
+            maxWidth: "92%",
+            paddingVertical: 10,
+            paddingHorizontal: 14,
+            borderRadius: 12,
+            backgroundColor: isUser ? colors.primary : colors.surface2,
+            borderWidth: isUser ? 0 : 1,
+            borderColor: colors.border,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 14,
+              lineHeight: 20,
+              color: isUser ? colors.white : colors.text,
+            }}
+            selectable
+          >
+            {m.content}
+          </Text>
+        </View>
+      )}
       {!isUser && m.sources && m.sources.length > 0 && (
         <View style={{ marginTop: 6, flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
           {m.sources.map((s, i) => (
@@ -414,5 +692,131 @@ function MessageBubble({ m, onSourcePress }: { m: Message; onSourcePress: (s: So
         </Text>
       )}
     </View>
+  );
+}
+
+function GenerateModal({
+  state,
+  onChangeInput,
+  onCancel,
+  onSubmit,
+}: {
+  state: { template: TemplateMeta; userInput: string; submitting: boolean };
+  onChangeInput: (v: string) => void;
+  onCancel: () => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      onRequestClose={state.submitting ? () => {} : onCancel}
+    >
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: spacing.lg,
+        }}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 560,
+            backgroundColor: colors.background,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: colors.border,
+            padding: spacing.lg,
+            gap: spacing.md,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+            <FileText size={20} color={colors.primary} />
+            <Text style={{ flex: 1, fontSize: 16, fontWeight: "700", color: colors.text }}>
+              {state.template.label}
+            </Text>
+            <Pressable onPress={onCancel} disabled={state.submitting} hitSlop={8}>
+              <X size={18} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+          <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+            {state.template.description}
+          </Text>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text }}>
+              {state.template.userInputLabel}
+            </Text>
+            <TextInput
+              value={state.userInput}
+              onChangeText={onChangeInput}
+              placeholder={state.template.userInputPlaceholder}
+              placeholderTextColor={colors.textMuted}
+              multiline
+              editable={!state.submitting}
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                fontSize: 14,
+                color: colors.text,
+                minHeight: 140,
+                maxHeight: 280,
+                backgroundColor: colors.surface,
+                ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : {}),
+              }}
+            />
+          </View>
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: spacing.sm }}>
+            <Pressable
+              onPress={onCancel}
+              disabled={state.submitting}
+              style={{
+                paddingHorizontal: spacing.md,
+                paddingVertical: 10,
+                borderRadius: 8,
+                backgroundColor: colors.surface2,
+              }}
+            >
+              <Text style={{ color: colors.text, fontWeight: "600" }}>Отмена</Text>
+            </Pressable>
+            <Pressable
+              onPress={onSubmit}
+              disabled={state.submitting || !state.userInput.trim()}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: spacing.md,
+                paddingVertical: 10,
+                borderRadius: 8,
+                backgroundColor:
+                  state.submitting || !state.userInput.trim() ? colors.surface2 : colors.primary,
+              }}
+            >
+              {state.submitting ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <Sparkles size={14} color={colors.white} />
+              )}
+              <Text
+                style={{
+                  color:
+                    state.submitting || !state.userInput.trim() ? colors.textMuted : colors.white,
+                  fontWeight: "700",
+                }}
+              >
+                {state.submitting ? "Генерирую…" : "Сгенерировать"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
