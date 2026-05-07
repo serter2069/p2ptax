@@ -107,26 +107,85 @@ export default function LandingScreen() {
           "/api/specialists/featured",
           { noAuth: true }
         );
-        const mapped: HeroSpecialistPreview[] = (sp.items ?? []).slice(0, 3).map((s) => {
-          // Берём до 2 ИФНС с city — ровно столько влезает в карточку
-          // на Hero без визуального шума. Город нужен для ленты герба.
-          const fnsList = (s.specialistFns ?? []).slice(0, 2).map((f) => ({
-            fnsId: f.fnsId,
-            fnsName: f.fnsName,
-            cityName: f.city?.name ?? null,
-          }));
-          return {
+        // 3 карточки на Hero. Каждая показывает РОВНО ОДНУ ИФНС
+        // (герб с городом) и РОВНО ОДНУ услугу. Услуги между
+        // карточками должны быть разными, чтобы посетитель видел
+        // разнообразие специалистов (камеральная, выездная, опер.
+        // контроль), а не три копии одной строчки.
+        const candidates = (sp.items ?? []).filter(
+          (s) => (s.specialistFns ?? []).length > 0 && (s.services ?? []).length > 0
+        );
+        const usedServiceIds = new Set<string>();
+        const picked: HeroSpecialistPreview[] = [];
+        // Pass 1: жадно берём по уникальной услуге.
+        for (const s of candidates) {
+          if (picked.length >= 3) break;
+          const uniqueService = s.services.find((sv) => !usedServiceIds.has(sv.id));
+          if (!uniqueService) continue;
+          usedServiceIds.add(uniqueService.id);
+          const f = s.specialistFns![0];
+          picked.push({
             id: s.id,
             firstName: s.firstName,
             lastName: s.lastName,
             avatarUrl: s.avatarUrl,
             cities: s.cities,
-            services: s.services,
-            fnsList,
+            services: [uniqueService],
+            fnsList: [{
+              fnsId: f.fnsId,
+              fnsName: f.fnsName,
+              cityName: f.city?.name ?? null,
+            }],
             createdAt: s.createdAt,
-          };
-        });
-        setSpecialists(mapped);
+          });
+        }
+        // Pass 2: добиваем до 3 (если уник-услуги закончились,
+        // допускаем повтор). Берём ещё не взятых специалистов.
+        if (picked.length < 3) {
+          const pickedIds = new Set(picked.map((p) => p.id));
+          for (const s of candidates) {
+            if (picked.length >= 3) break;
+            if (pickedIds.has(s.id)) continue;
+            const f = s.specialistFns![0];
+            picked.push({
+              id: s.id,
+              firstName: s.firstName,
+              lastName: s.lastName,
+              avatarUrl: s.avatarUrl,
+              cities: s.cities,
+              services: [s.services[0]],
+              fnsList: [{
+                fnsId: f.fnsId,
+                fnsName: f.fnsName,
+                cityName: f.city?.name ?? null,
+              }],
+              createdAt: s.createdAt,
+            });
+          }
+        }
+        // Финальный фолбек: если у featured-специалистов вообще нет
+        // ни услуг, ни ИФНС (свежий стейдж до seed-data), показываем
+        // первых трёх как есть.
+        if (picked.length === 0 && (sp.items ?? []).length > 0) {
+          const fallback: HeroSpecialistPreview[] = sp.items.slice(0, 3).map((s) => {
+            const f = (s.specialistFns ?? [])[0];
+            return {
+              id: s.id,
+              firstName: s.firstName,
+              lastName: s.lastName,
+              avatarUrl: s.avatarUrl,
+              cities: s.cities,
+              services: s.services.slice(0, 1),
+              fnsList: f
+                ? [{ fnsId: f.fnsId, fnsName: f.fnsName, cityName: f.city?.name ?? null }]
+                : [],
+              createdAt: s.createdAt,
+            };
+          });
+          setSpecialists(fallback);
+        } else {
+          setSpecialists(picked);
+        }
       } catch {
         setSpecialists([]);
       }

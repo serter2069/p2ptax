@@ -236,9 +236,9 @@ function SpecialistCard({
   const firstService = specialist.services[0] ?? null;
   const avatarBg = AVATAR_COLORS[index % AVATAR_COLORS.length];
   const since = specialist.createdAt ? new Date(specialist.createdAt).getFullYear() : null;
-  // Берём максимум 2 «герба» — больше не влезет в карточку без визуального
-  // шума. Если у спеца только одна ИФНС — рендерим один герб + текст.
-  const fnsBadges = (specialist.fnsList ?? []).slice(0, 2);
+  // По одному гербу на карточку — больше визуального шума не оправдано.
+  // Если в payload пришло несколько ИФНС, берём первую.
+  const fnsBadges = (specialist.fnsList ?? []).slice(0, 1);
 
   return (
     <View
@@ -303,7 +303,7 @@ function SpecialistCard({
         {fnsBadges.length > 0 ? (
           <View style={{ marginTop: 10 }}>
             <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: "600", marginBottom: 6 }}>
-              {fnsBadges.length === 1 ? "Специалист по ИФНС" : "Специалист по ИФНС:"}
+              Специалист по ИФНС
             </Text>
             <View className="flex-row" style={{ gap: 8 }}>
               {fnsBadges.map((f) => (
