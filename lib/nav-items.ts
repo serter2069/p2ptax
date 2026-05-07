@@ -6,6 +6,7 @@
 
 import {
 
+  Bot,
   FileText,
   MessageCircle,
   BarChart2,
@@ -116,7 +117,14 @@ export const USER_SPECIALIST_EXTRA: NavItem[] = [
   },
 ];
 
-export const USER_TAIL_ITEMS: NavItem[] = [];
+export const USER_TAIL_ITEMS: NavItem[] = [
+  {
+    label: "Консультант",
+    href: "/consultant",
+    icon: Bot,
+    match: (ctx) => topLevelMatch(ctx, "/consultant"),
+  },
+];
 
 export const ADMIN_ITEMS: NavItem[] = [
   {
