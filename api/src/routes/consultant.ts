@@ -16,6 +16,11 @@ import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { askTaxLLM } from "../lib/taxllm";
+import {
+  listTemplates,
+  findTemplate,
+  suggestTemplatesFor,
+} from "../lib/consultant-templates";
 
 const router = Router();
 router.use(authMiddleware);
@@ -94,6 +99,8 @@ router.get("/threads/:id/messages", async (req: Request, res: Response) => {
     messages: messages.map((m) => ({
       id: m.id,
       role: m.role,
+      kind: m.kind ?? "text",
+      attachmentFilename: m.attachmentFilename ?? null,
       content: m.content,
       createdAt: m.createdAt,
       sources: m.sourcesJson ? JSON.parse(m.sourcesJson) : [],
@@ -202,6 +209,9 @@ router.post("/chat", chatLimiter, async (req: Request, res: Response) => {
     });
   }
 
+  // Авто-предложение шаблонов: ищем триггеры в вопросе+ответе.
+  const suggestedActions = suggestTemplatesFor(`${message}\n\n${llm.answer}`);
+
   return res.json({
     threadId: thread.id,
     autoRolled,
@@ -209,7 +219,116 @@ router.post("/chat", chatLimiter, async (req: Request, res: Response) => {
       id: assistant.id,
       role: "assistant",
       content: assistant.content,
+      kind: "text",
       createdAt: assistant.createdAt,
+      sources: llm.sources ?? [],
+      usage: llm.usage ?? {},
+      debug: llm.debug,
+    },
+    suggestedActions,
+  });
+});
+
+// ─────────────────────── GET /templates — каталог шаблонов
+
+router.get("/templates", (_req: Request, res: Response) => {
+  return res.json({ templates: listTemplates() });
+});
+
+// ─────────────────────── POST /generate — генерация формального документа
+
+interface GenerateBody {
+  threadId?: string;
+  templateId?: string;
+  userInput?: string;
+}
+
+const genLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  keyGenerator: (req) => (req.user as { userId?: string } | undefined)?.userId ?? req.ip ?? "anon",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post("/generate", genLimiter, async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const body = req.body as GenerateBody;
+  const templateId = (body.templateId ?? "").trim();
+  const userInput = (body.userInput ?? "").trim();
+  if (!templateId) return res.status(400).json({ error: "template_required" });
+  if (!userInput) return res.status(400).json({ error: "user_input_required" });
+  if (userInput.length > 8000) return res.status(400).json({ error: "user_input_too_long" });
+
+  const tpl = findTemplate(templateId);
+  if (!tpl) return res.status(404).json({ error: "template_not_found" });
+
+  // Тред: либо тот, что указан явно (если активен и принадлежит юзеру),
+  // либо текущий активный.
+  let thread = body.threadId
+    ? await prisma.consultantThread.findUnique({ where: { id: String(body.threadId) } })
+    : null;
+  if (thread && thread.userId !== userId) thread = null;
+  if (!thread || thread.archivedFromUser || thread.contextOverflowedAt) {
+    thread = await getOrCreateActiveThread(userId);
+  }
+
+  // Сохраняем «запрос на генерацию» как user-сообщение в чате,
+  // чтобы история выглядела связно: «сгенерируй ответ на требование» + ввод.
+  const userMsgContent =
+    `📄 Запрос на генерацию: ${tpl.label}\n\n${userInput}`;
+  await prisma.consultantMessage.create({
+    data: { threadId: thread.id, role: "user", content: userMsgContent },
+  });
+
+  const prompt = tpl.buildPrompt({ templateId, userInput });
+  let llm;
+  try {
+    llm = await askTaxLLM(prompt, `p2ptax-${userId}-${thread.id}-gen-${tpl.id}`);
+  } catch (e: unknown) {
+    const errorText = e instanceof Error ? e.message : String(e);
+    await prisma.consultantMessage.create({
+      data: {
+        threadId: thread.id,
+        role: "assistant",
+        content: "Не удалось сгенерировать документ. Попробуйте ещё раз через минуту.",
+        debugJson: JSON.stringify({ error: errorText.slice(0, 500), templateId }),
+      },
+    });
+    return res.status(502).json({ error: "taxllm_unavailable", detail: errorText.slice(0, 200) });
+  }
+
+  const filename = tpl.filename({ templateId, userInput });
+  const docMessage = await prisma.consultantMessage.create({
+    data: {
+      threadId: thread.id,
+      role: "assistant",
+      kind: "document",
+      attachmentFilename: filename,
+      content: llm.answer,
+      sourcesJson: JSON.stringify(llm.sources ?? []),
+      usageJson: JSON.stringify(llm.usage ?? {}),
+      debugJson: llm.debug ? JSON.stringify(llm.debug) : null,
+    },
+  });
+
+  await prisma.consultantThread.update({
+    where: { id: thread.id },
+    data: {
+      updatedAt: new Date(),
+      ...(thread.title ? {} : { title: summariseTitle(`${tpl.label}: ${userInput}`) }),
+    },
+  });
+
+  return res.json({
+    threadId: thread.id,
+    message: {
+      id: docMessage.id,
+      role: "assistant",
+      kind: "document",
+      attachmentFilename: filename,
+      content: docMessage.content,
+      createdAt: docMessage.createdAt,
       sources: llm.sources ?? [],
       usage: llm.usage ?? {},
       debug: llm.debug,
