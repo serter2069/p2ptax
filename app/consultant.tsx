@@ -41,6 +41,7 @@ import {
   Copy,
   Check,
   RefreshCw,
+  Bug,
 } from "lucide-react-native";
 import { colors, spacing } from "@/lib/theme";
 import { apiGet, apiPost, ApiError } from "@/lib/api";
@@ -79,6 +80,35 @@ type TemplateMeta = {
 
 const TAXLLM_DOCS_BASE = "https://taxllm.smartlaunchhub.com/docs";
 
+// Чистим [Источник: Ст. 88 ч.1, п.1] из текста — пилюли источников всё
+// равно отрисовываются под сообщением. Также склеиваем висящие пробелы
+// и точки, которые остаются после вырезки.
+function stripInlineSources(content: string): string {
+  return content
+    .replace(/\s*\[Источник:[^\]]*\]/giu, "")
+    .replace(/\s+([.,;:!?])/g, "$1")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// Разбиваем текст на абзацы по двойному переводу строки или одинарному
+// (TaxLLM иногда жмёт всё в один блок) — рендерим каждый параграф
+// отдельным <Text>, чтобы получить нормальные отступы между абзацами.
+function splitParagraphs(text: string): string[] {
+  const cleaned = text.replace(/\r\n/g, "\n");
+  // Если есть двойные переводы — режем по ним. Иначе — каждое предложение,
+  // оканчивающееся точкой+пробел перед заглавной — новый абзац (consequence
+  // of grok который любит писать монолитом).
+  if (/\n\s*\n/.test(cleaned)) {
+    return cleaned.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  }
+  return cleaned
+    .split(/(?<=[.!?])\s+(?=[А-ЯA-ZЁ])/u)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
 export default function ConsultantScreen() {
   const { isAuthenticated } = useAuth();
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -93,6 +123,16 @@ export default function ConsultantScreen() {
     userInput: string;
     submitting: boolean;
   } | null>(null);
+  // Дебаг-лог для repro: каждое сетевое событие складывается сюда (макс 30),
+  // юзер копирует одной кнопкой и вставляет в чат с разрабом.
+  const [logEntries, setLogEntries] = useState<Array<Record<string, unknown>>>([]);
+  const [logCopied, setLogCopied] = useState(false);
+  const pushLog = (entry: Record<string, unknown>) => {
+    setLogEntries((prev) => [
+      ...prev.slice(-29),
+      { ts: new Date().toISOString(), ...entry },
+    ]);
+  };
   const scrollRef = useRef<ScrollView | null>(null);
 
   // Load active thread + its messages on mount, and fetch template catalog.
@@ -148,6 +188,7 @@ export default function ConsultantScreen() {
     };
     setMessages((prev) => [...prev, optimistic]);
     setSending(true);
+    pushLog({ event: "chat.request", message, threadId });
     try {
       const r = await apiPost<{
         threadId: string;
@@ -155,6 +196,14 @@ export default function ConsultantScreen() {
         message: Message;
         suggestedActions?: SuggestedAction[];
       }>("/api/consultant/chat", { message, threadId });
+      pushLog({
+        event: "chat.response",
+        threadId: r.threadId,
+        autoRolled: r.autoRolled,
+        suggestedActions: r.suggestedActions ?? [],
+        answerLen: r.message?.content?.length ?? 0,
+        sources: r.message?.sources?.length ?? 0,
+      });
       if (threadId && r.threadId !== threadId && r.autoRolled) {
         setMessages([optimistic, r.message]);
       } else {
@@ -163,6 +212,11 @@ export default function ConsultantScreen() {
       setThreadId(r.threadId);
       setSuggestedActions(r.suggestedActions ?? []);
     } catch (e) {
+      pushLog({
+        event: "chat.error",
+        status: e instanceof ApiError ? e.status : 0,
+        message: e instanceof Error ? e.message : String(e),
+      });
       const errMsg =
         e instanceof ApiError && e.status === 502
           ? "Сервис консультанта временно недоступен. Попробуйте через минуту."
@@ -219,6 +273,7 @@ export default function ConsultantScreen() {
     const userInput = genModal.userInput.trim();
     if (!userInput) return;
     setGenModal({ ...genModal, submitting: true });
+    pushLog({ event: "generate.request", templateId: genModal.template.id, userInputLen: userInput.length });
     try {
       const r = await apiPost<{
         threadId: string;
@@ -227,6 +282,13 @@ export default function ConsultantScreen() {
         threadId,
         templateId: genModal.template.id,
         userInput,
+      });
+      pushLog({
+        event: "generate.response",
+        threadId: r.threadId,
+        kind: r.message?.kind,
+        attachmentFilename: r.message?.attachmentFilename,
+        contentLen: r.message?.content?.length ?? 0,
       });
       // Reflect both the user request and the generated document into chat history.
       setMessages((prev) => [
@@ -243,6 +305,11 @@ export default function ConsultantScreen() {
       setSuggestedActions([]);
       setGenModal(null);
     } catch (e) {
+      pushLog({
+        event: "generate.error",
+        status: e instanceof ApiError ? e.status : 0,
+        message: e instanceof Error ? e.message : String(e),
+      });
       const errMsg =
         e instanceof ApiError && e.status === 502
           ? "Сервис временно недоступен. Попробуйте позже."
@@ -301,6 +368,30 @@ export default function ConsultantScreen() {
     const tpl = templates.find((t) => t.id === gen.templateId);
     if (!tpl) return;
     setGenModal({ template: tpl, userInput: gen.userInput ?? "", submitting: false });
+  }
+
+  async function copyDebugLog() {
+    const dump = {
+      ts: new Date().toISOString(),
+      url: typeof location !== "undefined" ? location.href : "",
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+      threadId,
+      messagesCount: messages.length,
+      lastMessage: messages[messages.length - 1] ?? null,
+      suggestedActions,
+      templates: templates.map((t) => t.id),
+      events: logEntries,
+    };
+    const text = JSON.stringify(dump, null, 2);
+    try {
+      if (Platform.OS === "web" && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+      }
+    } catch {}
+    setLogCopied(true);
+    setTimeout(() => setLogCopied(false), 2000);
+    // eslint-disable-next-line no-console
+    console.log("[consultant debug log]", dump);
   }
 
   if (!isAuthenticated) {
@@ -368,6 +459,24 @@ export default function ConsultantScreen() {
               <Text style={{ fontSize: 12, color: colors.textSecondary }}>Очистить</Text>
             </Pressable>
           )}
+          <Pressable
+            accessibilityLabel="Скопировать дебаг-лог"
+            onPress={copyDebugLog}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: spacing.sm,
+              paddingVertical: 6,
+              borderRadius: 6,
+              backgroundColor: logCopied ? colors.successSoft : colors.surface2,
+              gap: 4,
+            }}
+          >
+            <Bug size={14} color={logCopied ? colors.success : colors.textSecondary} />
+            <Text style={{ fontSize: 12, color: logCopied ? colors.success : colors.textSecondary }}>
+              {logCopied ? "Лог скопирован" : "Лог"}
+            </Text>
+          </Pressable>
         </View>
 
         {/* Messages */}
@@ -446,61 +555,84 @@ export default function ConsultantScreen() {
           )}
         </ScrollView>
 
-        {/* Composer */}
+        {/* Composer — единая коробка с input + send-кнопкой,
+            кнопка прибита к нижнему правому углу и строго совпадает по
+            высоте с однострочным состоянием инпута. */}
         <View
           style={{
-            flexDirection: "row",
-            alignItems: "flex-end",
             paddingHorizontal: spacing.lg,
             paddingVertical: spacing.md,
             borderTopWidth: 1,
             borderTopColor: colors.border,
-            gap: spacing.sm,
             maxWidth: 800,
             alignSelf: "center",
             width: "100%",
           }}
         >
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            placeholder="Спросите про налог, ставку, льготу или порядок отчётности…"
-            placeholderTextColor={colors.textMuted}
-            multiline
+          <View
             style={{
-              flex: 1,
+              flexDirection: "row",
+              alignItems: "flex-end",
               borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: 10,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              fontSize: 14,
-              color: colors.text,
-              maxHeight: 140,
-              minHeight: 44,
-              ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : {}),
-            }}
-            editable={!sending}
-            onKeyPress={(e: any) => {
-              if (Platform.OS === "web" && e.nativeEvent.key === "Enter" && (e.nativeEvent.metaKey || e.nativeEvent.ctrlKey)) {
-                send();
-              }
-            }}
-          />
-          <Pressable
-            onPress={send}
-            disabled={sending || !input.trim()}
-            style={{
-              backgroundColor: input.trim() && !sending ? colors.primary : colors.surface2,
-              paddingHorizontal: 14,
-              height: 44,
-              borderRadius: 10,
-              alignItems: "center",
-              justifyContent: "center",
+              borderColor: input.trim() ? colors.primary : colors.border,
+              borderRadius: 12,
+              backgroundColor: colors.surface,
+              overflow: "hidden",
             }}
           >
-            <Send size={18} color={input.trim() && !sending ? colors.white : colors.textMuted} />
-          </Pressable>
+            <TextInput
+              value={input}
+              onChangeText={setInput}
+              placeholder="Спросите про налог, ставку, льготу или порядок отчётности…"
+              placeholderTextColor={colors.textMuted}
+              multiline
+              style={{
+                flex: 1,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 14,
+                lineHeight: 20,
+                color: colors.text,
+                maxHeight: 160,
+                minHeight: 44,
+                ...(Platform.OS === "web"
+                  ? ({ outlineStyle: "none", border: "0" } as object)
+                  : {}),
+              }}
+              editable={!sending}
+              onKeyPress={(e: any) => {
+                if (
+                  Platform.OS === "web" &&
+                  e.nativeEvent.key === "Enter" &&
+                  (e.nativeEvent.metaKey || e.nativeEvent.ctrlKey)
+                ) {
+                  send();
+                }
+              }}
+            />
+            <Pressable
+              onPress={send}
+              disabled={sending || !input.trim()}
+              style={{
+                width: 44,
+                height: 44,
+                margin: 4,
+                borderRadius: 8,
+                backgroundColor:
+                  input.trim() && !sending ? colors.primary : colors.surface2,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Send
+                size={18}
+                color={input.trim() && !sending ? colors.white : colors.textMuted}
+              />
+            </Pressable>
+          </View>
+          <Text style={{ marginTop: 6, fontSize: 11, color: colors.textMuted }}>
+            ⌘/Ctrl + Enter — отправить
+          </Text>
         </View>
       </View>
 
@@ -718,24 +850,37 @@ function MessageBubble({
         <View
           style={{
             maxWidth: "92%",
-            paddingVertical: 10,
-            paddingHorizontal: 14,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
             borderRadius: 12,
             backgroundColor: isUser ? colors.primary : colors.surface2,
             borderWidth: isUser ? 0 : 1,
             borderColor: colors.border,
           }}
         >
-          <Text
-            style={{
-              fontSize: 14,
-              lineHeight: 20,
-              color: isUser ? colors.white : colors.text,
-            }}
-            selectable
-          >
-            {m.content}
-          </Text>
+          {isUser ? (
+            <Text style={{ fontSize: 14, lineHeight: 20, color: colors.white }} selectable>
+              {m.content}
+            </Text>
+          ) : (
+            // Ответ ассистента: режем на абзацы, чистим инлайн [Источник:…]
+            // (пилюли с источниками рендерятся ниже отдельно, дублирование
+            // в самом тексте раздражает читателя).
+            splitParagraphs(stripInlineSources(m.content)).map((p, i, arr) => (
+              <Text
+                key={i}
+                style={{
+                  fontSize: 14,
+                  lineHeight: 22,
+                  color: colors.text,
+                  marginBottom: i < arr.length - 1 ? 10 : 0,
+                }}
+                selectable
+              >
+                {p}
+              </Text>
+            ))
+          )}
         </View>
       )}
       {!isUser && m.sources && m.sources.length > 0 && (
