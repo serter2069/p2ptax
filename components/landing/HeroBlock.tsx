@@ -296,39 +296,31 @@ function SpecialistCard({
           </View>
         </View>
 
-        {/* «Гербы» ИФНС — главный визуал карточки. Подпись «Специалист
-            по ИФНС» делает смысл явным, чтобы посетитель не путал
-            «работает в ИФНС» (= сотрудник налоговой) и «специалист
-            по этой ИФНС» (= ведёт там дела клиентов). */}
-        {fnsBadges.length > 0 ? (
-          <View style={{ marginTop: 10 }}>
-            <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: "600", marginBottom: 6 }}>
-              Специалист по ИФНС
-            </Text>
-            <View className="flex-row" style={{ gap: 8 }}>
-              {fnsBadges.map((f) => (
-                <FnsLogo
-                  key={f.fnsId}
-                  name={f.fnsName}
-                  cityName={f.cityName}
-                  size="sm"
-                />
-              ))}
+        {/* Компактный ряд: герб ИФНС + рядом услуга. Раньше был
+            стек «caption → FnsLogo → service chip» который тянул
+            карточку на ~170px; теперь FnsLogo и chip в одну строку,
+            высота карточки ~110px. Смысл «специалист по этой ИФНС
+            делает эту услугу» считывается сам без подписи. */}
+        {(fnsBadges.length > 0 || firstService || city) && (
+          <View
+            className="flex-row items-center"
+            style={{ gap: 10, marginTop: 10 }}
+          >
+            {fnsBadges.length > 0 ? (
+              <FnsLogo
+                key={fnsBadges[0].fnsId}
+                name={fnsBadges[0].fnsName}
+                cityName={fnsBadges[0].cityName}
+                size="sm"
+              />
+            ) : null}
+            <View style={{ flex: 1, minWidth: 0 }}>
+              {firstService ? (
+                <Chip label={firstService.name} tone="accent" />
+              ) : city ? (
+                <Chip label={city} tone="default" />
+              ) : null}
             </View>
-          </View>
-        ) : (
-          // Фолбек: ни одной ИФНС в payload (например legacy seed) —
-          // показываем хотя бы город текстовым chip'ом.
-          city && (
-            <View className="flex-row flex-wrap" style={{ gap: 6, marginTop: 10 }}>
-              <Chip label={city} tone="default" />
-            </View>
-          )
-        )}
-
-        {firstService && (
-          <View className="flex-row flex-wrap" style={{ gap: 6, marginTop: 8 }}>
-            <Chip key={firstService.id} label={firstService.name} tone="accent" />
           </View>
         )}
       </View>
@@ -375,14 +367,24 @@ function Chip({ label, tone }: { label: string; tone: "default" | "accent" }) {
   const color = tone === "accent" ? colors.accentSoftInk : colors.textSecondary;
   return (
     <View
-      className="rounded-full"
+      className="rounded-full self-start"
       style={{
         paddingHorizontal: 10,
         paddingVertical: 4,
         backgroundColor: bg,
+        // Длинные услуги ("Отдел оперативного контроля") могут не
+        // влезать в правую колонку карточки рядом с гербом — даём
+        // chip'у сжиматься и текстy ужаться в 1 строку с ellipsis.
+        flexShrink: 1,
+        maxWidth: "100%",
       }}
     >
-      <Text style={{ color, fontSize: 12, fontWeight: "500" }}>{label}</Text>
+      <Text
+        style={{ color, fontSize: 12, fontWeight: "500" }}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
