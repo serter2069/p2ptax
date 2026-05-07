@@ -64,6 +64,9 @@ export const ROUTES = {
   profile: "/profile",
   settings: "/settings",
 
+  // Налоговый консультант (TaxLLM-чат).
+  consultant: "/consultant",
+
   // Specialist editor (Wave 5 / specialist-split). All specialist-mode
   // editing — work area, experience, contacts, public-profile toggle —
   // lives on this dedicated page. Distinct from the public profile

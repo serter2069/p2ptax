@@ -103,6 +103,7 @@ export function detectSidebarGroup(
     pathname.startsWith("/notifications") ||
     pathname.startsWith("/threads") ||
     pathname.startsWith("/settings") ||
+    pathname.startsWith("/consultant") ||
     // Wave 4 / profile-merged — /profile is the new authenticated home for
     // settings + onboarding combined.
     pathname.startsWith("/profile")
