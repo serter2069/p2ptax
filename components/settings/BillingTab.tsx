@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import {
   Check,
   Clock,
   Zap,
+  MapPin,
 } from "lucide-react-native";
 import Card from "@/components/ui/Card";
 import FnsLogo from "@/components/fns/FnsLogo";
@@ -82,6 +83,9 @@ interface PlanResponse {
   alreadyActive?: boolean;
   charged?: number;
   plan?: PlanRow;
+  // Бэкенд при смене тарифа на привязанной карте возвращает
+  // объяснение «спишется на следующем продлении» — показываем юзеру.
+  message?: string;
 }
 
 interface PlanTrimResponse {
@@ -141,6 +145,9 @@ function txKindLabel(kind: string): string {
 // пользователей пачкой 16,67 ₽-записей и «платежей в обработке».
 const HIDDEN_TX_KINDS = new Set(["daily_charge", "bind_pending"]);
 
+// Те же чипы, что на /fns — быстрый выбор без печатания.
+const TOP_CITY_NAMES = ["Москва", "Санкт-Петербург", "Новосибирск", "Екатеринбург", "Казань"];
+
 /**
  * PRO tab — per-account plan + per-FNS slots.
  *
@@ -169,12 +176,15 @@ export default function BillingTab({
     drop: ActiveVipFns[];
   } | null>(null);
 
-  // Catalog search
-  const [q, setQ] = useState("");
+  // Catalog search — city-first: typeahead по городу, после выбора
+  // показываем все ИФНС в нём (как на /fns).
+  const [cityQuery, setCityQuery] = useState("");
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [cityFilterId, setCityFilterId] = useState<string | null>(null);
   const [cities, setCities] = useState<CityRow[]>([]);
   const [searchResults, setSearchResults] = useState<SearchableFns[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -209,25 +219,63 @@ export default function BillingTab({
       .catch(() => undefined);
   }, []);
 
-  // Catalog search debounced 250ms.
+  // Топ-5 городов на чипах — быстрый выбор, как на /fns.
+  const topCities = useMemo(() => {
+    return TOP_CITY_NAMES.map((name) => cities.find((c) => c.name === name)).filter(
+      (c): c is CityRow => !!c
+    );
+  }, [cities]);
+
+  // Совпадения для дропдауна (≥2 символов, до 8 результатов).
+  const cityMatches = useMemo(() => {
+    const q = cityQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    if (cityFilterId) {
+      const cur = cities.find((c) => c.id === cityFilterId);
+      if (cur && cur.name.toLowerCase() === q) return [];
+    }
+    return cities.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [cityQuery, cities, cityFilterId]);
+
+  const pickCity = useCallback((city: CityRow) => {
+    setCityFilterId(city.id);
+    setCityQuery(city.name);
+    setCityDropdownOpen(false);
+  }, []);
+
+  const clearCity = useCallback(() => {
+    setCityFilterId(null);
+    setCityQuery("");
+    setCityDropdownOpen(false);
+  }, []);
+
+  // Когда подписан последний слот — авто-закрываем панель «подключить»,
+  // иначе пользователь смотрит на бесполезный поиск с дисабленными
+  // кнопками. Дальнейшее действие — апгрейд тарифа.
   useEffect(() => {
-    if (!data?.isSpecialist || !data.plan) {
+    if (!data) return;
+    const left = data.slotsLimit - data.slotsUsed;
+    if (left <= 0 && showAddSearch) {
+      setShowAddSearch(false);
+      clearCity();
+    }
+  }, [data, showAddSearch, clearCity]);
+
+  // Catalog search — fires только когда выбран город (паттерн как на /fns).
+  useEffect(() => {
+    if (!data?.isSpecialist || !data.plan || !cityFilterId) {
       setSearchResults([]);
       return;
     }
     setSearchLoading(true);
-    const t = setTimeout(() => {
-      const params = new URLSearchParams();
-      if (q.trim()) params.set("q", q.trim());
-      if (cityFilterId) params.set("cityId", cityFilterId);
-      params.set("limit", "30");
-      apiGet<{ items: SearchableFns[] }>(`/api/billing/fns-search?${params}`)
-        .then((res) => setSearchResults(res.items))
-        .catch(() => setSearchResults([]))
-        .finally(() => setSearchLoading(false));
-    }, 250);
-    return () => clearTimeout(t);
-  }, [q, cityFilterId, data?.isSpecialist, data?.plan, data?.activeVipFns.length]);
+    const params = new URLSearchParams();
+    params.set("cityId", cityFilterId);
+    params.set("limit", "100");
+    apiGet<{ items: SearchableFns[] }>(`/api/billing/fns-search?${params}`)
+      .then((res) => setSearchResults(res.items))
+      .catch(() => setSearchResults([]))
+      .finally(() => setSearchLoading(false));
+  }, [cityFilterId, data?.isSpecialist, data?.plan, data?.activeVipFns.length]);
 
   const redirect = useCallback((url: string) => {
     if (Platform.OS === "web" && typeof window !== "undefined") {
@@ -262,6 +310,23 @@ export default function BillingTab({
         setShowPlanSwitcher(false);
         setTrimDialog(null);
         await refresh();
+        // Бэкенд при смене тарифа на привязанной карте денег прямо
+        // сейчас не списывает — возвращает message «спишется на
+        // следующем продлении». Показываем юзеру, чтобы он понимал
+        // что произошло (раньше было молча — путало).
+        if (ok.message) {
+          void dialog.alert({
+            tone: "success",
+            title: "Тариф изменён",
+            message: ok.message,
+          });
+        } else if (ok.charged === 0 && ok.plan) {
+          void dialog.alert({
+            tone: "success",
+            title: "Тариф изменён",
+            message: `Тариф изменён на «${ok.plan.name}». Новая стоимость спишется на следующем продлении.`,
+          });
+        }
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Не удалось сменить тариф";
         await dialog.alert({ title: "Ошибка", message: msg });
@@ -288,6 +353,13 @@ export default function BillingTab({
           return;
         }
         await refresh();
+        if (!res.alreadyActive) {
+          void dialog.alert({
+            tone: "success",
+            title: "Подключено",
+            message: "Приоритет по ИФНС включён — новые запросы будут приходить мгновенно.",
+          });
+        }
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Не удалось добавить ИФНС";
         await dialog.alert({ title: "Ошибка", message: msg });
@@ -363,8 +435,6 @@ export default function BillingTab({
       setUnbindBusy(false);
     }
   }, [refresh]);
-
-  const cityChips = useMemo(() => cities.slice(0, 12), [cities]);
 
   if (loading || !data) {
     return (
@@ -910,11 +980,22 @@ export default function BillingTab({
           }}
         >
           {!showAddSearch ? (
+            // ОДНА кнопка «Добавить больше ИФНС» — если есть слот,
+            // открывает поиск; если лимит исчерпан, показывает тарифы
+            // (раньше было две раздельные кнопки «Лимит исчерпан» +
+            // «Сменить тариф», что путало).
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Подключить приоритет по ИФНС"
-              onPress={() => setShowAddSearch(true)}
-              disabled={slotsLeft <= 0}
+              accessibilityLabel={
+                slotsLeft > 0 ? "Подключить приоритет по ИФНС" : "Сменить тариф для подключения новых ИФНС"
+              }
+              onPress={() => {
+                if (slotsLeft > 0) {
+                  setShowAddSearch(true);
+                } else {
+                  setShowPlanSwitcher(true);
+                }
+              }}
               style={({ pressed }) => [
                 {
                   flexDirection: "row",
@@ -925,24 +1006,25 @@ export default function BillingTab({
                   borderRadius: 10,
                   borderWidth: 1,
                   borderStyle: "dashed",
-                  borderColor: slotsLeft > 0 ? colors.primary : colors.border,
+                  borderColor: colors.primary,
                   backgroundColor: colors.white,
                 },
                 pressed && { opacity: 0.7 },
-                slotsLeft <= 0 && { opacity: 0.6 },
               ]}
             >
-              <Plus size={14} color={slotsLeft > 0 ? colors.primary : colors.textMuted} />
+              <Plus size={14} color={colors.primary} />
               <Text
                 style={{
                   fontSize: 13,
                   fontWeight: "600",
-                  color: slotsLeft > 0 ? colors.primary : colors.textMuted,
+                  color: colors.primary,
                 }}
               >
-                {slotsLeft > 0
-                  ? `Подключить ИФНС${data.activeVipFns.length === 0 ? "" : " ещё"}`
-                  : "Лимит тарифа исчерпан"}
+                {data.activeVipFns.length === 0
+                  ? "Подключить первую ИФНС"
+                  : slotsLeft > 0
+                  ? "Добавить ещё ИФНС"
+                  : "Добавить больше ИФНС"}
               </Text>
             </Pressable>
           ) : (
@@ -956,8 +1038,7 @@ export default function BillingTab({
                   accessibilityLabel="Скрыть поиск"
                   onPress={() => {
                     setShowAddSearch(false);
-                    setQ("");
-                    setCityFilterId(null);
+                    clearCity();
                   }}
                   style={({ pressed }) => [
                     { padding: 4 },
@@ -968,74 +1049,147 @@ export default function BillingTab({
                 </Pressable>
               </View>
 
-              <View
-                className="flex-row items-center"
-                style={{
-                  gap: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 10,
-                  backgroundColor: colors.white,
-                  marginBottom: 10,
-                }}
-              >
-                <Search size={16} color={colors.textMuted} />
-                <TextInput
-                  value={q}
-                  onChangeText={setQ}
-                  placeholder="Код, имя ИФНС или город"
-                  placeholderTextColor={colors.placeholder}
-                  autoFocus
+              {/* City typeahead — паттерн как на /fns. position:relative
+                  + zIndex чтобы дропдаун перекрывал список ниже. */}
+              <View style={{ position: "relative", zIndex: 100, marginBottom: 10 }}>
+                <View
+                  className="flex-row items-center"
                   style={{
-                    flex: 1,
-                    fontSize: 14,
-                    color: colors.text,
-                    paddingVertical: 4,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    outlineWidth: 0 as any,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    outlineStyle: "none" as any,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    borderStyle: "none" as any,
+                    gap: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 10,
+                    backgroundColor: colors.white,
                   }}
-                />
+                >
+                  <Search size={16} color={colors.textMuted} />
+                  <TextInput
+                    value={cityQuery}
+                    onChangeText={(t) => {
+                      setCityQuery(t);
+                      setCityDropdownOpen(t.trim().length >= 2);
+                      if (cityFilterId) {
+                        const cur = cities.find((c) => c.id === cityFilterId);
+                        if (
+                          !cur ||
+                          !cur.name.toLowerCase().startsWith(t.trim().toLowerCase())
+                        ) {
+                          setCityFilterId(null);
+                        }
+                      }
+                    }}
+                    onFocus={() => {
+                      if (cityQuery.trim().length >= 2) setCityDropdownOpen(true);
+                    }}
+                    onBlur={() => {
+                      if (blurTimer.current) clearTimeout(blurTimer.current);
+                      blurTimer.current = setTimeout(() => setCityDropdownOpen(false), 150);
+                    }}
+                    placeholder="Введите город — например, Москва"
+                    placeholderTextColor={colors.placeholder}
+                    autoFocus
+                    style={{
+                      flex: 1,
+                      fontSize: 14,
+                      color: colors.text,
+                      paddingVertical: 4,
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      outlineWidth: 0 as any,
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      outlineStyle: "none" as any,
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      borderStyle: "none" as any,
+                    }}
+                  />
+                  {cityQuery.length > 0 && (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Очистить"
+                      onPress={clearCity}
+                      hitSlop={6}
+                    >
+                      <X size={14} color={colors.textMuted} />
+                    </Pressable>
+                  )}
+                </View>
+
+                {cityDropdownOpen && cityMatches.length > 0 && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: 44,
+                      left: 0,
+                      right: 0,
+                      backgroundColor: colors.white,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      borderRadius: 10,
+                      overflow: "hidden",
+                      zIndex: 100,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 12,
+                    }}
+                  >
+                    {cityMatches.map((c, idx) => (
+                      <Pressable
+                        key={c.id}
+                        accessibilityRole="button"
+                        accessibilityLabel={c.name}
+                        onPress={() => pickCity(c)}
+                        style={({ pressed }) => [
+                          {
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                            paddingHorizontal: 12,
+                            paddingVertical: 10,
+                            borderTopWidth: idx === 0 ? 0 : 1,
+                            borderTopColor: colors.border,
+                          },
+                          pressed && { backgroundColor: colors.surface },
+                        ]}
+                      >
+                        <MapPin size={14} color={colors.textMuted} />
+                        <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>
+                          {c.name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
               </View>
 
-              {cityChips.length > 0 && (
-                // flex-wrap вместо ScrollView horizontal: мышью на десктопе
-                // горизонтальный скролл не работает, чипы переносим на
-                // следующую строку.
+              {topCities.length > 0 && (
                 <View
                   className="flex-row flex-wrap"
                   style={{ gap: 6, paddingBottom: 10 }}
                 >
-                  <CityChip
-                    label="Все города"
-                    active={cityFilterId == null}
-                    onPress={() => setCityFilterId(null)}
-                  />
-                  {cityChips.map((c) => (
+                  {topCities.map((c) => (
                     <CityChip
                       key={c.id}
                       label={c.name}
                       active={cityFilterId === c.id}
-                      onPress={() => setCityFilterId(cityFilterId === c.id ? null : c.id)}
+                      onPress={() => (cityFilterId === c.id ? clearCity() : pickCity(c))}
                     />
                   ))}
                 </View>
               )}
 
-              {searchLoading ? (
+              {!cityFilterId ? (
+                <Text style={{ fontSize: 13, color: colors.textSecondary, paddingVertical: 8 }}>
+                  Выберите город — ниже появятся все ИФНС в нём.
+                </Text>
+              ) : searchLoading ? (
                 <View className="items-center py-6">
                   <ActivityIndicator size="small" color={colors.primary} />
                 </View>
               ) : searchResults.length === 0 ? (
                 <Text style={{ fontSize: 13, color: colors.textSecondary, paddingVertical: 8 }}>
-                  {q || cityFilterId
-                    ? "По вашему запросу ничего не найдено."
-                    : "Начните вводить код ИФНС или название города."}
+                  В этом городе ИФНС не найдены.
                 </Text>
               ) : (
                 searchResults.map((item, idx) => {
