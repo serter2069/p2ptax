@@ -10,52 +10,16 @@ export interface HeroSpecialistPreview {
   avatarUrl?: string | null;
   cities: Array<{ id: string; name: string }>;
   services: Array<{ id: string; name: string }>;
-  fnsName?: string | null;
+  /** ИФНС, по которым специалист работает. Рендерим 1–2 «герба»
+   *  под именем — это и есть key visual карточки. Пусто = чисто
+   *  текстовый chip в фолбеке. */
+  fnsList?: Array<{ fnsId: string; fnsName: string; cityName: string | null }>;
   createdAt?: string | null;
-}
-
-/**
- * Shorten verbose FNS names to fit card layout.
- * e.g. "Межрайонная ИФНС №39 по Республике Башкортостан" → "ИФНС №39, Уфа"
- */
-function shortFnsName(name: string): string {
-  if (!name) return name;
-  // Extract number like №39 or №3
-  const numMatch = name.match(/№\s*(\d+)/);
-  const num = numMatch ? `№${numMatch[1]}` : null;
-
-  // City mappings based on region/city patterns in the name
-  if (/Башкортостан|Уфа/i.test(name) && num) return `ИФНС ${num}, Уфа`;
-  if (/Москв/i.test(name) && num) return `ИФНС ${num}, Москва`;
-  if (/Санкт-Петербург|Петербург|СПб/i.test(name) && num) return `ИФНС ${num}, СПб`;
-  if (/Казан/i.test(name) && num) return `ИФНС ${num}, Казань`;
-  if (/Новосибирск/i.test(name) && num) return `ИФНС ${num}, Новосибирск`;
-  if (/Екатеринбург/i.test(name) && num) return `ИФНС ${num}, Екатеринбург`;
-  if (/Краснодар/i.test(name) && num) return `ИФНС ${num}, Краснодар`;
-  if (/Нижний Новгород/i.test(name) && num) return `ИФНС ${num}, Н.Новгород`;
-  if (/Самар/i.test(name) && num) return `ИФНС ${num}, Самара`;
-  if (/Ростов/i.test(name) && num) return `ИФНС ${num}, Ростов`;
-
-  // Generic shortening: strip "Межрайонная" prefix and long suffixes
-  return name
-    .replace(/^Межрайонная\s+/i, "")
-    .replace(/\s+по\s+.+$/, "")
-    .trim();
-}
-
-export interface HeroFnsBadge {
-  fnsId: string;
-  fnsName: string;
-  cityName: string | null;
 }
 
 interface HeroBlockProps {
   isDesktop: boolean;
   specialists: HeroSpecialistPreview[];
-  /** Уникальные ИФНС со специалистами — рендерятся гербами под
-   *  подзаголовком, чтобы посетитель сразу видел, что у нас покрыты
-   *  реальные инспекции. */
-  featuredFns?: HeroFnsBadge[];
   loading: boolean;
   onPrimaryCta: () => void;
   onSecondaryCta: () => void;
@@ -69,13 +33,11 @@ interface HeroBlockProps {
 export default function HeroBlock({
   isDesktop,
   specialists,
-  featuredFns = [],
   loading,
   onPrimaryCta,
   onSecondaryCta,
 }: HeroBlockProps) {
   const visible = useMemo(() => specialists.slice(0, 3), [specialists]);
-  const fnsBadges = useMemo(() => featuredFns.slice(0, 6), [featuredFns]);
   const placeholderCount = Math.max(0, 3 - visible.length);
 
   return (
@@ -190,40 +152,6 @@ export default function HeroBlock({
             в этой инспекции каждый день. Опишите ситуацию — он напишет первым.
           </Text>
 
-          {/* «Гербы» ИФНС со специалистами — визуальное доказательство
-              что текст про «знает вашу ИФНС» имеет за собой реальные
-              инспекции, а не маркетинг. Рендерим только когда данные
-              есть (анонимам — публичный featured-эндпоинт). */}
-          {fnsBadges.length > 0 && (
-            <View style={{ marginTop: 24 }}>
-              <Text
-                style={{
-                  color: colors.textMuted,
-                  fontSize: 11,
-                  fontWeight: "700",
-                  letterSpacing: 1.2,
-                  textTransform: "uppercase",
-                  marginBottom: 10,
-                }}
-              >
-                Специалисты работают в этих инспекциях
-              </Text>
-              <View
-                className="flex-row flex-wrap"
-                style={{ gap: 8, maxWidth: 540 }}
-              >
-                {fnsBadges.map((f) => (
-                  <FnsLogo
-                    key={f.fnsId}
-                    name={f.fnsName}
-                    cityName={f.cityName}
-                    size="sm"
-                  />
-                ))}
-              </View>
-            </View>
-          )}
-
           <View
             style={{
               marginTop: 32,
@@ -308,6 +236,9 @@ function SpecialistCard({
   const firstService = specialist.services[0] ?? null;
   const avatarBg = AVATAR_COLORS[index % AVATAR_COLORS.length];
   const since = specialist.createdAt ? new Date(specialist.createdAt).getFullYear() : null;
+  // Берём максимум 2 «герба» — больше не влезет в карточку без визуального
+  // шума. Если у спеца только одна ИФНС — рендерим один герб + текст.
+  const fnsBadges = (specialist.fnsList ?? []).slice(0, 2);
 
   return (
     <View
@@ -349,10 +280,14 @@ function SpecialistCard({
         </View>
       )}
 
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, minWidth: 0 }}>
         <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="font-semibold" style={{ color: colors.text, fontSize: 15 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              className="font-semibold"
+              style={{ color: colors.text, fontSize: 15 }}
+              numberOfLines={1}
+            >
               {name}
             </Text>
             <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
@@ -361,18 +296,41 @@ function SpecialistCard({
           </View>
         </View>
 
-        <View className="flex-row flex-wrap" style={{ gap: 6, marginTop: 10 }}>
-          {/* Show FNS name if available, otherwise fall back to city */}
-          {specialist.fnsName
-            ? <Chip label={shortFnsName(specialist.fnsName)} tone="default" />
-            : city
-            ? <Chip label={city} tone="default" />
-            : null}
-        </View>
+        {/* «Гербы» ИФНС — главный визуал карточки. Подпись «Специалист
+            по ИФНС» делает смысл явным, чтобы посетитель не путал
+            «работает в ИФНС» (= сотрудник налоговой) и «специалист
+            по этой ИФНС» (= ведёт там дела клиентов). */}
+        {fnsBadges.length > 0 ? (
+          <View style={{ marginTop: 10 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: "600", marginBottom: 6 }}>
+              {fnsBadges.length === 1 ? "Специалист по ИФНС" : "Специалист по ИФНС:"}
+            </Text>
+            <View className="flex-row" style={{ gap: 8 }}>
+              {fnsBadges.map((f) => (
+                <FnsLogo
+                  key={f.fnsId}
+                  name={f.fnsName}
+                  cityName={f.cityName}
+                  size="sm"
+                />
+              ))}
+            </View>
+          </View>
+        ) : (
+          // Фолбек: ни одной ИФНС в payload (например legacy seed) —
+          // показываем хотя бы город текстовым chip'ом.
+          city && (
+            <View className="flex-row flex-wrap" style={{ gap: 6, marginTop: 10 }}>
+              <Chip label={city} tone="default" />
+            </View>
+          )
+        )}
 
-        <View className="flex-row flex-wrap" style={{ gap: 6, marginTop: 8 }}>
-          {firstService && <Chip key={firstService.id} label={firstService.name} tone="accent" />}
-        </View>
+        {firstService && (
+          <View className="flex-row flex-wrap" style={{ gap: 6, marginTop: 8 }}>
+            <Chip key={firstService.id} label={firstService.name} tone="accent" />
+          </View>
+        )}
       </View>
     </View>
   );

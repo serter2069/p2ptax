@@ -88,12 +88,6 @@ export default function LandingScreen() {
 
   const [counts, setCounts] = useState<LandingCounts | null>(null);
   const [specialists, setSpecialists] = useState<HeroSpecialistPreview[]>([]);
-  // Уникальные ФНС из featured-специалистов — для визуальных «гербов»
-  // под подзаголовком Hero. Без них новый посетитель видит только
-  // абстрактный текст, а тут сразу — реальные ИФНС с реальными спецами.
-  const [heroFns, setHeroFns] = useState<
-    Array<{ fnsId: string; fnsName: string; cityName: string | null }>
-  >([]);
   const [cases, setCases] = useState<CaseCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -114,11 +108,13 @@ export default function LandingScreen() {
           { noAuth: true }
         );
         const mapped: HeroSpecialistPreview[] = (sp.items ?? []).slice(0, 3).map((s) => {
-          // Pick up to 2 FNS names; fall back to null (card will show city instead)
-          const fnsEntries = s.specialistFns ?? [];
-          const fnsName = fnsEntries.length > 0
-            ? fnsEntries[0].fnsName
-            : null;
+          // Берём до 2 ИФНС с city — ровно столько влезает в карточку
+          // на Hero без визуального шума. Город нужен для ленты герба.
+          const fnsList = (s.specialistFns ?? []).slice(0, 2).map((f) => ({
+            fnsId: f.fnsId,
+            fnsName: f.fnsName,
+            cityName: f.city?.name ?? null,
+          }));
           return {
             id: s.id,
             firstName: s.firstName,
@@ -126,37 +122,13 @@ export default function LandingScreen() {
             avatarUrl: s.avatarUrl,
             cities: s.cities,
             services: s.services,
-            fnsName,
+            fnsList,
             createdAt: s.createdAt,
           };
         });
         setSpecialists(mapped);
-
-        // Собираем уникальные ИФНС со всех featured-спецов (берём всех,
-        // не только первых 3) — источник для логотипной плашки на Hero.
-        const seen = new Set<string>();
-        const fnsList: Array<{
-          fnsId: string;
-          fnsName: string;
-          cityName: string | null;
-        }> = [];
-        for (const s of sp.items ?? []) {
-          for (const f of s.specialistFns ?? []) {
-            if (seen.has(f.fnsId)) continue;
-            seen.add(f.fnsId);
-            fnsList.push({
-              fnsId: f.fnsId,
-              fnsName: f.fnsName,
-              cityName: f.city?.name ?? null,
-            });
-            if (fnsList.length >= 6) break;
-          }
-          if (fnsList.length >= 6) break;
-        }
-        setHeroFns(fnsList);
       } catch {
         setSpecialists([]);
-        setHeroFns([]);
       }
 
       try {
@@ -268,7 +240,6 @@ export default function LandingScreen() {
         <HeroBlock
           isDesktop={isDesktop}
           specialists={specialists}
-          featuredFns={heroFns}
           loading={loading}
           onPrimaryCta={goCreateRequest}
           onSecondaryCta={goCatalog}
