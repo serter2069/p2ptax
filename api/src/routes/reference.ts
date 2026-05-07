@@ -182,6 +182,10 @@ router.get("/fns/list", async (req: Request, res: Response) => {
     const cityId = (req.query.cityId as string) || "";
     const limit = Math.min(60, Math.max(1, parseInt(req.query.limit as string) || 30));
     const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+    // На лендинге показываем только «живые» ИФНС — где есть и
+    // специалисты, и активные публичные запросы. Сортируем по
+    // суммарной активности (специалисты+запросы) DESC.
+    const activeOnly = req.query.activeOnly === "1" || req.query.activeOnly === "true";
 
     const where: Prisma.FnsOfficeWhereInput = {};
     if (cityId) where.cityId = cityId;
@@ -193,13 +197,21 @@ router.get("/fns/list", async (req: Request, res: Response) => {
         { city: { name: { contains: q, mode: "insensitive" } } },
       ];
     }
+    if (activeOnly) {
+      where.specialistFns = { some: {} };
+      where.requests = { some: { status: { in: ["ACTIVE", "CLOSING_SOON"] }, isPublic: true } };
+    }
+
+    // Если activeOnly — фетчим пул побольше, сортируем в JS по
+    // (specialistCount + activeRequestCount) DESC, потом slice.
+    const fetchTake = activeOnly ? Math.max(limit * 4, 60) : limit;
 
     const [offices, total] = await Promise.all([
       prisma.fnsOffice.findMany({
         where,
         orderBy: [{ city: { name: "asc" } }, { name: "asc" }],
-        take: limit,
-        skip: offset,
+        take: fetchTake,
+        skip: activeOnly ? 0 : offset,
         select: {
           id: true,
           name: true,
@@ -221,24 +233,37 @@ router.get("/fns/list", async (req: Request, res: Response) => {
       prisma.fnsOffice.count({ where }),
     ]);
 
+    let processed = offices.map((o) => {
+      const addr = formatKladrAddress(o.address);
+      return {
+        id: o.id,
+        name: o.name,
+        code: o.code,
+        address: addr?.primary ?? o.address,
+        addressSecondary: addr?.secondary ?? null,
+        city: o.city,
+        yandexRating: o.yandexRating,
+        yandexReviewsCount: o.yandexReviewsCount,
+        specialistCount: o._count.specialistFns,
+        activeRequestCount: o._count.requests,
+      };
+    });
+
+    if (activeOnly) {
+      // Сортируем по убыванию активности (запросы взвешеннее — это
+      // прямой сигнал «здесь сейчас что-то происходит»).
+      processed.sort(
+        (a, b) =>
+          (b.activeRequestCount * 2 + b.specialistCount) -
+          (a.activeRequestCount * 2 + a.specialistCount),
+      );
+      processed = processed.slice(offset, offset + limit);
+    }
+
     res.json({
-      items: offices.map((o) => {
-        const addr = formatKladrAddress(o.address);
-        return {
-          id: o.id,
-          name: o.name,
-          code: o.code,
-          address: addr?.primary ?? o.address,
-          addressSecondary: addr?.secondary ?? null,
-          city: o.city,
-          yandexRating: o.yandexRating,
-          yandexReviewsCount: o.yandexReviewsCount,
-          specialistCount: o._count.specialistFns,
-          activeRequestCount: o._count.requests,
-        };
-      }),
+      items: processed,
       total,
-      hasMore: offset + offices.length < total,
+      hasMore: offset + processed.length < total,
     });
   } catch (error) {
     console.error("fns/list error:", error);

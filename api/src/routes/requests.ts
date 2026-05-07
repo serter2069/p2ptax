@@ -248,6 +248,83 @@ router.get("/public", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/requests/specialist-opportunities — лента «возможно, нужна
+// ваша помощь» для главной. Авторизованный специалист видит свежие
+// активные публичные запросы в его scope (по specialist_fns), не
+// своего авторства.
+router.get(
+  "/specialist-opportunities",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const userId = (req as any).user?.userId as string | undefined;
+      if (!userId) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      const limit = Math.min(20, Math.max(1, parseInt(req.query.limit as string) || 6));
+
+      // FNS, которые специалист обслуживает.
+      const specialistFns = await prisma.specialistFns.findMany({
+        where: { specialistId: userId },
+        select: { fnsId: true },
+      });
+      if (specialistFns.length === 0) {
+        res.json({ items: [], total: 0 });
+        return;
+      }
+      const fnsIds = specialistFns.map((sf) => sf.fnsId);
+
+      const where: Prisma.RequestWhereInput = {
+        status: { in: ["ACTIVE", "CLOSING_SOON"] },
+        isPublic: true,
+        fnsId: { in: fnsIds },
+        userId: { not: userId },
+      };
+      const seedWhere = notSeedRequestWhere();
+      if (seedWhere) {
+        where.AND = [seedWhere];
+      }
+
+      const [items, total] = await Promise.all([
+        prisma.request.findMany({
+          where,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          include: {
+            city: true,
+            fns: true,
+            user: { select: { firstName: true, lastName: true } },
+            _count: { select: { threads: true, files: true } },
+          },
+        }),
+        prisma.request.count({ where }),
+      ]);
+
+      res.json({
+        items: items.map((r) => ({
+          id: r.id,
+          title: r.title,
+          description: r.description,
+          status: r.status,
+          createdAt: r.createdAt,
+          city: { id: r.city.id, name: r.city.name },
+          fns: { id: r.fns.id, name: r.fns.name, code: r.fns.code },
+          threadsCount: r._count.threads,
+          hasFiles: r._count.files > 0,
+          filesCount: r._count.files,
+          user: { firstName: r.user.firstName, lastName: r.user.lastName },
+        })),
+        total,
+      });
+    } catch (error) {
+      console.error("requests/specialist-opportunities error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
 // GET /api/requests/sample — dev helper: first request ID for metromap URL resolver
 // SECURITY: dev/tooling helper — returns minimal data (id only), intentionally public for metromap
 router.get("/sample", async (_req: Request, res: Response) => {

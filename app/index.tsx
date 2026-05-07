@@ -13,6 +13,7 @@ import HeroBlock, { type HeroSpecialistPreview } from "@/components/landing/Hero
 import TrustStrip from "@/components/landing/TrustStrip";
 import TrustPillarsSection from "@/components/landing/TrustPillarsSection";
 import FnsSearchSection from "@/components/landing/FnsSearchSection";
+import SpecialistOpportunitiesBlock from "@/components/landing/SpecialistOpportunitiesBlock";
 import ServicesSection from "@/components/landing/ServicesSection";
 import HowItWorksFlow from "@/components/landing/HowItWorksFlow";
 import CasesSection from "@/components/landing/CasesSection";
@@ -77,7 +78,7 @@ interface RecentWinsResponse {
 export default function LandingScreen() {
   const router = useRouter()
   const nav = useTypedRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isSpecialistUser } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
@@ -237,6 +238,14 @@ export default function LandingScreen() {
           onPrimaryCta={goCreateRequest}
           onSecondaryCta={goCatalog}
         />
+
+        {/* Авторизованным специалистам — лента возможностей по их
+            ИФНС: «Возможно, нужна ваша помощь». Если ничего нет —
+            блок не рендерится. Стоит сразу под hero, чтобы спец видел
+            актуальные клиенты не скроллясь. */}
+        {isAuthenticated && isSpecialistUser && (
+          <SpecialistOpportunitiesBlock isDesktop={isDesktop} />
+        )}
 
         {/* Specific-FNS search sits directly under the hero — users with
             a known inspection code (highest discovery intent) see it
