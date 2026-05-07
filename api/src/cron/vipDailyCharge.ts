@@ -51,8 +51,22 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
       pendingPlan: {
         select: { id: true, name: true, monthlyPriceKopeks: true, fnsLimit: true },
       },
+      pendingPlanKeepFnsIds: true,
     },
   });
+
+  // Cleanup stale bind_pending записей. Юзер начал ЮKassa-флоу, но
+  // не довёл его до конца (закрыл вкладку, отвалилась карта и т.п.).
+  // Webhook на success удаляет bind_pending сам — здесь чистим именно
+  // «недомеры». 24 часа — сильно больше типичного 30-сек hold'а
+  // ЮKassa, но достаточно если webhook задержался на минуты-часы.
+  const staleCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const cleanedPending = await prisma.billingTx.deleteMany({
+    where: { kind: "bind_pending", createdAt: { lt: staleCutoff } },
+  });
+  if (cleanedPending.count > 0) {
+    console.log(`[vip-daily] cleaned ${cleanedPending.count} stale bind_pending`);
+  }
 
   let charged = 0;
   let failed = 0;
@@ -69,14 +83,26 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
     let plan = user.subscriptionPlan;
     if (user.pendingPlan && user.pendingPlan.id !== plan.id) {
       const newPlan = user.pendingPlan;
-      const overflow = await prisma.specialistVipFns.count({
-        where: { specialistId: user.id },
-      }) - newPlan.fnsLimit;
+      const keepIds = new Set(user.pendingPlanKeepFnsIds ?? []);
       await prisma.$transaction(async (tx) => {
+        // Шаг 1: удалить всё что НЕ в keep-list (если keep-list пуст,
+        // это значит у юзера было ≤ нового лимита на момент schedule —
+        // ничего не дропаем).
+        if (keepIds.size > 0) {
+          await tx.specialistVipFns.deleteMany({
+            where: {
+              specialistId: user.id,
+              fnsId: { notIn: Array.from(keepIds) },
+            },
+          });
+        }
+        // Шаг 2: фолбек на oldest-first если после шага 1 всё ещё
+        // overflow (юзер добавил новые VIP после scheduling).
+        const remaining = await tx.specialistVipFns.count({
+          where: { specialistId: user.id },
+        });
+        const overflow = remaining - newPlan.fnsLimit;
         if (overflow > 0) {
-          // Дропаем самые старые VIP-слоты (oldest activatedAt). Юзер
-          // мог отменить лишние сам в течение цикла, но если не успел —
-          // система оставляет «последние подписанные».
           const toRemove = await tx.specialistVipFns.findMany({
             where: { specialistId: user.id },
             orderBy: { activatedAt: "asc" },
@@ -93,6 +119,7 @@ export async function runVipDailyChargeCron(now: Date = new Date()): Promise<{
             subscriptionPlanId: newPlan.id,
             pendingPlanId: null,
             pendingPlanScheduledAt: null,
+            pendingPlanKeepFnsIds: [],
           },
         });
         await tx.billingTx.create({

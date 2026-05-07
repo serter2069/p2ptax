@@ -78,6 +78,12 @@ model User {
   pendingPlanId                String?   @map("pending_plan_id")
   pendingPlan                  SubscriptionPlan? @relation("UserPendingPlan", fields: [pendingPlanId], references: [id], onDelete: SetNull)
   pendingPlanScheduledAt       DateTime? @map("pending_plan_scheduled_at")
+  // FNS-id, которые юзер выбрал ОСТАВИТЬ при scheduled-downgrade
+  // (когда new.fnsLimit < currentSlots). На apply cron удаляет VIP-
+  // строки, отсутствующие в этом списке. Пустой массив = ничего не
+  // обрезать (downgrade без trim или upgrade-сценарий — pending не
+  // используется, но колонка остаётся пустой).
+  pendingPlanKeepFnsIds        String[]  @default([]) @map("pending_plan_keep_fns_ids")
   createdAt                    DateTime  @default(now()) @map("created_at")
   updatedAt                    DateTime  @updatedAt @map("updated_at")
 
@@ -707,6 +713,11 @@ model ConsultantMessage {
   id          String   @id @default(uuid())
   threadId    String   @map("thread_id")
   role        String   // "user" | "assistant"
+  // "text" (default) — обычное сообщение чата.
+  // "document" — сгенерированный шаблонный документ (ответ на требование,
+  //              жалоба, уведомление и т.п.); FE рендерит «Скачать».
+  kind        String   @default("text")
+  attachmentFilename String? @map("attachment_filename")
   content     String   // plain text — markdown for assistant
   // Source citations and usage stats for assistant messages, JSON-as-text.
   sourcesJson String?  @map("sources_json")

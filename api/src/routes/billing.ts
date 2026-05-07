@@ -129,6 +129,7 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
             },
           },
           pendingPlanScheduledAt: true,
+          pendingPlanKeepFnsIds: true,
           pendingPlan: {
             select: {
               id: true,
@@ -186,6 +187,9 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
       // равноценный план). null когда смены не запланировано.
       pendingPlan: user.pendingPlan ? planBrief(user.pendingPlan) : null,
       pendingPlanScheduledAt: user.pendingPlanScheduledAt ?? null,
+      // Список FNS-id выбранных юзером для сохранения при apply.
+      // Пустой массив = trim не нужен (текущих ≤ нового лимита).
+      pendingPlanKeepFnsIds: user.pendingPlanKeepFnsIds ?? [],
       activeVipFns,
       slotsUsed: activeVipFns.length,
       slotsLimit: plan?.fnsLimit ?? 0,
@@ -266,6 +270,10 @@ router.get("/fns-search", authMiddleware, async (req: Request, res: Response) =>
 
 interface PlanRequestBody {
   planId?: string;
+  /** Только для downgrade когда currentSlots > newPlan.fnsLimit:
+   *  список FNS-id, которые юзер выбрал ОСТАВИТЬ после применения
+   *  смены. Длина ≤ newPlan.fnsLimit, все id из текущих VIP юзера. */
+  keepFnsIds?: string[];
 }
 
 const RENEWAL_DAYS = 30;
@@ -286,11 +294,14 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { planId } = (req.body ?? {}) as PlanRequestBody;
+    const { planId, keepFnsIds: rawKeepFnsIds } = (req.body ?? {}) as PlanRequestBody;
     if (!planId || typeof planId !== "string") {
       res.status(400).json({ error: "planId is required" });
       return;
     }
+    const keepFnsIds: string[] = Array.isArray(rawKeepFnsIds)
+      ? rawKeepFnsIds.filter((s): s is string => typeof s === "string")
+      : [];
 
     const [plan, user] = await Promise.all([
       prisma.subscriptionPlan.findUnique({
@@ -338,7 +349,7 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
     if (user.subscriptionPlanId === plan.id) {
       await prisma.user.update({
         where: { id: userId },
-        data: { pendingPlanId: null, pendingPlanScheduledAt: null },
+        data: { pendingPlanId: null, pendingPlanScheduledAt: null, pendingPlanKeepFnsIds: [] },
       });
       res.json({ ok: true, alreadyActive: true });
       return;
@@ -426,6 +437,7 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
             // смены, теперь юзер явно решил перейти прямо сейчас.
             pendingPlanId: null,
             pendingPlanScheduledAt: null,
+            pendingPlanKeepFnsIds: [],
           },
         });
         await tx.billingTx.create({
@@ -452,14 +464,56 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
     // ── Path 3: DOWNGRADE / equal price → schedule for next renewal ─
     // Юзер уже оплатил текущий цикл, поэтому его текущий тариф (с
     // полным набором VIP-слотов) работает до subscriptionNextChargeAt.
-    // На renewal cron подменит план на pendingPlanId и обрежет VIP
-    // (oldest first) до нового лимита.
+    // На renewal cron подменит план на pendingPlanId и удалит те VIP-
+    // строки, которых нет в pendingPlanKeepFnsIds (фолбек на oldest-
+    // first если юзер не указал).
+    const currentVipIds = await prisma.specialistVipFns.findMany({
+      where: { specialistId: userId },
+      select: { fnsId: true },
+    });
+    const currentVipIdSet = new Set(currentVipIds.map((r) => r.fnsId));
+    const willOverflow = currentVipIdSet.size > plan.fnsLimit;
+
+    if (willOverflow) {
+      // Фронт ОБЯЗАН прислать keepFnsIds, иначе мы не знаем что
+      // оставлять. Если не прислал — вернём 409, пусть открывает диалог.
+      if (keepFnsIds.length === 0) {
+        res.status(409).json({
+          error:
+            "Нужно выбрать ИФНС, которые останутся после смены тарифа.",
+          needsKeepSelection: true,
+          newPlan: planBrief(plan),
+          newLimit: plan.fnsLimit,
+          currentSlots: currentVipIdSet.size,
+        });
+        return;
+      }
+      // Валидация: все id из текущих VIP, длина ≤ newLimit, без дубликатов.
+      const dedup = Array.from(new Set(keepFnsIds));
+      if (dedup.length > plan.fnsLimit) {
+        res.status(400).json({
+          error: `Можно оставить не больше ${plan.fnsLimit} ИФНС, выбрано ${dedup.length}.`,
+        });
+        return;
+      }
+      const invalid = dedup.filter((id) => !currentVipIdSet.has(id));
+      if (invalid.length > 0) {
+        res.status(400).json({
+          error: "В списке оставляемых ИФНС есть те, которых нет в ваших VIP.",
+        });
+        return;
+      }
+    }
+
+    const keepToStore = willOverflow ? Array.from(new Set(keepFnsIds)) : [];
+
     await prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: userId },
         data: {
           pendingPlanId: plan.id,
           pendingPlanScheduledAt: new Date(),
+          pendingPlanKeepFnsIds: keepToStore,
         },
       });
       await tx.billingTx.create({
@@ -478,6 +532,7 @@ router.post("/plan", authMiddleware, async (req: Request, res: Response) => {
       pendingPlan: planBrief(plan),
       currentPlan: user.subscriptionPlan ? planBrief(user.subscriptionPlan) : null,
       applyAt: user.subscriptionNextChargeAt,
+      pendingPlanKeepFnsIds: keepToStore,
       message: user.subscriptionNextChargeAt
         ? `Текущий тариф работает до ${user.subscriptionNextChargeAt.toLocaleDateString("ru-RU")}, затем включится «${plan.name}». Деньги сейчас не списываются.`
         : `Тариф изменится на «${plan.name}» при следующем продлении.`,
@@ -511,7 +566,7 @@ router.post(
       await prisma.$transaction(async (tx) => {
         await tx.user.update({
           where: { id: userId },
-          data: { pendingPlanId: null, pendingPlanScheduledAt: null },
+          data: { pendingPlanId: null, pendingPlanScheduledAt: null, pendingPlanKeepFnsIds: [] },
         });
         await tx.billingTx.create({
           data: {
@@ -548,6 +603,7 @@ router.delete("/plan", authMiddleware, async (req: Request, res: Response) => {
           // активного подключения, что бессмысленно.
           pendingPlanId: null,
           pendingPlanScheduledAt: null,
+          pendingPlanKeepFnsIds: [],
         },
       });
       await tx.billingTx.create({

@@ -26,7 +26,7 @@ import {
 import Card from "@/components/ui/Card";
 import FnsLogo from "@/components/fns/FnsLogo";
 import { dialog } from "@/lib/dialog";
-import { apiGet, apiPost, apiDelete } from "@/lib/api";
+import { apiGet, apiPost, apiDelete, ApiError } from "@/lib/api";
 import { colors } from "@/lib/theme";
 
 interface PlanRow {
@@ -61,6 +61,9 @@ interface MePayload {
    *  равноценный план). null когда смены не запланировано. */
   pendingPlan: PlanRow | null;
   pendingPlanScheduledAt: string | null;
+  /** Список FNS-id, которые юзер выбрал ОСТАВИТЬ при apply. Пустой
+   *  массив = trim не требуется. */
+  pendingPlanKeepFnsIds: string[];
   activeVipFns: ActiveVipFns[];
   slotsUsed: number;
   slotsLimit: number;
@@ -96,8 +99,18 @@ interface PlanResponse {
   pendingPlan?: PlanRow;
   currentPlan?: PlanRow | null;
   applyAt?: string | null;
+  pendingPlanKeepFnsIds?: string[];
   // Описание для UI.
   message?: string;
+}
+
+/** 409 ответ когда downgrade требует выбора, какие ИФНС оставить. */
+interface NeedsKeepResponse {
+  error: string;
+  needsKeepSelection: true;
+  newPlan: PlanRow;
+  newLimit: number;
+  currentSlots: number;
 }
 
 interface VipFnsResponse {
@@ -183,6 +196,13 @@ export default function BillingTab({
   const [showPlanSwitcher, setShowPlanSwitcher] = useState(false);
   const [showAddSearch, setShowAddSearch] = useState(false);
   const [cancelPendingBusy, setCancelPendingBusy] = useState(false);
+  // Keep-picker для downgrade когда currentSlots > newLimit. Юзер
+  // выбирает какие N (newLimit) ИФНС оставить — остальные cron
+  // отключит на следующем продлении.
+  const [keepPicker, setKeepPicker] = useState<{
+    plan: PlanRow;
+    keepIds: Set<string>;
+  } | null>(null);
 
   // Catalog search — city-first: typeahead по городу, после выбора
   // показываем все ИФНС в нём (как на /fns).
@@ -294,16 +314,20 @@ export default function BillingTab({
   }, []);
 
   const submitPlan = useCallback(
-    async (planId: string) => {
+    async (planId: string, keepFnsIds?: string[]) => {
       setBusyPlanId(planId);
       try {
-        const ok = await apiPost<PlanResponse>("/api/billing/plan", { planId });
+        const ok = await apiPost<PlanResponse>("/api/billing/plan", {
+          planId,
+          ...(keepFnsIds ? { keepFnsIds } : {}),
+        });
         // ── Path 1: первое подключение → ЮKassa redirect ──
         if (ok.needsRedirect && ok.confirmationUrl) {
           redirect(ok.confirmationUrl);
           return;
         }
         setShowPlanSwitcher(false);
+        setKeepPicker(null);
         await refresh();
 
         // ── Path 2: апгрейд → списано прямо сейчас, цикл сброшен ──
@@ -330,14 +354,38 @@ export default function BillingTab({
           return;
         }
       } catch (e: unknown) {
+        // 409 needsKeepSelection → открыть keep-picker диалог.
+        if (e instanceof ApiError && e.status === 409) {
+          const d = e.data as Partial<NeedsKeepResponse>;
+          if (d.needsKeepSelection && d.newPlan) {
+            // Авто-преселект последних N (newLimit) подключённых VIP —
+            // юзер всё равно может перевыбрать. activeVipFns уже
+            // отсортирован по activatedAt desc.
+            const newest = data?.activeVipFns
+              .slice(0, d.newPlan.fnsLimit)
+              .map((v) => v.fnsId) ?? [];
+            setKeepPicker({ plan: d.newPlan, keepIds: new Set(newest) });
+            return;
+          }
+        }
         const msg = e instanceof Error ? e.message : "Не удалось сменить тариф";
         await dialog.alert({ title: "Ошибка", message: msg });
       } finally {
         setBusyPlanId(null);
       }
     },
-    [redirect, refresh]
+    [redirect, refresh, data?.activeVipFns]
   );
+
+  const toggleKeep = useCallback((fnsId: string) => {
+    setKeepPicker((prev) => {
+      if (!prev) return prev;
+      const next = new Set(prev.keepIds);
+      if (next.has(fnsId)) next.delete(fnsId);
+      else next.add(fnsId);
+      return { ...prev, keepIds: next };
+    });
+  }, []);
 
   const handleCancelPending = useCallback(async () => {
     const ok = await dialog.confirm({
@@ -477,6 +525,142 @@ export default function BillingTab({
 
   const hasPlan = !!data.plan;
   const pendingPlan = data.pendingPlan;
+
+  // ─── keep-picker (downgrade с overflow) — рендерим вместо обычного UI
+  if (keepPicker) {
+    const { plan: targetPlan, keepIds } = keepPicker;
+    const tooMany = keepIds.size > targetPlan.fnsLimit;
+    const tooFew = keepIds.size === 0;
+    const canConfirm = !tooMany && !tooFew && !busyPlanId;
+    return (
+      <Card>
+        <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
+          Какие ИФНС оставить на «{targetPlan.name}»?
+        </Text>
+        <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 6, lineHeight: 18 }}>
+          Лимит нового тарифа — {targetPlan.fnsLimit} {targetPlan.fnsLimit === 1 ? "ИФНС" : "ИФНС"}. Сейчас у вас {data.activeVipFns.length}.
+          Выберите, что останется после смены тарифа на следующем продлении (
+          {data.planNextChargeAt ? formatActivatedAt(data.planNextChargeAt) : "DD.MM"}). До этой
+          даты текущий тариф «{data.plan?.name}» работает целиком.
+        </Text>
+        <Text
+          style={{
+            fontSize: 12,
+            color: tooMany ? colors.error : colors.primary,
+            fontWeight: "600",
+            marginTop: 10,
+          }}
+        >
+          Выбрано {keepIds.size} из {targetPlan.fnsLimit}
+          {tooMany ? " — больше лимита" : ""}
+        </Text>
+        <View style={{ marginTop: 12 }}>
+          {data.activeVipFns.map((sub, idx) => {
+            const keep = keepIds.has(sub.fnsId);
+            return (
+              <Pressable
+                key={sub.fnsId}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: keep }}
+                onPress={() => toggleKeep(sub.fnsId)}
+                style={({ pressed }) => [
+                  {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    paddingVertical: 12,
+                    borderTopWidth: idx === 0 ? 0 : 1,
+                    borderTopColor: colors.border,
+                  },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 4,
+                    borderWidth: 1.5,
+                    borderColor: keep ? colors.primary : colors.border,
+                    backgroundColor: keep ? colors.primary : colors.white,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {keep && <Check size={12} color={colors.white} strokeWidth={3} />}
+                </View>
+                <FnsLogo name={sub.fnsName} cityName={sub.cityName} size="sm" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, color: colors.text }} numberOfLines={2}>
+                    {sub.fnsName}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                    {sub.cityName} · код {sub.fnsCode}
+                  </Text>
+                </View>
+                {keep ? (
+                  <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "600" }}>
+                    Оставить
+                  </Text>
+                ) : (
+                  <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                    Отключится
+                  </Text>
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+        <View className="flex-row" style={{ gap: 8, marginTop: 16 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Отменить смену тарифа"
+            onPress={() => setKeepPicker(null)}
+            style={({ pressed }) => [
+              {
+                flex: 1,
+                paddingVertical: 11,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.white,
+                alignItems: "center",
+              },
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Text style={{ color: colors.textSecondary, fontWeight: "600" }}>
+              Отмена
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Запланировать смену на ${targetPlan.name}`}
+            disabled={!canConfirm}
+            onPress={() => submitPlan(targetPlan.id, Array.from(keepIds))}
+            style={({ pressed }) => [
+              {
+                flex: 2,
+                paddingVertical: 11,
+                borderRadius: 10,
+                backgroundColor: colors.primary,
+                alignItems: "center",
+                flexDirection: "row",
+                justifyContent: "center",
+                gap: 6,
+              },
+              !canConfirm && { opacity: 0.5 },
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <Text style={{ color: colors.white, fontWeight: "600" }}>
+              {busyPlanId === targetPlan.id ? "..." : "Запланировать смену"}
+            </Text>
+          </Pressable>
+        </View>
+      </Card>
+    );
+  }
 
   // ─── no plan: upsell screen ─────────────────────────────────────
   if (!hasPlan) {
@@ -819,10 +1003,46 @@ export default function BillingTab({
                   до {pendingPlan.fnsLimit} ИФНС). Деньги сейчас не списываются.
                 </Text>
                 {pendingPlan.fnsLimit < data.slotsUsed && (
-                  <Text style={{ fontSize: 11, color: colors.warning ?? colors.error, marginTop: 6, lineHeight: 16 }}>
-                    У вас сейчас {data.slotsUsed} ИФНС, новый лимит {pendingPlan.fnsLimit}.
-                    {" "}Самые старые подключения отключатся автоматически — отвяжите ненужные сами, чтобы оставить нужные.
-                  </Text>
+                  <View style={{ marginTop: 8 }}>
+                    {data.pendingPlanKeepFnsIds.length > 0 ? (
+                      <>
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
+                          Останутся при смене ({data.pendingPlanKeepFnsIds.length}):
+                        </Text>
+                        {data.activeVipFns
+                          .filter((v) => data.pendingPlanKeepFnsIds.includes(v.fnsId))
+                          .map((v) => (
+                            <Text
+                              key={v.fnsId}
+                              style={{ fontSize: 11, color: colors.textSecondary, lineHeight: 16 }}
+                              numberOfLines={1}
+                            >
+                              · {v.fnsName} ({v.cityName})
+                            </Text>
+                          ))}
+                        {data.activeVipFns.some(
+                          (v) => !data.pendingPlanKeepFnsIds.includes(v.fnsId)
+                        ) && (
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              color: colors.warning ?? colors.error,
+                              marginTop: 6,
+                              lineHeight: 16,
+                            }}
+                          >
+                            Остальные{" "}
+                            {data.activeVipFns.length - data.pendingPlanKeepFnsIds.length} отключатся автоматически.
+                          </Text>
+                        )}
+                      </>
+                    ) : (
+                      <Text style={{ fontSize: 11, color: colors.warning ?? colors.error, lineHeight: 16 }}>
+                        У вас сейчас {data.slotsUsed} ИФНС, новый лимит {pendingPlan.fnsLimit}.
+                        {" "}Самые старые подключения отключатся автоматически.
+                      </Text>
+                    )}
+                  </View>
                 )}
                 <Pressable
                   accessibilityRole="button"
