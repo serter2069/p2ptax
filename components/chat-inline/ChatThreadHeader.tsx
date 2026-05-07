@@ -163,7 +163,10 @@ export default function ChatThreadHeader({
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: Z.STICKY,
+            // POPOVER (не STICKY): иначе меню рискует уйти под
+            // карточки сообщений, у которых elevation создаёт свой
+            // stacking context.
+            zIndex: Z.POPOVER,
           }}
         >
           <View

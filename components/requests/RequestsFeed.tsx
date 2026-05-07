@@ -333,80 +333,30 @@ export default function RequestsFeed({
 
     if (displayedRequests.length === 0) {
       if (mode === "mine") {
-        // Keep the action row (Создать запрос / Архив toggle) above
-        // the empty state so the navigation pattern stays the same
-        // whether the list is full or empty. Previously toggling into
-        // an empty Архив hid the toggle, which made it fiddly to
-        // navigate back to active requests.
+        // Кнопки «Создать запрос / Архив» теперь живут в стабильном
+        // mineHeader выше FlatList — здесь только сам EmptyState без
+        // дубликата панели. Раньше панель рендерилась и в inlineHeader
+        // (есть записи), и здесь (пусто) с разными pt-/wrapping —
+        // при переключении Архива отступы прыгали на 16px.
         return (
           <View className="flex-1">
-            <View
-              className="px-4 pt-4 pb-3"
-              style={{
-                flexDirection: isDesktop ? "row" : "column",
-                alignItems: isDesktop ? "center" : "stretch",
-                gap: 8,
-              }}
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Создать запрос"
-                onPress={() => nav.routes.requestsNew()}
-                style={{
-                  backgroundColor: colors.primary,
-                  minHeight: 40,
-                  minWidth: isDesktop ? 200 : undefined,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  borderRadius: 12,
-                  paddingHorizontal: 20,
-                  alignSelf: isDesktop ? "flex-start" : "stretch",
-                }}
-              >
-                <Text numberOfLines={1} className="text-white font-semibold text-sm">
-                  + Создать запрос
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={showArchiveOnly ? "Показать все" : "Показать архив"}
-                onPress={() => setShowArchiveOnly((v) => !v)}
-                style={{
-                  minHeight: 40,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  borderRadius: 12,
-                  paddingHorizontal: 16,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  backgroundColor: showArchiveOnly ? colors.surface2 : "transparent",
-                  alignSelf: isDesktop ? "flex-start" : "stretch",
-                }}
-              >
-                <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: "500" }}>
-                  {showArchiveOnly ? "Все запросы" : "Архив"}
-                </Text>
-              </Pressable>
-            </View>
-            <View className="flex-1">
-              <EmptyState
-                icon={FileText}
-                title={showArchiveOnly ? "Закрытых запросов нет" : "Запросов нет"}
-                subtitle={
-                  showArchiveOnly
-                    ? "Закрытые запросы появятся здесь, когда вы их закроете."
-                    : "Создайте первый запрос — специалисты из вашей ИФНС увидят его и предложат помощь"
-                }
-                actionLabel={
-                  showArchiveOnly ? "К активным запросам" : "Создать запрос"
-                }
-                onAction={
-                  showArchiveOnly
-                    ? () => setShowArchiveOnly(false)
-                    : () => nav.routes.requestsNew()
-                }
-              />
-            </View>
+            <EmptyState
+              icon={FileText}
+              title={showArchiveOnly ? "Закрытых запросов нет" : "Запросов нет"}
+              subtitle={
+                showArchiveOnly
+                  ? "Закрытые запросы появятся здесь, когда вы их закроете."
+                  : "Создайте первый запрос — специалисты из вашей ИФНС увидят его и предложат помощь"
+              }
+              actionLabel={
+                showArchiveOnly ? "К активным запросам" : "Создать запрос"
+              }
+              onAction={
+                showArchiveOnly
+                  ? () => setShowArchiveOnly(false)
+                  : () => nav.routes.requestsNew()
+              }
+            />
           </View>
         );
       }
@@ -422,19 +372,15 @@ export default function RequestsFeed({
     }
 
     // Header content rendered INSIDE the list so it scrolls away with the
-    // feed (matches /specialists pattern). Was previously rendered as a
-    // sibling above the FlatList — that pinned title + filters to the top
-    // even though the rest of the list scrolled.
-    const inlineHeader = (
-      // zIndex поднимаем, чтобы выпадающие списки городов/ИФНС
-      // в фильтре перекрывали карточки запросов ниже на web.
-      <View style={{ position: "relative", zIndex: Z.POPOVER }}>
-        {title && <PageTitle title={title} subtitle={subtitle} />}
-        {mode === "catalog" && (
-          /* Card styling matches the request rows below — rounded
-             border, white surface. Width comes from the FlatList
-             contentContainerStyle.paddingHorizontal so filter and
-             rows share the left/right edge (no extra mx-4 here). */
+    // feed (matches /specialists pattern). Mine mode рендерит header
+    // СНАРУЖИ FlatList (стабильно, не прыгает при тогле архива) — здесь
+    // только catalog-фильтр.
+    const inlineHeader =
+      mode === "catalog" ? (
+        // zIndex поднимаем, чтобы выпадающие списки городов/ИФНС
+        // в фильтре перекрывали карточки запросов ниже на web.
+        <View style={{ position: "relative", zIndex: Z.POPOVER }}>
+          {title && <PageTitle title={title} subtitle={subtitle} />}
           <View
             className="bg-white border border-border rounded-2xl mt-2 mb-3 px-4 py-3"
             style={{ position: "relative", zIndex: Z.POPOVER }}
@@ -448,51 +394,8 @@ export default function RequestsFeed({
               services={servicesHook}
             />
           </View>
-        )}
-        {mode === "mine" && (
-          <View className="px-4 pb-3" style={{ flexDirection: isDesktop ? "row" : "column", alignItems: isDesktop ? "center" : "stretch", gap: 8 }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Создать запрос"
-              onPress={() => nav.routes.requestsNew()}
-              style={{
-                backgroundColor: colors.primary,
-                minHeight: 40,
-                minWidth: isDesktop ? 200 : undefined,
-                justifyContent: "center",
-                alignItems: "center",
-                borderRadius: 12,
-                paddingHorizontal: 20,
-                alignSelf: isDesktop ? "flex-start" : "stretch",
-              }}
-            >
-              <Text numberOfLines={1} className="text-white font-semibold text-sm">+ Создать запрос</Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={showArchiveOnly ? "Показать все" : "Показать архив"}
-              onPress={() => setShowArchiveOnly((v) => !v)}
-              style={{
-                minHeight: 40,
-                justifyContent: "center",
-                alignItems: "center",
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: showArchiveOnly ? colors.surface2 : "transparent",
-                alignSelf: isDesktop ? "flex-start" : "stretch",
-              }}
-            >
-              <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: "500" }}>
-                {showArchiveOnly ? "Все запросы" : "Архив"}
-              </Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
-    );
+        </View>
+      ) : null;
 
     return (
       <FlatList
@@ -576,6 +479,66 @@ export default function RequestsFeed({
           onCreateRequest={() => nav.routes.requestsNew()}
           isAuthenticated={false}
         />
+      )}
+      {/* Mine: header (заголовок + Создать/Архив) рендерится СТАБИЛЬНО
+          сверху, чтобы не прыгал при тогле архива из-за разных оборачивающих
+          путей в renderContent (full vs empty). Catalog: header идёт внутри
+          FlatList (scroll-away pattern, как в /specialists). */}
+      {mode === "mine" && !initLoading && (
+        <View>
+          {title && <PageTitle title={title} subtitle={subtitle} />}
+          <View
+            className="px-4 pb-3"
+            style={{
+              flexDirection: isDesktop ? "row" : "column",
+              alignItems: isDesktop ? "center" : "stretch",
+              gap: 8,
+            }}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Создать запрос"
+              onPress={() => nav.routes.requestsNew()}
+              style={{
+                backgroundColor: colors.primary,
+                minHeight: 40,
+                minWidth: isDesktop ? 200 : undefined,
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: 12,
+                paddingHorizontal: 20,
+                alignSelf: isDesktop ? "flex-start" : "stretch",
+              }}
+            >
+              <Text numberOfLines={1} className="text-white font-semibold text-sm">
+                + Создать запрос
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showArchiveOnly ? "Показать все" : "Показать архив"}
+              onPress={() => setShowArchiveOnly((v) => !v)}
+              style={{
+                // Фиксируем минимальную ширину, чтобы при смене лейбла
+                // («Архив» ↔ «Все запросы») кнопка не дёргалась.
+                minHeight: 40,
+                minWidth: isDesktop ? 140 : undefined,
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: showArchiveOnly ? colors.surface2 : "transparent",
+                alignSelf: isDesktop ? "flex-start" : "stretch",
+              }}
+            >
+              <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: "500" }}>
+                {showArchiveOnly ? "Все запросы" : "Архив"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
       )}
       {/* Title + filter strip moved INTO the FlatList header (renderContent)
           so they scroll away with the list, matching /specialists. */}

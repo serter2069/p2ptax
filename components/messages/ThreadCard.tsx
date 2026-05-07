@@ -111,6 +111,11 @@ export default function ThreadCard({
         onPress={handleUserPress}
         className="mr-3 my-3.5"
         style={{
+          // Critical: borderRadius на ОБЁРТКЕ, не только на Avatar
+          // внутри. Иначе shadow рисуется по прямоугольному bounding-
+          // box → визуально аватар читается «квадратным», хотя сам
+          // <Image> круглый. Сергей жаловался много раз.
+          borderRadius: 9999,
           shadowColor: colors.black,
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.1,

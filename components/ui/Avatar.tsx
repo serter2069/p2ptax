@@ -93,7 +93,10 @@ export default function Avatar({
         <Image
           source={{ uri: effectiveUrl }}
           accessibilityLabel={name}
-          style={{ width: wh, height: wh }}
+          // borderRadius на самом <Image> тоже — на Safari/WebKit
+          // overflow:hidden у родителя иногда не клипает картинку
+          // (особенно во время загрузки), и аватар выглядит квадратным.
+          style={{ width: wh, height: wh, borderRadius: wh / 2 }}
           {...(Platform.OS === "web" ? ({ loading: "lazy" } as object) : {})}
           resizeMode="cover"
         />

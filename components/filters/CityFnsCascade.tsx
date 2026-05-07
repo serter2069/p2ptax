@@ -353,7 +353,11 @@ export default function CityFnsCascade({
         )}
 
         {!selFns && (
-          <View className="relative" style={{ zIndex: Z.STICKY }}>
+          // POPOVER (а не STICKY): при STICKY=10 дропдаун визуально
+          // оставался под карточками запросов ниже на /requests, потому
+          // что некоторые карточки на web имеют свой stacking-context
+          // через elevation/shadow.
+          <View className="relative" style={{ zIndex: Z.POPOVER }}>
             <Input
               variant="bordered"
               icon={Search}

@@ -49,12 +49,18 @@ export default function RequestCard({
 
   const isClosed = status === "CLOSED";
 
+  // Compact-режим — когда автор не показывается (e.g. /my-requests:
+  // печатать своё имя на каждой карточке избыточно). Делаем карточку
+  // визуально уже по высоте: меньше padding, меньше строк описания,
+  // дату складываем в нижнюю строку с ИФНС вместо отдельного row.
+  const compact = !authorName;
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={title}
       onPress={() => onPress(id)}
-      className="bg-white border border-border rounded-2xl p-4 mb-3"
+      className={`bg-white border border-border rounded-2xl ${compact ? "p-3 mb-2" : "p-4 mb-3"}`}
       style={({ pressed }) => [
         {
           shadowColor: colors.black,
@@ -77,15 +83,14 @@ export default function RequestCard({
         </View>
       )}
 
-      {/* top row: avatar + author + time. When there's no author
-          (e.g. /my-requests, where every row is the viewer's own
-          request — printing your own name on every card adds noise),
-          collapse to a single time stamp on the right. */}
-      <View
-        className={`flex-row items-center mb-1 ${authorName ? "justify-between" : "justify-end"}`}
-        style={{ paddingRight: isClosed ? 60 : 0 }}
-      >
-        {authorName ? (
+      {/* top row: только когда есть автор (catalog) — avatar + name + time.
+          В compact-режиме (mine) этот row выпадает, дата уходит в bottom
+          row рядом с ИФНС-чипом. Экономит ~24px вертикали. */}
+      {authorName && (
+        <View
+          className="flex-row items-center justify-between mb-1"
+          style={{ paddingRight: isClosed ? 60 : 0 }}
+        >
           <View className="flex-row items-center" style={{ flexShrink: 1, gap: 8 }}>
             <Avatar
               name={authorName}
@@ -96,37 +101,45 @@ export default function RequestCard({
               {authorName}
             </Text>
           </View>
-        ) : null}
-        <Text className="text-xs text-text-mute">{timeAgo(createdAt)}</Text>
-      </View>
+          <Text className="text-xs text-text-mute">{timeAgo(createdAt)}</Text>
+        </View>
+      )}
 
       {/* title */}
       <Text
-        className="text-base font-semibold text-text-base mb-1"
+        className={`text-base font-semibold text-text-base mb-1 ${compact && isClosed ? "pr-16" : ""}`}
         numberOfLines={2}
         style={{ flexShrink: 1, minWidth: 0 }}
       >
         {title}
       </Text>
 
-      {/* description */}
-      <Text className="text-sm text-text-mute mb-2" numberOfLines={3}>
+      {/* description — в compact режиме 2 строки вместо 3. */}
+      <Text
+        className={`text-sm text-text-mute ${compact ? "mb-1.5" : "mb-2"}`}
+        numberOfLines={compact ? 2 : 3}
+      >
         {shortDesc}
       </Text>
 
-      {/* bottom row: FNS chip + files */}
-      <View className="flex-row items-center justify-between">
-        <View className="bg-surface2 px-2 py-0.5 rounded" style={{ maxWidth: "80%" }}>
+      {/* bottom row: FNS chip + files (+ дата в compact-режиме) */}
+      <View className="flex-row items-center justify-between" style={{ gap: 8 }}>
+        <View className="bg-surface2 px-2 py-0.5 rounded" style={{ flexShrink: 1, maxWidth: "70%" }}>
           <Text className="text-xs text-text-mute" numberOfLines={1}>{fns.name}</Text>
         </View>
-        {hasFiles ? (
-          <View className="flex-row items-center gap-1">
-            <Paperclip size={14} color={colors.textMuted} />
-            {filesCount != null && filesCount > 0 ? (
-              <Text className="text-xs text-text-mute">{filesCount}</Text>
-            ) : null}
-          </View>
-        ) : null}
+        <View className="flex-row items-center" style={{ gap: 8 }}>
+          {hasFiles ? (
+            <View className="flex-row items-center gap-1">
+              <Paperclip size={14} color={colors.textMuted} />
+              {filesCount != null && filesCount > 0 ? (
+                <Text className="text-xs text-text-mute">{filesCount}</Text>
+              ) : null}
+            </View>
+          ) : null}
+          {compact && (
+            <Text className="text-xs text-text-mute">{timeAgo(createdAt)}</Text>
+          )}
+        </View>
       </View>
     </Pressable>
   );

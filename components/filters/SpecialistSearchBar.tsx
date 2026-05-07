@@ -152,7 +152,10 @@ export default function SpecialistSearchBar({
       )}
 
       {!selectedFns && (
-        <View className="relative" style={{ zIndex: Z.STICKY }}>
+        // POPOVER (не STICKY): при STICKY=10 дропдаун проваливается
+        // под карточки специалистов, у которых есть свой stacking
+        // context через elevation/shadow.
+        <View className="relative" style={{ zIndex: Z.POPOVER }}>
           <Input
             variant="bordered"
             icon={Search}
