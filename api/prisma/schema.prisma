@@ -403,6 +403,12 @@ model Request {
   description     String
   status          RequestStatus @default(ACTIVE)
   isPublic        Boolean       @default(true) @map("is_public")
+  // Клиент может разрешить показ контактов авторизованным
+  // специалистам по кнопке «Показать контакты». Если false —
+  // связь только через внутренний DM. Email берём из user.email,
+  // телефон — из contactPhone (клиент вводит при создании запроса).
+  showContacts    Boolean       @default(false) @map("show_contacts")
+  contactPhone    String?       @map("contact_phone")
   lastActivityAt  DateTime      @default(now()) @map("last_activity_at")
   extensionsCount Int           @default(0) @map("extensions_count")
   createdAt       DateTime      @default(now()) @map("created_at")

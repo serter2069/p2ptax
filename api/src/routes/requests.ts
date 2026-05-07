@@ -464,6 +464,10 @@ router.get("/:id/public", async (req: Request, res: Response) => {
       threadsCount: result._count.threads,
       hasExistingThread,
       existingThreadId,
+      // Флаг «клиент разрешил показывать контакты» — нужен фронту,
+      // чтобы решить рендерить кнопку «Показать контакты» или нет.
+      // Сами контакты не отдаём — за ними отдельный auth-эндпоинт.
+      showContacts: result.showContacts,
     });
   } catch (error) {
     console.error("requests/:id/public error:", error);
@@ -471,10 +475,67 @@ router.get("/:id/public", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/requests/:id/reveal-contacts — раскрыть контакты клиента
+// авторизованному специалисту. Эквивалент кнопки «Показать контакты».
+// Клиент должен был явно разрешить показ (showContacts=true) при
+// создании запроса.
+router.post(
+  "/:id/reveal-contacts",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const callerId = (req as any).user?.userId as string | undefined;
+      if (!callerId) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      const id = req.params.id as string;
+      const r = await prisma.request.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          userId: true,
+          isPublic: true,
+          showContacts: true,
+          contactPhone: true,
+          user: { select: { firstName: true, lastName: true, email: true } },
+        },
+      });
+      if (!r) {
+        res.status(404).json({ error: "Request not found" });
+        return;
+      }
+      // Хозяин запроса видит свои же контакты всегда (полезно для
+      // превью «как видят меня специалисты»).
+      const isOwner = r.userId === callerId;
+      if (!isOwner) {
+        if (!r.isPublic) {
+          res.status(404).json({ error: "Request not found" });
+          return;
+        }
+        if (!r.showContacts) {
+          res.status(403).json({ error: "Contacts are not shared by the client" });
+          return;
+        }
+      }
+      res.json({
+        firstName: r.user.firstName,
+        lastName: r.user.lastName,
+        email: r.user.email,
+        phone: r.contactPhone,
+      });
+    } catch (error) {
+      console.error("requests/:id/reveal-contacts error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
 // POST /api/requests/public — quick request from landing (auth required)
 router.post("/public", authMiddleware, createRequestRateLimiter, async (req: Request, res: Response) => {
   try {
-    const { title, cityId, fnsId, description, isPublic } = req.body;
+    const { title, cityId, fnsId, description, isPublic, showContacts, contactPhone } = req.body;
     const userId = req.user!.userId;
 
     if (!title || !cityId || !fnsId || !description) {
@@ -502,6 +563,11 @@ router.post("/public", authMiddleware, createRequestRateLimiter, async (req: Req
         description: stripHtml(description),
         userId,
         isPublic: typeof isPublic === "boolean" ? isPublic : true,
+        showContacts: typeof showContacts === "boolean" ? showContacts : false,
+        contactPhone:
+          typeof contactPhone === "string" && contactPhone.trim().length > 0
+            ? stripHtml(contactPhone.trim()).slice(0, 50)
+            : null,
       },
       select: {
         id: true,
@@ -581,7 +647,7 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { title, cityId, fnsId, serviceId, description, fileIds, pendingFileSessionId, isPublic } = req.body;
+    const { title, cityId, fnsId, serviceId, description, fileIds, pendingFileSessionId, isPublic, showContacts, contactPhone } = req.body;
 
     // Validate
     if (!title || title.length < 3 || title.length > 100) {
@@ -642,6 +708,10 @@ router.post("/", authMiddleware, createRequestRateLimiter, async (req: Request, 
         description: stripHtml(description),
         userId,
         isPublic: typeof isPublic === "boolean" ? isPublic : true,
+        showContacts: typeof showContacts === "boolean" ? showContacts : false,
+        contactPhone: typeof contactPhone === "string" && contactPhone.trim().length > 0
+          ? stripHtml(contactPhone.trim()).slice(0, 50)
+          : null,
       },
       include: {
         city: true,

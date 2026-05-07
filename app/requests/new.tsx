@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Platform,
   Pressable,
+  TextInput,
   useWindowDimensions,
 } from "react-native";
 import StyledSwitch from "@/components/ui/StyledSwitch";
@@ -85,6 +86,12 @@ export default function CreateRequest() {
   const [fnsAll, setFnsAll] = useState<FnsCascadeOption[]>([]);
 
   const [isPublic, setIsPublic] = useState(true);
+  // Контакты клиента: показывать ли их авторизованным специалистам
+  // (по кнопке «Показать контакты» на детальной странице запроса).
+  // По умолчанию off — клиент явно соглашается. Плюс отдельное поле
+  // для телефона (email берём из user.email).
+  const [showContacts, setShowContacts] = useState(false);
+  const [contactPhone, setContactPhone] = useState("");
   // Terms acceptance — only enforced for anonymous visitors (authed
   // users accepted at /login). Pre-checked so a returning user with
   // a fresh tab isn't blocked by a stray uncheck.
@@ -283,6 +290,8 @@ export default function CreateRequest() {
         // before OTP completed. Server clears the TTL on those rows.
         ...(anonSessionId ? { pendingFileSessionId: anonSessionId } : {}),
         isPublic,
+        showContacts,
+        ...(showContacts && contactPhone.trim() ? { contactPhone: contactPhone.trim() } : {}),
         ...(targetSpecialistId ? { targetSpecialistId } : {}),
       });
       track("intake_submit", {
@@ -344,7 +353,7 @@ export default function CreateRequest() {
       // already cleared it before opening the dialog.
       setSubmitting(false);
     }
-  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles, anonSessionId, isPublic, targetSpecialistId]);
+  }, [title, description, selectedCityId, selectedFnsId, selectedServiceId, nav, attachedFiles, anonSessionId, isPublic, showContacts, contactPhone, targetSpecialistId]);
 
   const handleSubmit = useCallback(async () => {
     setSubmitted(true);
@@ -603,6 +612,61 @@ export default function CreateRequest() {
                 onValueChange={setIsPublic}
                 disabled={submitting}
               />
+            </View>
+
+            {/* Контакты клиента: разрешить/запретить показ автори-
+                зованным специалистам по кнопке «Показать контакты»
+                на детальной странице. По умолчанию off — клиент
+                явно соглашается. Если on — раскрывается поле
+                телефона (email берём из аккаунта). */}
+            <View className="py-3 border-t border-border">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-1 mr-4">
+                  <Text className="text-sm font-medium text-text-base mb-0.5">
+                    Показывать мои контакты специалистам
+                  </Text>
+                  <Text className="text-xs text-text-mute leading-4">
+                    Только авторизованные специалисты увидят кнопку «Показать контакты» — нажмут и получат ваш email и телефон. Неавторизованным контакты не показываются никогда.
+                  </Text>
+                </View>
+                <StyledSwitch
+                  value={showContacts}
+                  onValueChange={setShowContacts}
+                  disabled={submitting}
+                />
+              </View>
+
+              {showContacts && (
+                <View className="mt-3" style={{ gap: 6 }}>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: "600" }}>
+                    Телефон для связи (необязательно)
+                  </Text>
+                  <TextInput
+                    value={contactPhone}
+                    onChangeText={setContactPhone}
+                    placeholder="+7 (___) ___-__-__"
+                    placeholderTextColor={colors.placeholder}
+                    keyboardType="phone-pad"
+                    editable={!submitting}
+                    maxLength={50}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      fontSize: 14,
+                      color: colors.text,
+                      backgroundColor: colors.white,
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      outlineWidth: 0 as any,
+                    }}
+                  />
+                  <Text style={{ fontSize: 11, color: colors.textMuted, lineHeight: 15 }}>
+                    Email возьмём из вашего аккаунта. Если хотите указать другой — поменяйте его в профиле.
+                  </Text>
+                </View>
+              )}
             </View>
           </Card>
 

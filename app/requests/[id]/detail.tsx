@@ -42,6 +42,7 @@ interface RequestDetailData {
   description: string;
   status: "ACTIVE" | "CLOSING_SOON" | "CLOSED";
   isPublic?: boolean;
+  showContacts?: boolean;
   createdAt: string;
   lastActivityAt: string;
   extensionsCount: number;
@@ -61,6 +62,13 @@ interface RequestDetailData {
     avatarUrl: string | null;
     isSpecialist: boolean;
   } | null;
+}
+
+interface RevealedContacts {
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
 }
 
 // ─── Shared file list ─────────────────────────────────────────────────────────
@@ -348,6 +356,24 @@ function SpecialistView({
 }) {
   const nav = useTypedRouter();
   const isClosed = request.status === "CLOSED";
+  const [revealed, setRevealed] = useState<RevealedContacts | null>(null);
+  const [revealing, setRevealing] = useState(false);
+  const [revealError, setRevealError] = useState<string | null>(null);
+
+  const handleReveal = useCallback(async () => {
+    setRevealing(true);
+    setRevealError(null);
+    try {
+      const res = await api<RevealedContacts>(`/api/requests/${request.id}/reveal-contacts`, {
+        method: "POST",
+      });
+      setRevealed(res);
+    } catch (e) {
+      setRevealError(e instanceof Error ? e.message : "Не удалось получить контакты");
+    } finally {
+      setRevealing(false);
+    }
+  }, [request.id]);
 
   return (
     <>
@@ -378,6 +404,8 @@ function SpecialistView({
 
       <RequestInfoBlock request={request} />
 
+      <FileList files={request.files} onPress={onFilePress} requestId={request.id} />
+
       {isClosed && (
         <View className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 mb-4 items-center">
           <Text className="text-sm text-text-base font-medium text-center">
@@ -386,11 +414,61 @@ function SpecialistView({
         </View>
       )}
 
-      <FileList files={request.files} onPress={onFilePress} requestId={request.id} />
+      {/* Контакты клиента: показываем кнопку «Показать контакты»
+          только если клиент сам разрешил при создании запроса
+          (showContacts=true). Иначе мягко сообщаем, что контактов
+          нет и нужно писать через DM. */}
+      {request.showContacts ? (
+        revealed ? (
+          <Card className="mb-4">
+            <Text className="text-xs font-semibold text-text-mute mb-3 uppercase tracking-wider">
+              Контакты клиента
+            </Text>
+            <View style={{ gap: 8 }}>
+              {revealed.email && (
+                <Text style={{ fontSize: 14, color: colors.text }}>
+                  ✉️ {revealed.email}
+                </Text>
+              )}
+              {revealed.phone && (
+                <Text style={{ fontSize: 14, color: colors.text }}>
+                  📞 {revealed.phone}
+                </Text>
+              )}
+              {!revealed.email && !revealed.phone && (
+                <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                  Клиент не указал контактных данных.
+                </Text>
+              )}
+            </View>
+          </Card>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Показать контакты"
+            onPress={handleReveal}
+            disabled={revealing}
+            className="border border-accent rounded-xl py-3.5 items-center mb-3"
+            style={({ pressed }) => [pressed && { opacity: 0.7 }, revealing && { opacity: 0.6 }]}
+          >
+            <Text className="text-accent font-semibold text-base">
+              {revealing ? "Загружаем…" : "Показать контакты"}
+            </Text>
+          </Pressable>
+        )
+      ) : (
+        <View className="bg-slate-50 border border-border rounded-xl px-4 py-3 mb-3">
+          <Text className="text-xs text-text-mute leading-5">
+            Клиент не открыл прямые контакты — пишите ему через защищённый чат на платформе.
+          </Text>
+        </View>
+      )}
+      {revealError && (
+        <View className="bg-danger-soft border border-danger rounded-xl px-4 py-2 mb-3">
+          <Text className="text-sm text-danger">{revealError}</Text>
+        </View>
+      )}
 
-      {/* Single primary CTA. If a thread already exists, jump to chat;
-          otherwise route to the dedicated compose screen at
-          /requests/[id]/write where the specialist actually writes. */}
       {!isClosed && (
         <Pressable
           accessibilityRole="button"
@@ -407,7 +485,7 @@ function SpecialistView({
         >
           <MessageSquare size={18} color="#fff" />
           <Text className="text-white font-semibold text-base ml-2">
-            {request.hasExistingThread ? "Перейти к диалогу" : "Написать"}
+            {request.hasExistingThread ? "Перейти к диалогу" : "Написать в чате"}
           </Text>
         </Pressable>
       )}
@@ -564,12 +642,12 @@ function AnonymousView({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Войти, чтобы откликнуться"
+        accessibilityLabel="Войти, чтобы посмотреть контакты"
         onPress={onLogin}
         className="bg-accent rounded-xl py-3.5 items-center mb-2"
         style={({ pressed }) => [pressed && { opacity: 0.7 }]}
       >
-        <Text className="text-white font-semibold text-base">Войти, чтобы откликнуться</Text>
+        <Text className="text-white font-semibold text-base">Войти, чтобы посмотреть контакты</Text>
       </Pressable>
 
       {request.fns?.code && (
