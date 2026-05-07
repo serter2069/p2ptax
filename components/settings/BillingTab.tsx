@@ -1207,7 +1207,14 @@ export default function BillingTab({
               </Text>
             </Pressable>
           ) : (
-            <View>
+            // zIndex POPOVER на корневом контейнере панели — иначе
+            // дропдаун городов уходил ПОД action-кнопки «Сменить
+            // тариф / Отменить» (это сиблинги ниже в Card'е) и под
+            // карточки «Сохранённая карта» / «История» вне Card'а:
+            // shadowOffset на тех элементах создавал свои stacking
+            // contexts на web. zIndex на самом typeahead'e не помогал
+            // — нужен был на ВСЕЙ панели целиком.
+            <View style={{ position: "relative", zIndex: 100 }}>
               <View className="flex-row items-center justify-between" style={{ marginBottom: 10 }}>
                 <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text }}>
                   Подключить приоритет
@@ -1229,8 +1236,9 @@ export default function BillingTab({
               </View>
 
               {/* City typeahead — паттерн как на /fns. position:relative
-                  + zIndex чтобы дропдаун перекрывал список ниже. */}
-              <View style={{ position: "relative", zIndex: 100, marginBottom: 10 }}>
+                  + zIndex чтобы дропдаун перекрывал список ниже. Парент
+                  panel поднят выше — здесь bump zIndex выше парента. */}
+              <View style={{ position: "relative", zIndex: 200, marginBottom: 10 }}>
                 <View
                   className="flex-row items-center"
                   style={{
@@ -1306,11 +1314,17 @@ export default function BillingTab({
                       borderColor: colors.border,
                       borderRadius: 10,
                       overflow: "hidden",
-                      zIndex: 100,
+                      // zIndex 1000 (=Z.MODAL уровень) — гарантированно
+                      // выше любых сиблингов с elevation/shadow,
+                      // включая Card'и с историей операций ниже.
+                      zIndex: 1000,
+                      // elevation для RN Web mapper (некоторые версии
+                      // мапят elevation→zIndex авторитарнее, чем zIndex).
+                      elevation: 16,
                       shadowColor: "#000",
                       shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.08,
-                      shadowRadius: 12,
+                      shadowOpacity: 0.12,
+                      shadowRadius: 16,
                     }}
                   >
                     {cityMatches.map((c, idx) => (

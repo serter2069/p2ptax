@@ -8,6 +8,7 @@ import {
   Mail,
   Send,
   MessageCircle,
+  MessageSquare,
   Globe,
   type LucideIcon,
 } from "lucide-react-native";
@@ -34,6 +35,8 @@ const KIND_LABELS: Record<string, string> = {
   email: "Email",
   telegram: "Telegram",
   whatsapp: "WhatsApp",
+  // Max — российский мессенджер VK, по номеру телефона.
+  max: "Max",
   other: "Другое",
 };
 const KIND_ICONS: Record<string, LucideIcon> = {
@@ -41,6 +44,7 @@ const KIND_ICONS: Record<string, LucideIcon> = {
   email: Mail,
   telegram: Send,
   whatsapp: MessageCircle,
+  max: MessageSquare,
   other: Globe,
 };
 const KINDS = Object.keys(KIND_LABELS);
@@ -49,6 +53,7 @@ function placeholderFor(kind: string): string {
   switch (kind) {
     case "phone":
     case "whatsapp":
+    case "max":
       return "+7 (___) ___-__-__";
     case "telegram":
       return "@username";
@@ -60,7 +65,7 @@ function placeholderFor(kind: string): string {
 }
 
 function keyboardFor(kind: string) {
-  if (kind === "phone" || kind === "whatsapp") return "phone-pad" as const;
+  if (kind === "phone" || kind === "whatsapp" || kind === "max") return "phone-pad" as const;
   if (kind === "email") return "email-address" as const;
   return "default" as const;
 }
@@ -76,7 +81,7 @@ interface Props {
  * раскрывающаяся в форму с Modal-пикером типа.
  *
  * Используется на /profile (постоянная секция) и инлайн на
- * /requests/new (когда тумблер «Опубликовать мои контакты» включён).
+ * /requests/new (когда тумблер «Открыть мои прямые контакты» включён).
  */
 export default function MyContactsEditor({ onChange }: Props) {
   const [contacts, setContacts] = useState<UserContactRow[]>([]);

@@ -439,13 +439,16 @@ router.delete("/me", authMiddleware, async (req: Request, res: Response) => {
 // контакты ОТ КЛИЕНТА (UserContact), не путать с контактами
 // специалиста-эксперта (SpecialistContact в contacts.ts).
 
-const ALLOWED_KINDS = new Set(["email", "phone", "telegram", "whatsapp", "other"]);
+// `max` — российский мессенджер VK Max, добавили по запросу клиента.
+// `vk` — ВКонтакте.
+const ALLOWED_KINDS = new Set(["email", "phone", "telegram", "whatsapp", "max", "vk", "other"]);
 
 function normalizeContactValue(kind: string, raw: string): string {
   const v = raw.trim();
-  if (kind === "phone") {
+  if (kind === "phone" || kind === "max" || kind === "whatsapp") {
     // Оставляем плюс, цифры и пробелы/скобки/тире — никаких хитрых
     // нормализаций (страна Россия, пользователь видит то, что ввёл).
+    // Max и WhatsApp идентифицируются по номеру телефона.
     return v.replace(/[^\d+\s()\-]/g, "").slice(0, 50);
   }
   if (kind === "email") return v.toLowerCase().slice(0, 200);

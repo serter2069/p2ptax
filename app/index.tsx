@@ -14,6 +14,7 @@ import TrustStrip from "@/components/landing/TrustStrip";
 import TrustPillarsSection from "@/components/landing/TrustPillarsSection";
 import FnsSearchSection from "@/components/landing/FnsSearchSection";
 import SpecialistOpportunitiesBlock from "@/components/landing/SpecialistOpportunitiesBlock";
+import LiveRequestsBlock from "@/components/landing/LiveRequestsBlock";
 import ServicesSection from "@/components/landing/ServicesSection";
 import HowItWorksFlow from "@/components/landing/HowItWorksFlow";
 import CasesSection from "@/components/landing/CasesSection";
@@ -304,14 +305,6 @@ export default function LandingScreen() {
           onSecondaryCta={goCatalog}
         />
 
-        {/* Авторизованным специалистам — лента возможностей по их
-            ИФНС: «Возможно, нужна ваша помощь». Если ничего нет —
-            блок не рендерится. Стоит сразу под hero, чтобы спец видел
-            актуальные клиенты не скроллясь. */}
-        {isAuthenticated && isSpecialistUser && (
-          <SpecialistOpportunitiesBlock isDesktop={isDesktop} />
-        )}
-
         {/* Specific-FNS search sits directly under the hero — users with
             a known inspection code (highest discovery intent) see it
             without scrolling. */}
@@ -347,6 +340,17 @@ export default function LandingScreen() {
           onBecomeSpecialist={goBecomeSpecialist}
           specialistsCount={counts?.specialistsCount ?? 0}
         />
+
+        {/* Лента живых запросов сразу под секцией «стать специалистом» —
+            specialist'ы видят, что ждут отклика, а анонимы получают
+            социальное доказательство (сайт активный, реальные клиенты).
+            Авторизованным специалистам дополнительно показываем
+            персональную «возможно, нужна ваша помощь» по их ИФНС. */}
+        {isAuthenticated && isSpecialistUser && (
+          <SpecialistOpportunitiesBlock isDesktop={isDesktop} />
+        )}
+
+        <LiveRequestsBlock isDesktop={isDesktop} />
 
         <FooterSection
           isDesktop={isDesktop}

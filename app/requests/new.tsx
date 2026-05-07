@@ -411,18 +411,27 @@ export default function CreateRequest() {
             paddingHorizontal: 24,
           }}
         >
-          {width < 640 && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Назад"
-              onPress={() => router.back()}
-              className="flex-row items-center mt-4 mb-1"
-              style={{ minHeight: 44 }}
-            >
-              <ChevronLeft size={20} color={colors.text} />
-              <Text className="text-text-base ml-1">Назад</Text>
-            </Pressable>
-          )}
+          {/* Кнопка «Назад» — всегда видна, не только на мобиле.
+              Раньше прятали на десктопе для авторизованных, и юзер,
+              нечаянно нажавший «Создать запрос», оставался без выхода.
+              Анонимам тоже полезно — есть LandingHeader, но кнопка
+              «назад в исходник» более прямой путь. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Назад"
+            onPress={() => {
+              // router.back() возвращает на предыдущую страницу. Если
+              // /requests/new — точка входа (deep-link, шаринг ссылки),
+              // back-stack пустой — отправляем на каталог по умолчанию.
+              if (router.canGoBack()) router.back();
+              else nav.routes.home();
+            }}
+            className="flex-row items-center mt-4 mb-1"
+            style={{ minHeight: 44 }}
+          >
+            <ChevronLeft size={20} color={colors.text} />
+            <Text className="text-text-base ml-1">Назад</Text>
+          </Pressable>
           <Text
             className="text-xl font-bold text-text-base"
             style={{ paddingTop: 16, paddingBottom: 16 }}
@@ -624,10 +633,10 @@ export default function CreateRequest() {
               <View className="flex-row items-center justify-between">
                 <View className="flex-1 mr-4">
                   <Text className="text-sm font-medium text-text-base mb-0.5">
-                    Опубликовать мои контакты для специалистов
+                    Открыть мои прямые контакты для специалистов
                   </Text>
                   <Text className="text-xs text-text-mute leading-4">
-                    Только авторизованные специалисты увидят кнопку «Показать контакты». В открытой ленте и неавторизованным — не виднo.
+                    Только авторизованные специалисты увидят кнопку «Показать контакты». В открытой ленте и неавторизованным — не видно.
                   </Text>
                 </View>
                 <StyledSwitch

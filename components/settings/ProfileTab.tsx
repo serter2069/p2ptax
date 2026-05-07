@@ -104,7 +104,7 @@ export default function ProfileTab({
 
       {/* Мои контакты — общий список (email/phone/telegram/...). Эти
           же контакты подтягиваются при создании запроса, когда клиент
-          включает «Опубликовать мои контакты для специалистов». */}
+          включает «Открыть мои прямые контакты для специалистов». */}
       <View className="bg-white border border-border rounded-2xl px-4 py-5 mb-4">
         <MyContactsEditor />
       </View>
