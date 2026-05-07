@@ -52,6 +52,7 @@ import statsRoutes from "./routes/stats";
 import savedSpecialistsRoutes from "./routes/saved-specialists";
 import accountRoutes from "./routes/account";
 import billingRoutes from "./routes/billing";
+import consultantRoutes from "./routes/consultant";
 import { startNotificationWorker } from "./notifications/notification.processor";
 import { runRequestLifecycleCron } from "./cron/requestLifecycle";
 import { runVipDailyChargeCron } from "./cron/vipDailyCharge";
@@ -121,6 +122,7 @@ app.use("/api/notifications", notificationsRoutes);
 app.use("/api/saved-specialists", savedSpecialistsRoutes);
 app.use("/api/account", accountRoutes);
 app.use("/api/billing", billingRoutes);
+app.use("/api/consultant", consultantRoutes);
 app.use("/api", contactsRoutes);
 
 // 404 handler — no matching route
