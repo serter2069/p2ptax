@@ -16,6 +16,15 @@ async function getValidToken(): Promise<string | null> {
   return AsyncStorage.getItem(TOKEN_KEY);
 }
 
+/**
+ * Public helper for non-`api()` callers (e.g. streaming endpoints that
+ * need to manually attach the auth header to a `fetch()` because they
+ * read response.body as a stream rather than calling .json()).
+ */
+export async function getAccessToken(): Promise<string | null> {
+  return AsyncStorage.getItem(TOKEN_KEY);
+}
+
 export async function api<T = unknown>(
   path: string,
   options: ApiOptions = {}

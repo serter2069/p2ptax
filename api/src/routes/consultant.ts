@@ -15,7 +15,8 @@ import { Router, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
-import { askTaxLLM } from "../lib/taxllm";
+import { askTaxLLM, streamTaxLLM } from "../lib/taxllm";
+import type { TaxLLMSource } from "../lib/taxllm";
 import {
   listTemplates,
   findTemplate,
@@ -153,7 +154,7 @@ router.post("/chat", chatLimiter, async (req: Request, res: Response) => {
   const prevMessages = await prisma.consultantMessage.findMany({
     where: { threadId: thread.id },
     orderBy: { createdAt: "asc" },
-    select: { content: true },
+    select: { role: true, content: true, kind: true },
   });
   const prevTokens = prevMessages.reduce((acc, m) => acc + estimateTokens(m.content), 0);
   let autoRolled = false;
@@ -170,9 +171,23 @@ router.post("/chat", chatLimiter, async (req: Request, res: Response) => {
     data: { threadId: thread.id, role: "user", content: message },
   });
 
+  // История диалога для TaxLLM: последние 10 user/assistant сообщений
+  // (без document-карточек — там полные тексты документов раздуют контекст
+  // и не помогают для уточнений). Если только что произошёл autoRoll —
+  // история пустая, тред новый.
+  const history = autoRolled
+    ? []
+    : prevMessages
+        .filter((m) => (m.kind ?? "text") === "text")
+        .slice(-10)
+        .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+
   let llm;
   try {
-    llm = await askTaxLLM(message, `p2ptax-${userId}-${thread.id}`);
+    llm = await askTaxLLM(message, {
+      conversationId: `p2ptax-${userId}-${thread.id}`,
+      history,
+    });
   } catch (e: unknown) {
     const errorText = e instanceof Error ? e.message : String(e);
     await prisma.consultantMessage.create({
@@ -227,6 +242,180 @@ router.post("/chat", chatLimiter, async (req: Request, res: Response) => {
     },
     suggestedActions,
   });
+});
+
+// ─────────────────────── POST /chat/stream — то же что /chat, но NDJSON-стрим
+//
+// Протокол:
+//   {"type":"start", "threadId":"…", "tempId":"…", "autoRolled":false}
+//   {"type":"meta",  "sources":[…], "intent":"tax|casual|clarify"}
+//   {"type":"token", "text":"…"}      ← многократно
+//   {"type":"done",  "messageId":"…", "suggestedActions":[…], "usage":{…}}
+//   {"type":"error", "message":"…"}
+//
+// Клиент держит fetch().body.getReader(), парсит NDJSON по \n и наращивает
+// текст ассистента. Сам p2ptax-api по приходу done сохраняет полное
+// сообщение в БД + считает suggestedActions.
+
+router.post("/chat/stream", chatLimiter, async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const body = req.body as ChatBody;
+  const message = (body.message ?? "").trim();
+  if (!message) return res.status(400).json({ error: "message_required" });
+  if (message.length > 4000) return res.status(400).json({ error: "message_too_long" });
+
+  let thread = body.threadId
+    ? await prisma.consultantThread.findUnique({ where: { id: body.threadId } })
+    : null;
+  if (thread && thread.userId !== userId) thread = null;
+  if (!thread || thread.archivedFromUser || thread.contextOverflowedAt) {
+    thread = await getOrCreateActiveThread(userId);
+  }
+
+  const prevMessages = await prisma.consultantMessage.findMany({
+    where: { threadId: thread.id },
+    orderBy: { createdAt: "asc" },
+    select: { role: true, content: true, kind: true },
+  });
+  const prevTokens = prevMessages.reduce((acc, m) => acc + estimateTokens(m.content), 0);
+  let autoRolled = false;
+  if (prevTokens + estimateTokens(message) > CONTEXT_OVERFLOW_TOKENS) {
+    await prisma.consultantThread.update({
+      where: { id: thread.id },
+      data: { contextOverflowedAt: new Date() },
+    });
+    thread = await prisma.consultantThread.create({ data: { userId } });
+    autoRolled = true;
+  }
+
+  await prisma.consultantMessage.create({
+    data: { threadId: thread.id, role: "user", content: message },
+  });
+
+  const history = autoRolled
+    ? []
+    : prevMessages
+        .filter((m) => (m.kind ?? "text") === "text")
+        .slice(-10)
+        .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+
+  // SSE-style headers — отключаем буферизацию nginx и выставляем
+  // chunked + ndjson, чтобы прокси не накапливал ответ.
+  res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders?.();
+
+  const send = (obj: unknown) => {
+    res.write(JSON.stringify(obj) + "\n");
+  };
+
+  const tempId = `tmp-${Date.now()}`;
+  send({ type: "start", threadId: thread.id, tempId, autoRolled });
+
+  let upstream: globalThis.Response;
+  try {
+    upstream = await streamTaxLLM(message, {
+      conversationId: `p2ptax-${userId}-${thread.id}`,
+      history,
+    });
+  } catch (e: unknown) {
+    const errorText = e instanceof Error ? e.message : String(e);
+    await prisma.consultantMessage.create({
+      data: {
+        threadId: thread.id,
+        role: "assistant",
+        content: "Сервис консультанта временно недоступен. Попробуйте через минуту.",
+        debugJson: JSON.stringify({ error: errorText.slice(0, 500) }),
+      },
+    });
+    send({ type: "error", message: "taxllm_unavailable" });
+    return res.end();
+  }
+
+  // Читаем NDJSON от TaxLLM построчно, агрегируем answer + sources + usage,
+  // ретранслируем чанки клиенту в том же формате.
+  const reader = upstream.body?.getReader();
+  if (!reader) {
+    send({ type: "error", message: "no_stream_body" });
+    return res.end();
+  }
+  const decoder = new TextDecoder();
+  let buf = "";
+  let answer = "";
+  let sources: TaxLLMSource[] = [];
+  let usage: Record<string, unknown> = {};
+  let debug: Record<string, unknown> | null = null;
+  let intent = "tax";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let nl = buf.indexOf("\n");
+      while (nl !== -1) {
+        const line = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        nl = buf.indexOf("\n");
+        if (!line) continue;
+        let chunk: { type?: string; text?: string; sources?: TaxLLMSource[]; usage?: Record<string, unknown>; debug?: Record<string, unknown>; intent?: string; message?: string; answer?: string };
+        try {
+          chunk = JSON.parse(line);
+        } catch {
+          continue;
+        }
+        if (chunk.type === "meta") {
+          sources = chunk.sources ?? [];
+          if (chunk.debug) debug = chunk.debug;
+          if (chunk.intent) intent = chunk.intent;
+          send({ type: "meta", sources, intent });
+        } else if (chunk.type === "token" && chunk.text) {
+          answer += chunk.text;
+          send({ type: "token", text: chunk.text });
+        } else if (chunk.type === "done") {
+          if (chunk.usage) usage = chunk.usage;
+          if (chunk.answer) answer = chunk.answer;
+        } else if (chunk.type === "error") {
+          send({ type: "error", message: chunk.message ?? "unknown" });
+        }
+      }
+    }
+  } catch (e) {
+    send({ type: "error", message: e instanceof Error ? e.message : String(e) });
+    return res.end();
+  }
+
+  // Записываем готовое сообщение в БД и считаем suggestedActions.
+  const assistant = await prisma.consultantMessage.create({
+    data: {
+      threadId: thread.id,
+      role: "assistant",
+      content: answer,
+      sourcesJson: JSON.stringify(sources),
+      usageJson: JSON.stringify(usage),
+      debugJson: debug ? JSON.stringify({ ...debug, intent }) : JSON.stringify({ intent }),
+    },
+  });
+  await prisma.consultantThread.update({
+    where: { id: thread.id },
+    data: thread.title
+      ? { updatedAt: new Date() }
+      : { title: summariseTitle(message), updatedAt: new Date() },
+  });
+
+  const suggestedActions =
+    intent === "tax" ? suggestTemplatesFor(`${message}\n\n${answer}`) : [];
+
+  send({
+    type: "done",
+    messageId: assistant.id,
+    createdAt: assistant.createdAt,
+    suggestedActions,
+    usage,
+    intent,
+  });
+  res.end();
 });
 
 // ─────────────────────── GET /templates — каталог шаблонов
@@ -284,7 +473,10 @@ router.post("/generate", genLimiter, async (req: Request, res: Response) => {
   const prompt = tpl.buildPrompt({ templateId, userInput });
   let llm;
   try {
-    llm = await askTaxLLM(prompt, `p2ptax-${userId}-${thread.id}-gen-${tpl.id}`);
+    llm = await askTaxLLM(prompt, {
+      conversationId: `p2ptax-${userId}-${thread.id}-gen-${tpl.id}`,
+      forceRag: true, // /generate уже сам строит налоговый промпт — пропускаем intent-router
+    });
   } catch (e: unknown) {
     const errorText = e instanceof Error ? e.message : String(e);
     await prisma.consultantMessage.create({
