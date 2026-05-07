@@ -176,6 +176,39 @@ export default function SpecialistPublicProfile() {
     }
   }, [isAuthenticated, router, id, savedBookmark]);
 
+  // Поделиться: на десктоп-вебе — clipboard + кратко «Скопировано»,
+  // на мобиле — Web Share API (нативное окно). Тот же паттерн, что
+  // на /fns-staff/[id]. ВАЖНО: useState/useCallback должны быть ДО
+  // early return'ов ниже — иначе React ругается «rendered more hooks
+  // than during the previous render» (на loading=true все хуки
+  // после ранних return'ов не вызываются).
+  const [shareCopied, setShareCopied] = useState(false);
+  const handleShare = useCallback(async () => {
+    if (!specialist) return;
+    const displayLast = specialist.lastName ? specialist.lastName[0] + "." : null;
+    const shareName =
+      [specialist.firstName, displayLast].filter(Boolean).join(" ") || "Специалист";
+    const url =
+      Platform.OS === "web" && typeof window !== "undefined"
+        ? window.location.href
+        : `https://p2ptax.smartlaunchhub.com/profile/${id}`;
+    const title = `${shareName} — специалист по налогам | P2PTax`;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const navigatorAny = typeof navigator !== "undefined" ? (navigator as any) : null;
+      const useNative = Platform.OS !== "web" || (isDesktop ? false : !!navigatorAny?.share);
+      if (useNative && navigatorAny?.share) {
+        await navigatorAny.share({ title, url });
+      } else if (navigatorAny?.clipboard?.writeText) {
+        await navigatorAny.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      /* user cancelled */
+    }
+  }, [specialist, id, isDesktop]);
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
@@ -464,33 +497,6 @@ export default function SpecialistPublicProfile() {
       <SpecialistReviewsPlaceholder cardShadow={legacyShadow} />
     </View>
   );
-
-  // Поделиться: на десктоп-вебе — clipboard + кратко «Скопировано»,
-  // на мобиле — Web Share API (нативное окно). Тот же паттерн, что
-  // на /fns-staff/[id], для согласованности.
-  const [shareCopied, setShareCopied] = useState(false);
-  const handleShare = useCallback(async () => {
-    if (!specialist) return;
-    const url =
-      Platform.OS === "web" && typeof window !== "undefined"
-        ? window.location.href
-        : `https://p2ptax.smartlaunchhub.com/profile/${id}`;
-    const title = `${name} — специалист по налогам | P2PTax`;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const navigatorAny = typeof navigator !== "undefined" ? (navigator as any) : null;
-      const useNative = Platform.OS !== "web" || (isDesktop ? false : !!navigatorAny?.share);
-      if (useNative && navigatorAny?.share) {
-        await navigatorAny.share({ title, url });
-      } else if (navigatorAny?.clipboard?.writeText) {
-        await navigatorAny.clipboard.writeText(url);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-      }
-    } catch {
-      /* user cancelled */
-    }
-  }, [specialist, id, name, isDesktop]);
 
   const shareButton = (
     <Pressable
