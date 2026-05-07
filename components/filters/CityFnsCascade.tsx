@@ -519,15 +519,19 @@ export default function CityFnsCascade({
                 const fnsId = selFns.id;
                 const selected = (value.fnsServices ?? {})[fnsId] ?? [];
                 const allActive = selected.length === 0;
+                // Это фильтр со стороны специалиста на /requests:
+                // «Все услуги» = не фильтруем по типу услуги, видим
+                // и заявки с конкретной услугой, и заявки клиентов,
+                // которые сами выбрали «Не знаю» (serviceId=null).
                 return (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Не знаю — все услуги"
+                    accessibilityLabel="Все услуги"
                     onPress={() => onChange({ cities: value.cities, fns: value.fns, fnsServices: { ...(value.fnsServices ?? {}), [fnsId]: [] } })}
                     className={`px-3 h-8 items-center justify-center rounded-full border ${allActive ? "bg-accent border-accent" : "bg-white border-border"}`}
                   >
                     <Text className={`text-xs ${allActive ? "text-white font-medium" : "text-text-base"}`}>
-                      Не знаю
+                      Все услуги
                     </Text>
                   </Pressable>
                 );

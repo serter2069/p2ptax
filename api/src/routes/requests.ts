@@ -153,6 +153,7 @@ router.get("/public", async (req: Request, res: Response) => {
 
     const cityId = (req.query.city_id as string) || undefined;
     const fnsId = (req.query.fns_id as string) || undefined;
+    const serviceId = (req.query.service_id as string) || undefined;
 
     // Optional auth — used to filter the caller's own requests out
     // of the public catalog (no point showing yourself your own
@@ -175,6 +176,14 @@ router.get("/public", async (req: Request, res: Response) => {
     if (cityId) where.cityId = cityId;
     if (fnsId) where.fnsId = fnsId;
     if (callerId) where.userId = { not: callerId };
+    // Фильтр по услуге: специалист выбирает «Камеральная проверка»
+    // — показываем заявки с этой услугой ИЛИ те, где клиент выбрал
+    // «Не знаю» (serviceId=null). Логика «не знаю клиента = подходит
+    // под любой фильтр специалиста». «Все услуги» = serviceId не
+    // передаётся, фильтр пропускается.
+    if (serviceId) {
+      where.OR = [{ serviceId }, { serviceId: null }];
+    }
 
     // Exclude QA/dev seed rows from the public feed.
     const seedWhere = notSeedRequestWhere();

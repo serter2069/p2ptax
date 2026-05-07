@@ -113,6 +113,12 @@ export default function RequestsFeed({
   const [filterValue, setFilterValue] = useState<CityFnsValue>(EMPTY_FILTER);
   const selectedCityId = filterValue.cities[0] ?? null;
   const selectedFnsId = filterValue.fns[0] ?? null;
+  // Услуга: берём первую из набора по выбранной ИФНС. Пустой массив
+  // (или отсутствие ключа) = «Все услуги», фильтр не передаём.
+  const selectedServiceId =
+    selectedFnsId && filterValue.fnsServices?.[selectedFnsId]?.[0]
+      ? filterValue.fnsServices[selectedFnsId][0]
+      : null;
 
   // List state
   const [requests, setRequests] = useState<RequestItem[]>([]);
@@ -167,6 +173,7 @@ export default function RequestsFeed({
         let path = `/api/requests/public?page=${pageNum}&limit=${LIMIT}`;
         if (selectedCityId) path += `&city_id=${selectedCityId}`;
         if (selectedFnsId) path += `&fns_id=${selectedFnsId}`;
+        if (selectedServiceId) path += `&service_id=${selectedServiceId}`;
 
         // Don't pass noAuth: when the caller is authenticated, the
         // backend uses the token to filter the user's own requests
@@ -182,7 +189,7 @@ export default function RequestsFeed({
         setError("Не удалось загрузить запросы");
       }
     },
-    [selectedCityId, selectedFnsId]
+    [selectedCityId, selectedFnsId, selectedServiceId]
   );
 
   // ── Mine fetch ──
@@ -235,7 +242,7 @@ export default function RequestsFeed({
     setListLoading(true);
     setPage(1);
     fetchCatalog(1).finally(() => setListLoading(false));
-  }, [mode, selectedCityId, selectedFnsId, fetchCatalog]);
+  }, [mode, selectedCityId, selectedFnsId, selectedServiceId, fetchCatalog]);
 
   // ── Handlers ──
   const handleRefresh = useCallback(async () => {
