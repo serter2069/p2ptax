@@ -13,6 +13,9 @@
 
 import { Router, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
+import multer from "multer";
+import crypto from "crypto";
+import path from "path";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { askTaxLLM, streamTaxLLM } from "../lib/taxllm";
@@ -22,6 +25,9 @@ import {
   findTemplate,
   suggestTemplatesFor,
 } from "../lib/consultant-templates";
+import { ocrImage } from "../lib/ocr";
+import { analyzeDocument } from "../lib/document-analyzer";
+import { minioClient, MINIO_BUCKET, ensureBucket as ensureMinioBucket, presignReadStable } from "../lib/minio";
 
 const router = Router();
 router.use(authMiddleware);
@@ -567,5 +573,267 @@ router.post("/generate", genLimiter, async (req: Request, res: Response) => {
     },
   });
 });
+
+// ─────────────────────── POST /upload-document — OCR + анализ + чат
+//
+// Принимает image/* (jpg/png/webp/gif) или application/pdf. Кладёт файл
+// в MinIO, прогоняет через self-hosted OCR (Qwen2.5-VL), классифицирует
+// через TaxLLM, создаёт два сообщения в треде:
+//   1. user kind="upload" — превью файла, имя файла, ссылка на скачивание
+//   2. assistant kind="text" — карточка анализа: «Распознано как: Требование…
+//      № 12345 от 15.04.2026, дедлайн 5 раб. дней. Резюме: …»
+//
+// Возвращает оба сообщения + suggestedTemplateId (FE использует чтобы
+// открыть модалку генерации с предзаполненным OCR-текстом).
+//
+// PDF: поддержка text-PDF + image-PDF через ImageMagick `convert`
+// (poppler-utils недоступен из-за стороннего apt-lock).
+
+const docUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB — достаточно для скана А4
+  fileFilter: (_req, file, cb) => {
+    const allowed = [
+      "image/jpeg", "image/png", "image/webp", "image/gif",
+      "application/pdf",
+    ];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Поддерживаются JPEG/PNG/WebP/GIF/PDF"));
+  },
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  keyGenerator: (req) => (req.user as { userId?: string } | undefined)?.userId ?? req.ip ?? "anon",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post(
+  "/upload-document",
+  uploadLimiter,
+  docUpload.single("file"),
+  async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: "file_required" });
+
+    // Тред: либо явный, либо текущий активный.
+    const threadIdInput = (req.body?.threadId as string | undefined)?.trim();
+    let thread = threadIdInput
+      ? await prisma.consultantThread.findUnique({ where: { id: threadIdInput } })
+      : null;
+    if (thread && thread.userId !== userId) thread = null;
+    if (!thread || thread.archivedFromUser || thread.contextOverflowedAt) {
+      thread = await getOrCreateActiveThread(userId);
+    }
+
+    // Сохраняем файл в MinIO.
+    await ensureMinioBucket();
+    const ext = (() => {
+      const map: Record<string, string> = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+        "application/pdf": ".pdf",
+      };
+      return map[file.mimetype] ?? path.extname(file.originalname).toLowerCase();
+    })();
+    const key = `consultant-uploads/${Date.now()}-${crypto.randomUUID()}${ext}`;
+    await minioClient.putObject(MINIO_BUCKET, key, file.buffer, file.size, {
+      "Content-Type": file.mimetype,
+    });
+    const fileUrl = `/${MINIO_BUCKET}/${key}`;
+    const presigned = await presignReadStable(key);
+
+    // Создаём user-сообщение типа "upload" — оно сразу появится в чате
+    // (юзер не должен ждать OCR чтобы увидеть что файл загрузился).
+    const userMsg = await prisma.consultantMessage.create({
+      data: {
+        threadId: thread.id,
+        role: "user",
+        kind: "upload",
+        attachmentFilename: file.originalname,
+        content: `📎 ${file.originalname}`,
+        debugJson: JSON.stringify({
+          upload: {
+            key,
+            url: fileUrl,
+            presigned,
+            mimeType: file.mimetype,
+            size: file.size,
+          },
+        }),
+      },
+    });
+
+    // OCR + анализ. Если что-то падает — сохраняем assistant-сообщение с
+    // ошибкой, чтобы юзер видел что произошло.
+    let ocrText = "";
+    let ocrModel = "";
+    let ocrElapsed = 0;
+    try {
+      if (file.mimetype.startsWith("image/")) {
+        const ocr = await ocrImage(file.buffer, file.originalname, file.mimetype);
+        ocrText = ocr.text;
+        ocrModel = ocr.model;
+        ocrElapsed = ocr.elapsedSec;
+      } else if (file.mimetype === "application/pdf") {
+        // PDF: конвертируем первые 3 страницы в PNG через ImageMagick
+        // (`convert -density 150 input.pdf[0-2] out-%d.png`) и OCR-ним
+        // каждую. node-poppler/pdf-parse не установлены, ставить
+        // отдельно сейчас не можем (apt-lock), а ImageMagick + ghostscript
+        // уже на сервере и поддерживают PDF.
+        const { execFile } = await import("node:child_process");
+        const fs = await import("node:fs/promises");
+        const tmpDir = await fs.mkdtemp("/tmp/p2ptax-ocr-");
+        const pdfPath = `${tmpDir}/input.pdf`;
+        await fs.writeFile(pdfPath, file.buffer);
+        const pageTexts: string[] = [];
+        for (let p = 0; p < 3; p++) {
+          const pngPath = `${tmpDir}/page-${p}.png`;
+          await new Promise<void>((resolve, reject) => {
+            execFile(
+              "convert",
+              ["-density", "150", `${pdfPath}[${p}]`, pngPath],
+              { timeout: 60_000 },
+              (err) => (err ? reject(err) : resolve()),
+            );
+          }).catch(() => {
+            // Страница не существует или конвертация упала — пропускаем.
+          });
+          try {
+            const png = await fs.readFile(pngPath);
+            const ocr = await ocrImage(png, `page-${p}.png`, "image/png");
+            pageTexts.push(ocr.text);
+            ocrModel = ocr.model;
+            ocrElapsed += ocr.elapsedSec;
+          } catch {
+            break;
+          }
+        }
+        ocrText = pageTexts.join("\n\n— страница —\n\n");
+        await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+      }
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : String(e);
+      const failMsg = await prisma.consultantMessage.create({
+        data: {
+          threadId: thread.id,
+          role: "assistant",
+          content:
+            "Не удалось распознать текст документа. Попробуйте загрузить более чёткое изображение или введите ключевые поля (дата, номер, что просит ИФНС) текстом.",
+          debugJson: JSON.stringify({ ocrError: errMsg.slice(0, 500), upload: { key } }),
+        },
+      });
+      return res.json({
+        threadId: thread.id,
+        userMessage: serializeMessage(userMsg),
+        assistantMessage: serializeMessage(failMsg),
+        ocrFailed: true,
+      });
+    }
+
+    // Анализ через TaxLLM: классификация + структурные поля.
+    const analyzed = await analyzeDocument(ocrText).catch(() => null);
+
+    // Формируем человекочитаемую assistant-карточку.
+    const lines: string[] = [];
+    if (analyzed) {
+      lines.push(`Распознан документ: ${analyzed.docTypeRu}.`);
+      const meta: string[] = [];
+      if (analyzed.number) meta.push(`№ ${analyzed.number}`);
+      if (analyzed.date) meta.push(`от ${analyzed.date}`);
+      if (analyzed.fns) meta.push(`${analyzed.fns}`);
+      if (meta.length) lines.push(`Реквизиты: ${meta.join(", ")}.`);
+      if (analyzed.deadline) lines.push(`Срок ответа: ${analyzed.deadline}.`);
+      if (analyzed.summary) lines.push(`\nСуть: ${analyzed.summary}`);
+      if (analyzed.suggestedTemplateId) {
+        const tpl = findTemplate(analyzed.suggestedTemplateId);
+        if (tpl) lines.push(`\nГотов подготовить ответный документ: «${tpl.label}» — кнопка ниже.`);
+      } else {
+        lines.push(`\nЕсли нужно подготовить ответный документ или создать запрос на специалиста — кнопки ниже.`);
+      }
+    } else {
+      lines.push("Текст распознан, но автоматическая классификация не удалась.");
+      lines.push(
+        ocrText.slice(0, 600) +
+          (ocrText.length > 600 ? "…\n\n(см. полный текст в карточке файла)" : ""),
+      );
+    }
+
+    const assistantMsg = await prisma.consultantMessage.create({
+      data: {
+        threadId: thread.id,
+        role: "assistant",
+        content: lines.join("\n"),
+        debugJson: JSON.stringify({
+          docAnalysis: analyzed,
+          ocr: { text: ocrText, model: ocrModel, elapsedSec: ocrElapsed },
+          uploadKey: key,
+        }),
+      },
+    });
+
+    // suggestedActions: если классификатор предложил шаблон — пушим именно
+    // его. Иначе — обычные пилюли по тексту OCR.
+    const suggestedActions = analyzed?.suggestedTemplateId
+      ? (() => {
+          const tpl = findTemplate(analyzed.suggestedTemplateId!);
+          return tpl ? [{ id: tpl.id, label: tpl.label }] : [];
+        })()
+      : suggestTemplatesFor(ocrText.slice(0, 2000));
+
+    // Обновляем тред (title если новый).
+    await prisma.consultantThread.update({
+      where: { id: thread.id },
+      data: thread.title
+        ? { updatedAt: new Date() }
+        : {
+            title: analyzed?.docTypeRu ? `Документ: ${analyzed.docTypeRu}` : "Документ от ИФНС",
+            updatedAt: new Date(),
+          },
+    });
+
+    return res.json({
+      threadId: thread.id,
+      userMessage: serializeMessage(userMsg),
+      assistantMessage: serializeMessage(assistantMsg),
+      analysis: analyzed,
+      suggestedActions,
+      // Если классификатор знает подходящий шаблон — отдаём его id и
+      // OCR-текст для предзаполнения userInput в модалке генерации.
+      suggestedTemplate: analyzed?.suggestedTemplateId
+        ? { templateId: analyzed.suggestedTemplateId, prefilledInput: ocrText }
+        : null,
+    });
+  },
+);
+
+function serializeMessage(m: {
+  id: string;
+  role: string;
+  kind?: string | null;
+  attachmentFilename?: string | null;
+  content: string;
+  createdAt: Date;
+  sourcesJson?: string | null;
+  usageJson?: string | null;
+  debugJson?: string | null;
+}) {
+  return {
+    id: m.id,
+    role: m.role,
+    kind: m.kind ?? "text",
+    attachmentFilename: m.attachmentFilename ?? null,
+    content: m.content,
+    createdAt: m.createdAt,
+    sources: m.sourcesJson ? JSON.parse(m.sourcesJson) : [],
+    usage: m.usageJson ? JSON.parse(m.usageJson) : null,
+    debug: m.debugJson ? JSON.parse(m.debugJson) : null,
+  };
+}
 
 export default router;
