@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import {
   FileText,
   ArrowRight,
   MapPin,
-  Star,
+  X,
 } from "lucide-react-native";
 import Card from "@/components/ui/Card";
 import LandingHeader from "@/components/landing/LandingHeader";
@@ -41,11 +41,13 @@ interface FnsCard {
   code: string;
   address: string | null;
   city: { id: string; name: string; slug: string };
-  yandexRating?: number | null;
-  yandexReviewsCount?: number | null;
   specialistCount: number;
   activeRequestCount: number;
 }
+
+// Топ-5 городов на чипах. Больше не нужно — список можно найти через
+// поиск-typeahead (мышью по горизонтали скроллить неудобно).
+const TOP_CITY_NAMES = ["Москва", "Санкт-Петербург", "Новосибирск", "Екатеринбург", "Казань"];
 
 /**
  * Public catalog of FNS offices — `/fns`. Discovery surface: every
@@ -56,19 +58,13 @@ interface FnsCard {
 export default function FnsCatalogPage() {
   const router = useRouter();
   const nav = useTypedRouter();
-  const params = useLocalSearchParams<{ cityId?: string; q?: string }>();
+  const params = useLocalSearchParams<{ cityId?: string }>();
   const initialCityId =
     typeof params.cityId === "string"
       ? params.cityId
       : Array.isArray(params.cityId)
       ? params.cityId[0]
       : null;
-  const initialQ =
-    typeof params.q === "string"
-      ? params.q
-      : Array.isArray(params.q)
-      ? params.q[0]
-      : "";
   const { width } = useWindowDimensions();
   const isDesktop = width >= BREAKPOINT;
   const { user } = useAuth();
@@ -78,9 +74,13 @@ export default function FnsCatalogPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [q, setQ] = useState(initialQ);
+  // Typeahead-инпут: ищем город по имени, после выбора подставляем
+  // имя в инпут и фиксируем cityFilterId.
+  const [cityQuery, setCityQuery] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [cityFilterId, setCityFilterId] = useState<string | null>(initialCityId);
   const [cities, setCities] = useState<CityRow[]>([]);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync URL → state when query param changes (deep-link / back button).
   useEffect(() => {
@@ -88,23 +88,18 @@ export default function FnsCatalogPage() {
   }, [initialCityId]);
 
   useEffect(() => {
-    if (initialQ) setQ(initialQ);
-  }, [initialQ]);
-
-  useEffect(() => {
-    api<{ items: CityRow[] }>("/api/cities?limit=200", { noAuth: true })
+    api<{ items: CityRow[] }>("/api/cities?limit=1000", { noAuth: true })
       .then((res) => setCities(res.items))
       .catch(() => setCities([]));
   }, []);
 
-  const fetchPage = useCallback(async (search: string, cityId: string | null) => {
+  const fetchPage = useCallback(async (cityId: string | null) => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (search.trim()) params.set("q", search.trim());
       if (cityId) params.set("cityId", cityId);
-      params.set("limit", "300");
+      params.set("limit", "500");
       const res = await api<{ items: FnsCard[]; total: number }>(
         `/api/fns/list?${params}`,
         { noAuth: true }
@@ -120,15 +115,48 @@ export default function FnsCatalogPage() {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => void fetchPage(q, cityFilterId), 250);
-    return () => clearTimeout(t);
-  }, [q, cityFilterId, fetchPage]);
+    void fetchPage(cityFilterId);
+  }, [cityFilterId, fetchPage]);
 
+  // Если URL принёс cityId — подставим имя в инпут.
+  useEffect(() => {
+    if (cityFilterId && cities.length > 0) {
+      const c = cities.find((x) => x.id === cityFilterId);
+      if (c && cityQuery !== c.name) setCityQuery(c.name);
+    }
+  }, [cityFilterId, cities]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Топ-5 городов жёстко по списку (Москва, СПб и т.д.).
   const topCities = useMemo(() => {
-    return [...cities]
-      .sort((a, b) => (b.officesCount ?? 0) - (a.officesCount ?? 0))
-      .slice(0, 14);
+    return TOP_CITY_NAMES
+      .map((name) => cities.find((c) => c.name === name))
+      .filter((c): c is CityRow => !!c);
   }, [cities]);
+
+  // Совпадения для дропдауна (≥2 символов, до 8 результатов).
+  const cityMatches = useMemo(() => {
+    const q = cityQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    // Если уже выбран город и имя совпадает — не показываем
+    // (иначе сразу после выбора дропдаун висит пустой).
+    if (cityFilterId) {
+      const cur = cities.find((c) => c.id === cityFilterId);
+      if (cur && cur.name.toLowerCase() === q) return [];
+    }
+    return cities.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [cityQuery, cities, cityFilterId]);
+
+  const pickCity = useCallback((city: CityRow) => {
+    setCityFilterId(city.id);
+    setCityQuery(city.name);
+    setDropdownOpen(false);
+  }, []);
+
+  const clearCity = useCallback(() => {
+    setCityFilterId(null);
+    setCityQuery("");
+    setDropdownOpen(false);
+  }, []);
 
   // Group items by city.name when no city filter is active. Cities
   // are sorted alphabetically; FNS within a city are also sorted by
@@ -198,73 +226,148 @@ export default function FnsCatalogPage() {
                 lineHeight: 20,
               }}
             >
-              Все {total > 0 ? `${total} ` : ""}ИФНС России. Для каждой — отдельная страница со списком специалистов, адресом и кнопкой создать запрос. Сгруппировано по городам — найдите свой город ниже или используйте поиск.
+              Все {total > 0 ? `${total} ` : ""}ИФНС России. Выберите город — ниже появятся все ИФНС в нём со ссылками на детальные страницы.
             </Text>
           </View>
 
-          {/* Search */}
-          <View
-            className="flex-row items-center"
-            style={{
-              gap: 10,
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: 12,
-              backgroundColor: colors.white,
-            }}
-          >
-            <Search size={18} color={colors.textMuted} />
-            <TextInput
-              value={q}
-              onChangeText={setQ}
-              placeholder="Код ИФНС, название инспекции или город"
-              placeholderTextColor={colors.placeholder}
+          {/* City typeahead.
+              position:relative + zIndex POPOVER, чтобы дропдаун
+              перекрывал карточки списка ниже на web. */}
+          <View style={{ position: "relative", zIndex: 100 }}>
+            <View
+              className="flex-row items-center"
               style={{
-                flex: 1,
-                fontSize: 15,
-                color: colors.text,
-                paddingVertical: 4,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                outlineWidth: 0 as any,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                outlineStyle: "none" as any,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                borderStyle: "none" as any,
+                gap: 10,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 12,
+                backgroundColor: colors.white,
               }}
-            />
+            >
+              <Search size={18} color={colors.textMuted} />
+              <TextInput
+                value={cityQuery}
+                onChangeText={(t) => {
+                  setCityQuery(t);
+                  setDropdownOpen(t.trim().length >= 2);
+                  // Если стерли имя выбранного города — снимаем фильтр.
+                  if (cityFilterId) {
+                    const cur = cities.find((c) => c.id === cityFilterId);
+                    if (!cur || !cur.name.toLowerCase().startsWith(t.trim().toLowerCase())) {
+                      setCityFilterId(null);
+                    }
+                  }
+                }}
+                onFocus={() => {
+                  if (cityQuery.trim().length >= 2) setDropdownOpen(true);
+                }}
+                onBlur={() => {
+                  // Закрываем с задержкой, чтобы клик по строке дропдауна успел отработать.
+                  if (blurTimer.current) clearTimeout(blurTimer.current);
+                  blurTimer.current = setTimeout(() => setDropdownOpen(false), 150);
+                }}
+                placeholder="Введите город — например, Москва"
+                placeholderTextColor={colors.placeholder}
+                style={{
+                  flex: 1,
+                  fontSize: 15,
+                  color: colors.text,
+                  paddingVertical: 4,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  outlineWidth: 0 as any,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  outlineStyle: "none" as any,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  borderStyle: "none" as any,
+                }}
+              />
+              {cityQuery.length > 0 && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Очистить"
+                  onPress={clearCity}
+                  hitSlop={6}
+                >
+                  <X size={16} color={colors.textMuted} />
+                </Pressable>
+              )}
+            </View>
+
+            {/* Dropdown с совпадениями. */}
+            {dropdownOpen && cityMatches.length > 0 && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 52,
+                  left: 0,
+                  right: 0,
+                  backgroundColor: colors.white,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  zIndex: 100,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 12,
+                }}
+              >
+                {cityMatches.map((c, idx) => (
+                  <Pressable
+                    key={c.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={c.name}
+                    onPress={() => pickCity(c)}
+                    style={({ pressed }) => [
+                      {
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        borderTopWidth: idx === 0 ? 0 : 1,
+                        borderTopColor: colors.border,
+                      },
+                      pressed && { backgroundColor: colors.surface },
+                    ]}
+                  >
+                    <MapPin size={14} color={colors.textMuted} />
+                    <Text style={{ flex: 1, fontSize: 14, color: colors.text }}>{c.name}</Text>
+                    {c.officesCount ? (
+                      <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                        {c.officesCount} ИФНС
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </View>
 
-          {/* City chips */}
+          {/* Топ-5 чипов под инпутом — быстрый выбор без печатания. */}
           {topCities.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 6 }}
-            >
-              <CityChip
-                label="Все города"
-                active={cityFilterId == null}
-                onPress={() => setCityFilterId(null)}
-              />
+            <View className="flex-row flex-wrap" style={{ gap: 6 }}>
               {topCities.map((c) => (
                 <CityChip
                   key={c.id}
                   label={`${c.name}${c.officesCount ? ` (${c.officesCount})` : ""}`}
                   active={cityFilterId === c.id}
-                  onPress={() =>
-                    setCityFilterId(cityFilterId === c.id ? null : c.id)
-                  }
+                  onPress={() => (cityFilterId === c.id ? clearCity() : pickCity(c))}
                 />
               ))}
-            </ScrollView>
+              {cityFilterId && (
+                <CityChip label="Все города" active={false} onPress={clearCity} />
+              )}
+            </View>
           )}
 
           {!loading && !error && (
             <Text style={{ fontSize: 12, color: colors.textMuted }}>
-              {q || cityFilterId
-                ? `Найдено: ${items.length}${total > items.length ? ` из ${total}` : ""}`
+              {cityFilterId
+                ? `В выбранном городе: ${items.length} ${items.length === 1 ? "ИФНС" : "ИФНС"}`
                 : `Всего ИФНС: ${total} в ${groupedByCity.length} городах`}
             </Text>
           )}
@@ -281,12 +384,11 @@ export default function FnsCatalogPage() {
           ) : items.length === 0 ? (
             <Card>
               <Text style={{ color: colors.textSecondary }}>
-                По вашему запросу ничего не найдено.
+                По выбранному городу ничего не найдено.
               </Text>
             </Card>
-          ) : cityFilterId || q ? (
-            // Flat list — when filtering or searching, no need for
-            // city grouping (results are usually homogeneous already).
+          ) : cityFilterId ? (
+            // Город выбран → плоский список всех ИФНС этого города.
             <FnsGrid items={items} isDesktop={isDesktop} onPress={(id) => router.push(`/fns/${id}` as never)} />
           ) : (
             // Grouped — default browse mode.
@@ -407,17 +509,6 @@ function FnsGrid({
               flexWrap: "wrap",
             }}
           >
-            {item.yandexRating != null && (
-              <View className="flex-row items-center" style={{ gap: 4 }}>
-                <Star size={11} color={colors.warning ?? "#f5a623"} fill={colors.warning ?? "#f5a623"} />
-                <Text style={{ fontSize: 11, color: colors.textSecondary }}>
-                  <Text style={{ color: colors.text, fontWeight: "600" }}>
-                    {item.yandexRating.toFixed(1)}
-                  </Text>
-                  {item.yandexReviewsCount ? ` · ${item.yandexReviewsCount}` : ""}
-                </Text>
-              </View>
-            )}
             <View className="flex-row items-center" style={{ gap: 4 }}>
               <Users size={11} color={colors.textMuted} />
               <Text style={{ fontSize: 11, color: colors.textSecondary }}>
